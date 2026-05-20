@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบเช็คชื่อและจัดการชุมนุม - โรงเรียนไชยฉิมพลีวิทยาคม</title>
+    <title>MAKHRAB - โรงเรียนไชยฉิมพลีวิทยาคม</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -145,8 +145,8 @@
     <!-- Login Screen -->
     <div id="login-screen">
         <div class="text-center mb-8 text-white w-full px-4">
-            <i class="fas fa-school text-6xl mb-4 text-green-300"></i>
-            <h1 class="text-3xl md:text-4xl font-bold tracking-tight">ระบบเช็คชื่อ & จัดการวิชาชุมนุม</h1>
+            <img src="logopng.png" alt="School Logo" class="w-48 h-48 mb-4 mx-auto">
+            <h1 class="text-3xl md:text-4xl font-bold tracking-tight">MAKHRAB</h1>
             <h2 class="text-xl mt-2 text-green-200">โรงเรียนไชยฉิมพลีวิทยาคม</h2>
         </div>
         
@@ -201,9 +201,12 @@
     <!-- Main App Header -->
     <header class="bg-green-700 text-white shadow-md relative z-10 w-full hidden" id="app-header">
         <div class="container mx-auto px-4 py-4 md:py-6 flex flex-col md:flex-row justify-between items-center w-full">
-            <div class="text-center md:text-left mb-3 md:mb-0 w-full md:w-auto">
-                <h1 class="text-2xl md:text-3xl font-bold tracking-tight"><i class="fas fa-clipboard-check mr-2"></i>ระบบเช็คชื่อ & วิชาชุมนุม</h1>
-                <h2 class="text-sm md:text-base font-medium text-green-100">โรงเรียนไชยฉิมพลีวิทยาคม</h2>
+            <div class="flex items-center gap-4 mb-4 md:mb-0">
+                <img src="logopng.png" alt="School Logo" class="w-16 h-16 flex-shrink-0">
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold tracking-tight">MAKHRAB</h1>
+                    <h2 class="text-sm md:text-base font-medium text-green-100">โรงเรียนไชยฉิมพลีวิทยาคม</h2>
+                </div>
             </div>
             <div class="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto">
                 <div class="text-sm text-right">
@@ -227,10 +230,11 @@
                     <!-- Teacher & Admin Menu -->
                     <li id="menu-checkin" class="hidden"><button onclick="switchTab('checkin')" class="nav-btn active px-4 py-4 font-medium hover:bg-green-600 border-b-4 border-white text-white focus:outline-none transition-colors duration-200" id="nav-checkin"><i class="fas fa-user-check mr-2"></i> เช็คชื่อปกติ</button></li>
                     <li id="menu-club-checkin" class="hidden"><button onclick="switchTab('club-checkin')" class="nav-btn border-transparent text-green-200 px-4 py-4 font-medium hover:bg-green-600 border-b-4 hover:text-white focus:outline-none transition-colors duration-200" id="nav-club-checkin"><i class="fas fa-users-cog mr-2"></i> เช็คชื่อชุมนุม</button></li>
-                    <li id="menu-club-manage" class="hidden"><button onclick="switchTab('club-manage')" class="nav-btn border-transparent text-green-200 px-4 py-4 font-medium hover:bg-green-600 border-b-4 hover:text-white focus:outline-none transition-colors duration-200" id="nav-club-manage"><i class="fas fa-tasks mr-2"></i> จัดการชุมนุม</button></li>
                     <li id="menu-history" class="hidden"><button onclick="switchTab('history')" class="nav-btn border-transparent text-green-200 px-4 py-4 font-medium hover:bg-green-600 border-b-4 hover:text-white focus:outline-none transition-colors duration-200" id="nav-history"><i class="fas fa-history mr-2"></i> ประวัติเข้าเรียน</button></li>
                     <li id="menu-stats" class="hidden"><button onclick="switchTab('stats')" class="nav-btn border-transparent text-green-200 px-4 py-4 font-medium hover:bg-green-600 border-b-4 hover:text-white focus:outline-none transition-colors duration-200" id="nav-stats"><i class="fas fa-chart-pie mr-2"></i> สถิติ</button></li>
                     <li id="menu-students" class="hidden"><button onclick="switchTab('students')" class="nav-btn border-transparent text-green-200 px-4 py-4 font-medium hover:bg-green-600 border-b-4 hover:text-white focus:outline-none transition-colors duration-200" id="nav-students"><i class="fas fa-users-cog mr-2"></i> จัดการนักเรียน</button></li>
+                    <li id="menu-club-manage" class="hidden"><button onclick="switchTab('club-manage')" class="nav-btn border-transparent text-green-200 px-4 py-4 font-medium hover:bg-green-600 border-b-4 hover:text-white focus:outline-none transition-colors duration-200" id="nav-club-manage"><i class="fas fa-tasks mr-2"></i> จัดการชุมนุม</button></li>
+
                     
                     <!-- Admin Only Menu -->
                     <li id="menu-master" class="hidden"><button onclick="switchTab('master')" class="nav-btn border-transparent text-green-200 px-4 py-4 font-medium hover:bg-green-600 border-b-4 hover:text-white focus:outline-none transition-colors duration-200" id="nav-master"><i class="fas fa-database mr-2"></i> ข้อมูลพื้นฐาน</button></li>
@@ -288,7 +292,6 @@
                                 </select>
                             </div>
                             <div class="mb-3"><label class="text-sm font-medium text-gray-700">เบอร์โทรศัพท์ผู้ปกครอง *</label><input type="text" id="sp-p-phone" required placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
-                            <div class="mb-3"><label class="text-sm font-medium text-gray-700">วันเกิดผู้ปกครอง</label><input type="date" id="sp-p-dob" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
                         </div>
                     </div>
                     <div class="mt-6 text-center border-t pt-6">
@@ -412,13 +415,13 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">ชั้นเรียน</label>
                         <select id="checkin-class" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" onchange="resetCheckinTable()"><option value="">-- เลือกชั้นเรียน --</option></select>
                     </div>
+                        <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">ครูผู้สอน</label>
+                        <select id="checkin-teacher" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" onchange="onTeacherChange()"><option value="">-- เลือกครูผู้สอน --</option></select>
+                    </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">วิชา</label>
                         <select id="checkin-subject" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" onchange="resetCheckinTable()"><option value="">-- เลือกวิชา --</option></select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">ครูผู้สอน</label>
-                        <select id="checkin-teacher" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" onchange="resetCheckinTable()"><option value="">-- เลือกครูผู้สอน --</option></select>
                     </div>
                 </div>
 
@@ -458,7 +461,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">เลขที่</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">รหัสประจำตัว</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อ - นามสกุล</th>
-                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider md:w-64">สถานะ</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider md:w-74">สถานะ</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200" id="checkin-table-body"></tbody>
@@ -568,12 +571,12 @@
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">ปีการศึกษา/ภาค</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">ชื่อชุมนุม</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">ครูที่ปรึกษาหลัก</th>
-                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-500">ความจุ (คน)</th>
-                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-500">สถานะ</th>
-                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-500">จัดการ</th>
+                                    <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ปีการศึกษา/ภาค</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชื่อชุมนุม</th>
+                                    <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ครูที่ปรึกษาหลัก</th>
+                                    <th class="hidden md:table-cell px-4 py-2 text-center text-xs font-medium text-gray-500 whitespace-nowrap">ความจุ (คน)</th>
+                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 whitespace-nowrap">สถานะ</th>
+                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 whitespace-nowrap">จัดการ</th>
                                 </tr>
                             </thead>
                             <tbody id="tbody-club-list" class="divide-y divide-gray-200"></tbody>
@@ -623,11 +626,11 @@
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-4 py-2 text-center w-12"><input type="checkbox" id="enroll-select-all" onchange="toggleAllEnrollCheckboxes(this)"></th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">ชั้น/เลขที่</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">รหัส</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">ชื่อ - นามสกุล</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">สถานะชุมนุม</th>
+                                    <th class="px-4 py-2 text-center w-12 whitespace-nowrap"><input type="checkbox" id="enroll-select-all" onchange="toggleAllEnrollCheckboxes(this)"></th>
+                                    <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชั้น/เลขที่</th>
+                                    <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">รหัส</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชื่อ - นามสกุล</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">สถานะชุมนุม</th>
                                 </tr>
                             </thead>
                             <tbody id="tbody-enroll-students" class="divide-y divide-gray-200"></tbody>
@@ -651,7 +654,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">วันที่ <span class="text-xs text-gray-400">(เว้นว่างเพื่อดูทั้งเทอม)</span></label>
-                        <input type="date" id="history-date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500">
+                        <input type="date"  id="history-date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500" onchange="renderHistory()">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">ปีการศึกษา</label>
@@ -767,20 +770,27 @@
                         <input type="text" id="manage-search" placeholder="พิมพ์ชื่อ นามสกุล หรือรหัสประจำตัว..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500" onkeyup="renderManageStudents()">
                     </div>
                 </div>
-                <div class="overflow-x-auto bg-white rounded-lg border border-gray-200 shadow-sm w-full">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ชั้น/เลขที่</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">รหัส</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ชื่อ - นามสกุล (ชื่อเล่น)</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">เบอร์โทร</th>
-                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">จัดการ</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200" id="manage-students-table-body"></tbody>
-                    </table>
-                </div>
+                <div class="overflow-x-auto w-full"> <!-- เพิ่ม div คลุมไว้เผื่อจอเล็กมาก ๆ จะได้ปัดซ้ายขวาได้นิดหน่อย -->
+    <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+            <tr>
+                <!-- ซ่อนบนมือถือ แสดงผลบนจอ md ขึ้นไป -->
+                <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">ชั้น/เลขที่</th>
+                <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">รหัส</th>
+                
+                <!-- แสดงตลอด -->
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">ชื่อ - นามสกุล (ชื่อเล่น)</th>
+                
+                <!-- ซ่อนบนมือถือ -->
+                <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">เบอร์โทร</th>
+                
+                <!-- แสดงตลอด -->
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">จัดการ</th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200" id="manage-students-table-body"></tbody>
+    </table>
+</div>
             </div>
         </section>
 
@@ -805,10 +815,10 @@
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">รหัสวิชา</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">ชื่อวิชา</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">หน่วยกิต</th>
-                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-500">จัดการ</th>
+                                    <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">รหัสวิชา</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชื่อวิชา</th>
+                                    <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">หน่วยกิต</th>
+                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 whitespace-nowrap">จัดการ</th>
                                 </tr>
                             </thead>
                             <tbody id="tbody-subjects" class="divide-y divide-gray-200"></tbody>
@@ -826,11 +836,11 @@
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">อีเมล (ใช้เข้าระบบ)</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">ชื่อ - สกุล</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">โทรศัพท์</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">วิชาที่สอน</th>
-                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-500">จัดการ</th>
+                                    <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">อีเมล (ใช้เข้าระบบ)</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชื่อ - สกุล</th>
+                                    <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">โทรศัพท์</th>
+                                    <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">วิชาที่สอน</th>
+                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 whitespace-nowrap">จัดการ</th>
                                 </tr>
                             </thead>
                             <tbody id="tbody-teachers" class="divide-y divide-gray-200"></tbody>
@@ -848,10 +858,10 @@
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">ปีการศึกษา/ภาค</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">ชื่อชั้นเรียน</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500">ครูที่ปรึกษา</th>
-                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-500">จัดการ</th>
+                                    <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ปีการศึกษา/ภาค</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชื่อชั้นเรียน</th>
+                                    <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ครูที่ปรึกษา</th>
+                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 whitespace-nowrap">จัดการ</th>
                                 </tr>
                             </thead>
                             <tbody id="tbody-classes" class="divide-y divide-gray-200"></tbody>
@@ -976,12 +986,22 @@
                     <input type="hidden" id="stu-id">
                     <div class="flex justify-between items-end border-b pb-1 mb-3">
                         <h4 class="font-bold">ข้อมูลส่วนตัว</h4>
-                        <div class="w-1/3">
-                            <label class="text-sm font-medium text-red-600 block mb-1">สถานะนักเรียน *</label>
-                            <select id="stu-status" class="w-full px-3 py-1.5 border border-red-300 bg-red-50 rounded text-sm font-bold">
-                                <option value="ปกติ">ปกติ (กำลังศึกษา)</option>
-                                <option value="ลาออก">ลาออก / พ้นสภาพ</option>
-                            </select>
+                        <div class="w-2/3 md:w-1/2 flex justify-end gap-3">
+                            <div class="w-1/2">
+                                <label class="text-sm font-medium text-blue-600 block mb-1">สถานะเยี่ยมบ้าน</label>
+                                <select id="stu-homevisit" class="w-full px-3 py-1.5 border border-blue-300 bg-blue-50 rounded text-sm font-bold">
+                                    <option value="">- เลือก -</option>
+                                    <option value="สำเร็จ">สำเร็จ</option>
+                                    <option value="ไม่สำเร็จ">ไม่สำเร็จ</option>
+                                </select>
+                            </div>
+                            <div class="w-1/2">
+                                <label class="text-sm font-medium text-red-600 block mb-1">สถานะนักเรียน *</label>
+                                <select id="stu-status" class="w-full px-3 py-1.5 border border-red-300 bg-red-50 rounded text-sm font-bold">
+                                    <option value="ปกติ">ปกติ (กำลังศึกษา)</option>
+                                    <option value="ลาออก">ลาออก / พ้นสภาพ</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <!-- Adjusted grid-cols to 5 columns on desktop for Name inputs -->
@@ -1041,7 +1061,26 @@
                             <input type="text" id="stu-address" class="w-full px-3 py-2 border rounded">
                         </div>
                     </div>
-                    <h4 class="font-bold mb-3 border-b pb-1">ข้อมูลผู้ปกครอง</h4>
+                    
+                    <h4 class="font-bold mb-3 border-b pb-1 mt-4 text-blue-700">ข้อมูลบิดา</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+                        <div><label class="text-sm font-medium">ชื่อบิดา</label><input type="text" id="stu-f-fname" class="w-full px-3 py-2 border rounded"></div>
+                        <div><label class="text-sm font-medium">นามสกุล</label><input type="text" id="stu-f-lname" class="w-full px-3 py-2 border rounded"></div>
+                        <div><label class="text-sm font-medium">อายุ (ปี)</label><input type="number" id="stu-f-age" class="w-full px-3 py-2 border rounded"></div>
+                        <div><label class="text-sm font-medium">อาชีพ</label><input type="text" id="stu-f-job" class="w-full px-3 py-2 border rounded"></div>
+                        <div><label class="text-sm font-medium">เบอร์โทรศัพท์</label><input type="text" id="stu-f-phone" placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded"></div>
+                    </div>
+                    
+                    <h4 class="font-bold mb-3 border-b pb-1 mt-4 text-pink-700">ข้อมูลมารดา</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+                        <div><label class="text-sm font-medium">ชื่อมารดา</label><input type="text" id="stu-m-fname" class="w-full px-3 py-2 border rounded"></div>
+                        <div><label class="text-sm font-medium">นามสกุล</label><input type="text" id="stu-m-lname" class="w-full px-3 py-2 border rounded"></div>
+                        <div><label class="text-sm font-medium">อายุ (ปี)</label><input type="number" id="stu-m-age" class="w-full px-3 py-2 border rounded"></div>
+                        <div><label class="text-sm font-medium">อาชีพ</label><input type="text" id="stu-m-job" class="w-full px-3 py-2 border rounded"></div>
+                        <div><label class="text-sm font-medium">เบอร์โทรศัพท์</label><input type="text" id="stu-m-phone" placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded"></div>
+                    </div>
+
+                    <h4 class="font-bold mb-3 border-b pb-1 text-gray-700">ข้อมูลผู้ปกครอง</h4>
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                             <label class="text-sm font-medium">คำนำหน้า</label>
@@ -1074,10 +1113,6 @@
                             <label class="text-sm font-medium">โทรศัพท์</label>
                             <input type="text" id="stu-p-phone" placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded">
                         </div>
-                        <div>
-                            <label class="text-sm font-medium">วันเกิด</label>
-                            <input type="date" id="stu-p-dob" class="w-full px-3 py-2 border rounded">
-                        </div>
                     </div>
                 </form>
             </div>
@@ -1107,7 +1142,7 @@
         const DB_KEY_CLUB_ENROLLMENTS = 'school_club_enrollments';
         const DB_KEY_CLUB_RECORDS = 'school_club_records';
 
-        const DEFAULT_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzRIJb3_c47u24qqJX3F9fpRSqW6fvup-jqOXzoquybZkHVivlVgPpYsREGriHe2ojj_w/exec";
+        const DEFAULT_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyMA10lYNtzpac-eYc7PLiaNN6CJD_ho9BFRvrXIjt1_mSD_0XuFpVkcc-EON1x-9T8tQ/exec";
 
         // State variables
         let currentTab = '';
@@ -1337,6 +1372,13 @@
             document.getElementById('form-login-teacher').reset();
         }
 
+        /**
+         * Returns the current date and time formatted as an ISO-like string (YYYY-MM-DDTHH:mm:ss.sss)
+         * in the 'Asia/Bangkok' timezone. This string does not include a timezone offset or 'Z'.
+         * When parsed by `new Date()`, it will be interpreted as local time.
+         * @returns {string} The formatted date-time string.
+         */
+        
         function updateMenuVisibility() {
             ['menu-my-profile', 'menu-my-club', 'menu-academic', 'menu-checkin', 'menu-club-checkin', 'menu-club-manage', 'menu-history', 'menu-stats', 'menu-students', 'menu-master', 'menu-settings'].forEach(id => {
                 document.getElementById(id).classList.add('hidden');
@@ -1584,7 +1626,8 @@
 
         // --- Master Dropdowns Populators ---
         function updateAllDropdowns() {
-            const subjectSelects = ['checkin-subject', 'history-subject', 'stats-subject'];
+            // Populate subjects for History and Stats tabs (Checkin is now dynamic)
+            const subjectSelects = ['history-subject', 'stats-subject'];
             const subjectOptions = allSubjects.map(s => `<option value="${s.name}">${s.code} - ${s.name}</option>`).join('');
             subjectSelects.forEach(id => {
                 const el = document.getElementById(id);
@@ -1593,23 +1636,31 @@
                     el.innerHTML = `<option value="">${defaultText}</option>${subjectOptions}`;
                 }
             });
+            
+            // Reset checkin subject dropdown
+            const checkinSubjectEl = document.getElementById('checkin-subject');
+            if (checkinSubjectEl) {
+                checkinSubjectEl.innerHTML = `<option value="">-- เลือกวิชา --</option>`;
+            }
 
             const checkinTeacher = document.getElementById('checkin-teacher');
             if(checkinTeacher) {
                 checkinTeacher.innerHTML = `<option value="">-- เลือกครูผู้สอน --</option>` + 
-                allTeachers.map(t => `<option value="${t.firstName} ${t.lastName}">${t.title}${t.firstName} ${t.lastName}</option>`).join('');
+                allTeachers.map(t => `<option value="${t.id}">${t.title}${t.firstName} ${t.lastName}</option>`).join('');
             }
 
             const stuClass = document.getElementById('stu-class');
             if(stuClass) {
+                const sortedClasses = [...allClasses].sort((a, b) => a.className.localeCompare(b.className, undefined, { numeric: true }));
                 stuClass.innerHTML = `<option value="">-- เลือกชั้นเรียน --</option>` + 
-                allClasses.map(c => `<option value="${c.className}">${c.className} (ปี ${c.year}/${c.semester})</option>`).join('');
+                sortedClasses.map(c => `<option value="${c.className}">${c.className} (ปี ${c.year}/${c.semester})</option>`).join('');
             }
 
             const uploadClass = document.getElementById('upload-class');
             if(uploadClass) {
+                const sortedClasses = [...allClasses].sort((a, b) => a.className.localeCompare(b.className, undefined, { numeric: true }));
                 uploadClass.innerHTML = `<option value="">-- เลือกชั้นเรียน --</option>` +
-                allClasses.map(c => `<option value="${c.className}">${c.className}</option>`).join('');
+                sortedClasses.map(c => `<option value="${c.className}">${c.className}</option>`).join('');
             }
         }
 
@@ -1617,6 +1668,7 @@
             const el = document.getElementById(targetId);
             if (!el) return;
             const filtered = allClasses.filter(c => c.year == yearVal && c.semester == semVal);
+            filtered.sort((a, b) => a.className.localeCompare(b.className, undefined, { numeric: true }));
             const classOptions = filtered.map(c => `<option value="${c.className}">${c.className}</option>`).join('');
             el.innerHTML = `<option value="">${defaultText}</option>${classOptions}`;
         }
@@ -1625,6 +1677,31 @@
             const yr = document.getElementById('checkin-year').value;
             const sem = document.getElementById('checkin-semester').value;
             updateClassDropdown(yr, sem, 'checkin-class', '-- เลือกชั้นเรียน --');
+        }
+
+        // --- Dependent Dropdown for Checkin ---
+        function onTeacherChange() {
+            const teacherId = document.getElementById('checkin-teacher').value;
+            populateCheckinSubjectDropdown(teacherId);
+            resetCheckinTable();
+        }
+
+        function populateCheckinSubjectDropdown(teacherId) {
+            const subjectSelect = document.getElementById('checkin-subject');
+            if (!subjectSelect) return;
+            
+            subjectSelect.innerHTML = '<option value="">-- เลือกวิชา --</option>'; // Reset first
+
+            if (!teacherId) return; // No teacher selected
+
+            const teacher = allTeachers.find(t => t.id === teacherId);
+            if (!teacher || !teacher.subjects) return; // Teacher not found or has no subjects
+
+            const teacherSubjectIds = teacher.subjects;
+            const teacherSubjects = allSubjects.filter(s => teacherSubjectIds.includes(s.id));
+            
+            teacherSubjects.sort((a, b) => (a.code || a.name).localeCompare(b.code || b.name));
+            subjectSelect.innerHTML += teacherSubjects.map(s => `<option value="${s.name}">${s.code} - ${s.name}</option>`).join('');
         }
 
         function onHistoryYearSemesterChange() {
@@ -1661,14 +1738,20 @@
                 const enrolledCount = allClubEnrollments.filter(e => e.clubId === c.id && e.year == c.year && e.semester == c.semester).length;
                 
                 return `<tr>
-                    <td class="px-4 py-2 text-sm">${c.year}/${c.semester}</td>
-                    <td class="px-4 py-2 text-sm font-bold text-green-800">${c.name}</td>
-                    <td class="px-4 py-2 text-sm">${pTeacherName}</td>
-                    <td class="px-4 py-2 text-center text-sm">${enrolledCount} / ${c.capacity}</td>
-                    <td class="px-4 py-2 text-center text-sm">
+                    <td class="hidden md:table-cell px-4 py-2 text-sm whitespace-nowrap">${c.year}/${c.semester}</td>
+                    <td class="px-4 py-2">
+                        <div class="text-sm font-bold text-green-800 whitespace-nowrap">${c.name}</div>
+                        <div class="md:hidden mt-1 text-xs text-gray-500 flex flex-col gap-1">
+                            <div>ปี ${c.year}/${c.semester} | ครู: ${pTeacherName}</div>
+                            <div>ความจุ: ${enrolledCount} / ${c.capacity} คน</div>
+                        </div>
+                    </td>
+                    <td class="hidden md:table-cell px-4 py-2 text-sm whitespace-nowrap">${pTeacherName}</td>
+                    <td class="hidden md:table-cell px-4 py-2 text-center text-sm whitespace-nowrap">${enrolledCount} / ${c.capacity}</td>
+                    <td class="px-4 py-2 text-center text-sm whitespace-nowrap">
                         <span class="px-2 py-0.5 rounded text-xs font-bold ${c.status === 'เปิด' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${c.status}</span>
                     </td>
-                    <td class="px-4 py-2 text-center text-sm">
+                    <td class="px-4 py-2 text-center text-sm whitespace-nowrap">
                         <button onclick="editClub('${c.id}')" class="text-blue-500 hover:text-blue-700 mr-3"><i class="fas fa-edit"></i></button>
                         <button onclick="deleteClub('${c.id}')" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
                     </td>
@@ -1795,6 +1878,7 @@
             // Update Class filter dropdown
             const classDropdown = document.getElementById('enroll-filter-class');
             const filteredClasses = allClasses.filter(c => c.year == yr && c.semester == sem);
+            filteredClasses.sort((a, b) => a.className.localeCompare(b.className, undefined, { numeric: true }));
             classDropdown.innerHTML = `<option value="">ทุกชั้นเรียน</option>` + 
                 filteredClasses.map(c => `<option value="${c.className}">${c.className}</option>`).join('');
 
@@ -1834,22 +1918,29 @@
                 finalStudents = mappedStudents.filter(m => m.club);
             }
 
-            finalStudents.sort((a,b) => a.student.class.localeCompare(b.student.class) || a.student.number - b.student.number);
+            finalStudents.sort((a,b) => a.student.class.localeCompare(b.student.class, undefined, { numeric: true }) || a.student.number - b.student.number);
 
             document.getElementById('tbody-enroll-students').innerHTML = finalStudents.map(m => {
                 const s = m.student;
                 const clubStatusText = m.club ? 
-                    `<span class="bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded-full font-bold"><i class="fas fa-check-circle mr-1"></i> ${m.club.name}</span>` : 
-                    `<span class="bg-yellow-100 text-yellow-800 text-xs px-2.5 py-1 rounded-full font-bold"><i class="fas fa-exclamation-triangle mr-1"></i> ไม่มีชุมนุม</span>`;
+                    `<span class="bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded-full font-bold whitespace-nowrap"><i class="fas fa-check-circle mr-1"></i> ${m.club.name}</span>` : 
+                    `<span class="bg-yellow-100 text-yellow-800 text-xs px-2.5 py-1 rounded-full font-bold whitespace-nowrap"><i class="fas fa-exclamation-triangle mr-1"></i> ไม่มีชุมนุม</span>`;
+
+                const checkboxHtml = m.club ? '' : `<input type="checkbox" value="${s.id}" class="enroll-select-cb">`;
 
                 return `<tr>
-                    <td class="px-4 py-2 text-center">
-                        <input type="checkbox" value="${s.id}" class="enroll-select-cb">
+                    <td class="px-4 py-2 text-center whitespace-nowrap">
+                        ${checkboxHtml}
                     </td>
-                    <td class="px-4 py-2 text-sm">${s.class} เลขที่ ${s.number}</td>
-                    <td class="px-4 py-2 text-sm font-mono">${s.studentId}</td>
-                    <td class="px-4 py-2 text-sm font-bold text-gray-800">${getStudentFullName(s)}</td>
-                    <td class="px-4 py-2 text-sm">${clubStatusText}</td>
+                    <td class="hidden md:table-cell px-4 py-2 text-sm whitespace-nowrap">${s.class} เลขที่ ${s.number}</td>
+                    <td class="hidden md:table-cell px-4 py-2 text-sm font-mono whitespace-nowrap">${s.studentId}</td>
+                    <td class="px-4 py-2">
+                        <div class="text-sm font-bold text-gray-800 whitespace-nowrap">${getStudentFullName(s)}</div>
+                        <div class="md:hidden mt-1 text-xs text-gray-500">
+                            ${s.class} เลขที่ ${s.number} | รหัส: ${s.studentId}
+                        </div>
+                    </td>
+                    <td class="px-4 py-2 text-sm whitespace-nowrap">${clubStatusText}</td>
                 </tr>`;
             }).join('');
 
@@ -1948,7 +2039,7 @@
             const enrolledStudentIds = enrollments.map(e => e.studentId);
             
             currentCheckinStudents = allStudents.filter(s => enrolledStudentIds.includes(s.id) && s.status !== 'ลาออก');
-            currentCheckinStudents.sort((a,b) => a.class.localeCompare(b.class) || a.number - b.number);
+            currentCheckinStudents.sort((a,b) => a.class.localeCompare(b.class, undefined, { numeric: true }) || a.number - b.number);
 
             if(currentCheckinStudents.length === 0) {
                 document.getElementById('club-no-students-alert').classList.remove('hidden');
@@ -2003,7 +2094,7 @@
                 const aChecked = (activeCheckinStates[a.id] && a.id !== lastCheckedClubStuId) ? 1 : 0;
                 const bChecked = (activeCheckinStates[b.id] && b.id !== lastCheckedClubStuId) ? 1 : 0;
                 if (aChecked !== bChecked) return aChecked - bChecked; 
-                return a.class.localeCompare(b.class) || a.number - b.number; 
+                return a.class.localeCompare(b.class, undefined, { numeric: true }) || a.number - b.number; 
             });
 
             const tbody = document.getElementById('club-checkin-table-body');
@@ -2066,11 +2157,10 @@
 
             const record = {
                 id: generateId(),
-                date,
+                date: getThaiLocalTimeISOString(), // Store full timestamp (date and time) in Thai timezone
                 clubId,
                 year: yr,
                 semester: sem,
-                timestamp: new Date().toISOString(),
                 attendance: att
             };
 
@@ -2396,7 +2486,7 @@
 
                 const enrollments = allClubEnrollments.filter(e => e.clubId === statsClassOrClub && e.year == yr && e.semester == sem);
                 const enrolledStudentIds = enrollments.map(e => e.studentId);
-                const stus = allStudents.filter(x => enrolledStudentIds.includes(x.id) && x.status !== 'ลาออก').sort((a,b)=>a.class.localeCompare(b.class) || a.number-b.number);
+                const stus = allStudents.filter(x => enrolledStudentIds.includes(x.id) && x.status !== 'ลาออก').sort((a,b)=>a.class.localeCompare(b.class, undefined, { numeric: true }) || a.number-b.number);
                 
                 let recs = allClubRecords.filter(x => x.clubId === statsClassOrClub && matchRecordYearSemester(x, yr, sem));
 
@@ -2463,19 +2553,30 @@
 
             if (type === 'regular') {
                 let recs = allRecords; 
-                if(d) recs=recs.filter(r=>r.date===d); 
+                if (d) {
+                    recs = recs.filter(r => {
+                        const recordDate = r.date.split('T')[0]; // Normalize record date to YYYY-MM-DD
+                        return recordDate === d;
+                    });
+                }
                 if(classOrClub) recs=recs.filter(r=>r.class===classOrClub); 
                 if(s) recs=recs.filter(r=>r.subject===s);
                 if(yr && sem) recs=recs.filter(r => matchRecordYearSemester(r, yr, sem));
 
                 if (currentUser && currentUser.role === 'teacher') {
                     const teacherFullName = `${currentUser.data.firstName} ${currentUser.data.lastName}`;
-                    recs = recs.filter(r => r.teacher === teacherFullName);
+                    // Note: If r.teacher is stored as "ครูสมชาย ใจดี" and currentUser.data.firstName is "สมชาย",
+                    // this comparison might need adjustment if the full name format differs.
+                    // Assuming r.teacher is already in the format "FirstName LastName" or "Title FirstName LastName"
+                    // as constructed in saveAttendance.
+                    recs = recs.filter(r => r.teacher === teacherFullName); 
                 }
 
                 recs.sort((a,b)=>new Date(b.date)-new Date(a.date));
                 if(recs.length===0) return cont.innerHTML='<div class="text-center py-10 text-gray-500">ไม่พบประวัติการเช็คชื่อปกติ</div>';
 
+                // The r.year and r.semester are directly saved in the record object.
+                // If they are missing, getYearSemesterFromDate(r.date) is used as fallback.
                 recs.forEach(r => {
                     let stat={มา:0,สาย:0,ลา:0,ขาด:0}; r.attendance.forEach(a=>stat[a.status]++);
                     const rYr = r.year !== undefined ? r.year : getYearSemesterFromDate(r.date).year;
@@ -2483,7 +2584,7 @@
                     cont.innerHTML += `<div class="bg-white border rounded-lg shadow-sm mb-4">
                         <div class="bg-gray-50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                             <div>
-                                <h4 class="font-bold text-gray-800">${r.date} (ปีการศึกษา ${rYr} ภาคเรียน ${rSem})</h4>
+                                <h4 class="font-bold text-gray-800">${r.date.split('T')[0]} (ปีการศึกษา ${rYr} ภาคเรียน ${rSem})</h4>
                                 <p class="text-sm mt-1">ชั้นเรียน: ${r.class} | วิชา: ${r.subject} | ครู: ${r.teacher||'-'}</p>
                             </div>
                             <div class="text-sm font-semibold text-green-700 bg-green-100 px-3 py-1.5 rounded-full w-full sm:w-auto text-center">มา:${stat['มา']} สาย:${stat['สาย']} ลา:${stat['ลา']} ขาด:${stat['ขาด']}</div>
@@ -2493,7 +2594,12 @@
             } else {
                 // Club Attendance History
                 let recs = allClubRecords;
-                if(d) recs = recs.filter(r => r.date === d);
+                if (d) {
+                    recs = recs.filter(r => {
+                        const recordDate = r.date.split('T')[0]; // Normalize record date to YYYY-MM-DD
+                        return recordDate === d;
+                    });
+                }
                 if(classOrClub) recs = recs.filter(r => r.clubId === classOrClub);
                 if(yr && sem) recs = recs.filter(r => matchRecordYearSemester(r, yr, sem));
 
@@ -2511,7 +2617,7 @@
                     cont.innerHTML += `<div class="bg-white border rounded-lg shadow-sm mb-4">
                         <div class="bg-green-50/50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                             <div>
-                                <h4 class="font-bold text-green-900">${r.date} (กิจกรรมวิชาชุมนุม - ปี ${rYr}/${rSem})</h4>
+                                <h4 class="font-bold text-green-900">${r.date.split('T')[0]} (กิจกรรมวิชาชุมนุม - ปี ${rYr}/${rSem})</h4>
                                 <p class="text-sm font-bold text-gray-700 mt-1">ชุมนุม: ${club ? club.name : 'ไม่พบข้อมูลชุมนุม'}</p>
                             </div>
                             <div class="text-sm font-semibold text-green-700 bg-green-100 px-3 py-1.5 rounded-full w-full sm:w-auto text-center">มา:${stat['มา']} สาย:${stat['สาย']} ลา:${stat['ลา']} ขาด:${stat['ขาด']}</div>
@@ -2524,25 +2630,51 @@
         // --- Master CRUDs ---
         function renderMasterData() {
             document.getElementById('tbody-subjects').innerHTML = allSubjects.map(s => `<tr>
-                <td class="px-4 py-2 text-sm">${s.code}</td><td class="px-4 py-2 text-sm">${s.name}</td><td class="px-4 py-2 text-sm">${s.credit}</td>
-                <td class="px-4 py-2 text-center text-sm">
+                <td class="hidden md:table-cell px-4 py-2 text-sm whitespace-nowrap">${s.code}</td>
+                <td class="px-4 py-2">
+                    <div class="text-sm font-bold text-gray-800 whitespace-nowrap">${s.name}</div>
+                    <div class="md:hidden mt-1 text-xs text-gray-500">รหัส: ${s.code} | ${s.credit} หน่วยกิต</div>
+                </td>
+                <td class="hidden md:table-cell px-4 py-2 text-sm whitespace-nowrap">${s.credit}</td>
+                <td class="px-4 py-2 text-center text-sm whitespace-nowrap">
                     <button onclick="editSubject('${s.id}')" class="text-blue-500 hover:text-blue-700 mr-3"><i class="fas fa-edit"></i></button>
                     <button onclick="deleteMaster('subject', '${s.id}')" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
                 </td></tr>`).join('');
             
             document.getElementById('tbody-teachers').innerHTML = allTeachers.map(t => {
                 const subs = t.subjects ? t.subjects.map(sid => { const s = allSubjects.find(x=>x.id===sid); return s?s.name:''; }).filter(Boolean).join(', ') : '-';
-                return `<tr><td class="px-4 py-2 text-sm font-medium text-gray-800">${t.email||'-'}</td><td class="px-4 py-2 text-sm">${t.title}${t.firstName} ${t.lastName}</td><td class="px-4 py-2 text-sm">${t.phone}</td><td class="px-4 py-2 text-sm text-gray-500">${subs}</td>
-                <td class="px-4 py-2 text-center text-sm">
+                return `<tr>
+                <td class="hidden md:table-cell px-4 py-2 text-sm font-medium text-gray-800 whitespace-nowrap">${t.email||'-'}</td>
+                <td class="px-4 py-2">
+                    <div class="text-sm font-bold text-gray-800 whitespace-nowrap">${t.title}${t.firstName} ${t.lastName}</div>
+                    <div class="md:hidden mt-1 text-xs text-gray-500 flex flex-col gap-1">
+                        <div>📧 ${t.email||'ไม่มีอีเมล'}</div>
+                        <div>📞 ${t.phone||'ไม่มีเบอร์โทร'}</div>
+                        <div class="truncate w-48">วิชา: ${subs}</div>
+                    </div>
+                </td>
+                <td class="hidden md:table-cell px-4 py-2 text-sm whitespace-nowrap">${t.phone||'-'}</td>
+                <td class="hidden md:table-cell px-4 py-2 text-sm text-gray-500 max-w-xs truncate">${subs}</td>
+                <td class="px-4 py-2 text-center text-sm whitespace-nowrap">
                     <button onclick="editTeacher('${t.id}')" class="text-blue-500 hover:text-blue-700 mr-3"><i class="fas fa-edit"></i></button>
                     <button onclick="deleteMaster('teacher', '${t.id}')" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
                 </td></tr>`;
             }).join('');
 
-            document.getElementById('tbody-classes').innerHTML = allClasses.map(c => {
+            const sortedClasses = [...allClasses].sort((a, b) => a.className.localeCompare(b.className, undefined, { numeric: true }));
+            document.getElementById('tbody-classes').innerHTML = sortedClasses.map(c => {
                 const advs = c.advisors ? c.advisors.map(tid => { const t = allTeachers.find(x=>x.id===tid); return t?t.firstName:''; }).filter(Boolean).join(', ') : '-';
-                return `<tr><td class="px-4 py-2 text-sm">${c.year}/${c.semester}</td><td class="px-4 py-2 text-sm font-bold">${c.className}</td><td class="px-4 py-2 text-sm">${advs}</td>
-                <td class="px-4 py-2 text-center text-sm">
+                return `<tr>
+                <td class="hidden md:table-cell px-4 py-2 text-sm whitespace-nowrap">${c.year}/${c.semester}</td>
+                <td class="px-4 py-2">
+                    <div class="text-sm font-bold text-gray-800 whitespace-nowrap">${c.className}</div>
+                    <div class="md:hidden mt-1 text-xs text-gray-500 flex flex-col gap-1">
+                        <div>ปี ${c.year}/${c.semester}</div>
+                        <div class="truncate w-48">ครูที่ปรึกษา: ${advs}</div>
+                    </div>
+                </td>
+                <td class="hidden md:table-cell px-4 py-2 text-sm whitespace-nowrap">${advs}</td>
+                <td class="px-4 py-2 text-center text-sm whitespace-nowrap">
                     <button onclick="editClass('${c.id}')" class="text-blue-500 hover:text-blue-700 mr-3"><i class="fas fa-edit"></i></button>
                     <button onclick="deleteMaster('class', '${c.id}')" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
                 </td></tr>`;
@@ -2668,7 +2800,6 @@
             
             document.getElementById('sp-p-rel').value = s.parentRelation || 'บิดา';
             document.getElementById('sp-p-phone').value = s.parentPhone || '';
-            document.getElementById('sp-p-dob').value = s.parentDob || '';
         }
 
         async function saveMyProfile(e) {
@@ -2694,7 +2825,6 @@
             s.parentLastName = document.getElementById('sp-p-lname').value;
             s.parentRelation = document.getElementById('sp-p-rel').value;
             s.parentPhone = pPhone;
-            s.parentDob = document.getElementById('sp-p-dob').value;
             
             s.isProfileComplete = true; 
 
@@ -2834,11 +2964,13 @@
             const date = document.getElementById('checkin-date').value; 
             const cls = document.getElementById('checkin-class').value; 
             const sub = document.getElementById('checkin-subject').value; 
-            const teacher = document.getElementById('checkin-teacher').value;
+            const teacherId = document.getElementById('checkin-teacher').value;
             const yr = document.getElementById('checkin-year').value;
             const sem = document.getElementById('checkin-semester').value;
 
-            if(!date || !cls || !sub || !teacher || !yr || !sem) { document.getElementById('checkin-alert').classList.remove('hidden'); return; }
+            // The 'teacherId' variable is the teacher's ID. The check is still valid.
+            // The actual teacher name for saving is retrieved in saveAttendance().
+            if(!date || !cls || !sub || !teacherId || !yr || !sem) { document.getElementById('checkin-alert').classList.remove('hidden'); return; }
             document.getElementById('checkin-alert').classList.add('hidden');
 
             currentCheckinStudents = allStudents.filter(s => s.class === cls && s.status !== 'ลาออก').sort((a,b)=>a.number - b.number);
@@ -2931,12 +3063,43 @@
             lastCheckedStuId = null;
             renderCheckinTable();
         }
+function getThaiLocalTimeISOString() {
+    const now = new Date();
+    
+    // ดึงข้อมูลเวลาของไทยโดยระบุ Timezone ชัดเจน
+    const formatter = new Intl.DateTimeFormat('sv-SE', { // 'sv-SE' จะได้ฟอร์แมต YYYY-MM-DD HH:mm:ss คล้าย ISO
+        timeZone: 'Asia/Bangkok',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
 
+    const parts = formatter.formatToParts(now);
+    const getPart = (type) => parts.find(p => p.type === type).value;
+
+    const year = getPart('year');
+    const month = getPart('month');
+    const day = getPart('day');
+    const hour = getPart('hour');
+    const minute = getPart('minute');
+    const second = getPart('second');
+    
+    // ดึง มิลลิวินาที จากตัวแปร now ปกติ
+    const ms = String(now.getMilliseconds()).padStart(3, '0');
+
+    // ประกอบร่างเป็น ISO 8601 ที่ระบุ Offset +07:00 ของไทย
+    return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+}
         async function saveAttendance() {
             const date = document.getElementById('checkin-date').value; 
             const cls = document.getElementById('checkin-class').value; 
             const sub = document.getElementById('checkin-subject').value; 
-            const teacher = document.getElementById('checkin-teacher').value;
+            const teacherSelect = document.getElementById('checkin-teacher');
+            const teacher = teacherSelect.options[teacherSelect.selectedIndex].text; // Get teacher's full name from text
             const yr = parseInt(document.getElementById('checkin-year').value);
             const sem = parseInt(document.getElementById('checkin-semester').value);
 
@@ -2950,13 +3113,12 @@
             }));
             const record = { 
                 id: generateId(), 
-                date, 
+                date: getThaiLocalTimeISOString(), // Store full timestamp (date and time) in Thai timezone
                 class: cls, 
                 subject: sub, 
                 teacher, 
                 year: yr, 
                 semester: sem, 
-                timestamp: new Date().toISOString(), 
                 attendance: att 
             };
             allRecords = allRecords.filter(r => !(r.date===date && r.class===cls && r.subject===sub && matchRecordYearSemester(r, yr, sem)));
@@ -2993,7 +3155,8 @@
             const date = document.getElementById('checkin-date').value;
             const cls = document.getElementById('checkin-class').value;
             const sub = document.getElementById('checkin-subject').value;
-            const teacher = document.getElementById('checkin-teacher').value;
+            const teacherSelect = document.getElementById('checkin-teacher');
+            const teacher = teacherSelect.options[teacherSelect.selectedIndex].text; // Get teacher's full name from text
             const yr = document.getElementById('checkin-year').value;
             const sem = document.getElementById('checkin-semester').value;
 
@@ -3101,6 +3264,7 @@
             document.getElementById('student-form').reset(); 
             document.getElementById('stu-id').value=''; 
             document.getElementById('stu-status').value='ปกติ'; 
+            document.getElementById('stu-homevisit').value=''; 
             document.getElementById('stu-title').value='เด็กชาย'; 
             document.getElementById('stu-p-title').value='นาย'; 
             document.getElementById('stu-p-rel').value='บิดา'; 
@@ -3113,6 +3277,7 @@
             document.getElementById('student-form').reset(); 
             document.getElementById('stu-id').value = s.id;
             document.getElementById('stu-status').value = s.status || 'ปกติ';
+            document.getElementById('stu-homevisit').value = s.homeVisit || '';
             document.getElementById('stu-studentid').value = s.studentId || '';
             document.getElementById('stu-title').value = s.title || 'เด็กชาย';
             if(s.name && !s.firstName) { document.getElementById('stu-fname').value = s.name; } 
@@ -3127,12 +3292,23 @@
             document.getElementById('stu-email').value = s.email || '';
             document.getElementById('stu-address').value = s.address || '';
             
+            document.getElementById('stu-f-fname').value = s.fatherFirstName || '';
+            document.getElementById('stu-f-lname').value = s.fatherLastName || '';
+            document.getElementById('stu-f-age').value = s.fatherAge || '';
+            document.getElementById('stu-f-job').value = s.fatherJob || '';
+            document.getElementById('stu-f-phone').value = s.fatherPhone || '';
+            
+            document.getElementById('stu-m-fname').value = s.motherFirstName || '';
+            document.getElementById('stu-m-lname').value = s.motherLastName || '';
+            document.getElementById('stu-m-age').value = s.motherAge || '';
+            document.getElementById('stu-m-job').value = s.motherJob || '';
+            document.getElementById('stu-m-phone').value = s.motherPhone || '';
+            
             document.getElementById('stu-p-title').value = s.parentTitle || 'นาย';
             if(s.parentName && !s.parentFirstName) { document.getElementById('stu-p-fname').value = s.parentName; }
             else { document.getElementById('stu-p-fname').value = s.parentFirstName || ''; document.getElementById('stu-p-lname').value = s.parentLastName || ''; }
             document.getElementById('stu-p-rel').value = s.parentRelation || 'บิดา';
             document.getElementById('stu-p-phone').value = s.parentPhone || '';
-            document.getElementById('stu-p-dob').value = s.parentDob || '';
             
             document.getElementById('student-modal').classList.add('show');
         }
@@ -3144,12 +3320,17 @@
             const nickname = document.getElementById('stu-nickname').value.trim(); // Get Nickname
             const citizenId = document.getElementById('stu-citizenid').value.toString().replace(/\s+/g, '');
             const phone = document.getElementById('stu-phone').value.toString().trim();
+            const fPhone = document.getElementById('stu-f-phone').value.toString().trim();
+            const mPhone = document.getElementById('stu-m-phone').value.toString().trim();
             const pPhone = document.getElementById('stu-p-phone').value.toString().trim();
             const status = document.getElementById('stu-status').value;
+            const homeVisit = document.getElementById('stu-homevisit').value;
 
             if(!studentId || !fname || !lname) return customAlert('กรุณากรอกรหัสประจำตัว ชื่อ และนามสกุลให้ครบถ้วน');
             if(!validateThaiCitizenId(citizenId)) return customAlert('เลขประจำตัวประชาชน 13 หลัก ไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');
             if(!validatePhoneNumber(phone)) return customAlert('เบอร์โทรศัพท์นักเรียนไม่ถูกต้อง (ต้องเป็นตัวเลข 9-10 หลักเท่านั้น)');
+            if(!validatePhoneNumber(fPhone)) return customAlert('เบอร์โทรศัพท์บิดาไม่ถูกต้อง (ต้องเป็นตัวเลข 9-10 หลักเท่านั้น)');
+            if(!validatePhoneNumber(mPhone)) return customAlert('เบอร์โทรศัพท์มารดาไม่ถูกต้อง (ต้องเป็นตัวเลข 9-10 หลักเท่านั้น)');
             if(!validatePhoneNumber(pPhone)) return customAlert('เบอร์โทรศัพท์ผู้ปกครองไม่ถูกต้อง (ต้องเป็นตัวเลข 9-10 หลักเท่านั้น)');
 
             const objId = document.getElementById('stu-id').value || generateId();
@@ -3159,6 +3340,7 @@
             const obj = {
                 id: objId,
                 status: status,
+                homeVisit: homeVisit,
                 isProfileComplete: isComp,
                 studentId: studentId,
                 title: document.getElementById('stu-title').value,
@@ -3173,12 +3355,23 @@
                 email: document.getElementById('stu-email').value.trim(),
                 address: document.getElementById('stu-address').value.trim(),
                 
+                fatherFirstName: document.getElementById('stu-f-fname').value.trim(),
+                fatherLastName: document.getElementById('stu-f-lname').value.trim(),
+                fatherAge: document.getElementById('stu-f-age').value,
+                fatherJob: document.getElementById('stu-f-job').value.trim(),
+                fatherPhone: fPhone,
+                
+                motherFirstName: document.getElementById('stu-m-fname').value.trim(),
+                motherLastName: document.getElementById('stu-m-lname').value.trim(),
+                motherAge: document.getElementById('stu-m-age').value,
+                motherJob: document.getElementById('stu-m-job').value.trim(),
+                motherPhone: mPhone,
+                
                 parentTitle: document.getElementById('stu-p-title').value,
                 parentFirstName: document.getElementById('stu-p-fname').value.trim(),
                 parentLastName: document.getElementById('stu-p-lname').value.trim(),
                 parentRelation: document.getElementById('stu-p-rel').value,
-                parentPhone: pPhone,
-                parentDob: document.getElementById('stu-p-dob').value
+                parentPhone: pPhone
             };
 
             const idx = allStudents.findIndex(x=>x.id===obj.id); if(idx>-1) allStudents[idx]=obj; else allStudents.push(obj);
@@ -3191,32 +3384,54 @@
             let stus = allStudents; if(f) stus=stus.filter(s=>s.class===f); 
             if(txt) stus=stus.filter(s => getStudentFullName(s).toLowerCase().includes(txt) || (s.studentId && s.studentId.toString().includes(txt)));
             
-            stus.sort((a,b)=> a.class.localeCompare(b.class) || a.number-b.number);
+            stus.sort((a,b)=> a.class.localeCompare(b.class, undefined, { numeric: true }) || a.number-b.number);
             
             // Build the class filter dynamically
             const filterClassDropdown = document.getElementById('manage-filter-class');
-            const classList = [...new Set(allStudents.map(s => s.class))].filter(Boolean).sort();
+            const classList = [...new Set(allStudents.map(s => s.class))].filter(Boolean).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
             const currentSelected = filterClassDropdown.value;
             filterClassDropdown.innerHTML = `<option value="">ดูทุกชั้นเรียน</option>` + classList.map(c => `<option value="${c}">${c}</option>`).join('');
             filterClassDropdown.value = currentSelected;
 
-            document.getElementById('manage-students-table-body').innerHTML = stus.map(s => {
-                const isResigned = s.status === 'ลาออก';
-                const statusBadge = isResigned ? `<span class="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded ml-2 font-bold whitespace-nowrap">ลาออก</span>` : '';
-                const incompleteWarning = (!s.isProfileComplete && !isResigned) ? `<span class="text-yellow-500 ml-2" title="ยังไม่กรอกประวัติครบบริบูรณ์"><i class="fas fa-exclamation-triangle"></i></span>` : '';
-                const rowClass = isResigned ? 'opacity-50 bg-gray-50' : 'hover:bg-gray-50';
+     document.getElementById('manage-students-table-body').innerHTML = stus.map(s => {
+    const isResigned = s.status === 'ลาออก';
+    const statusBadge = isResigned ? `<span class="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded ml-2 font-bold whitespace-nowrap">ลาออก</span>` : '';
+    const incompleteWarning = (!s.isProfileComplete && !isResigned) ? `<span class="text-yellow-500 ml-2" title="ยังไม่กรอกประวัติครบบริบูรณ์"><i class="fas fa-exclamation-triangle"></i></span>` : '';
+    const rowClass = isResigned ? 'opacity-50 bg-gray-50' : 'hover:bg-gray-50';
 
-                return `<tr class="${rowClass}">
-                    <td class="px-6 py-4 text-sm">${s.class} เลขที่ ${s.number}</td>
-                    <td class="px-6 py-4 text-sm">${s.studentId}</td>
-                    <td class="px-6 py-4 text-sm font-bold text-gray-800">${getStudentFullName(s)} ${statusBadge} ${incompleteWarning}</td>
-                    <td class="px-6 py-4 text-sm">${s.phone||'-'}</td>
-                    <td class="px-6 py-4 text-center text-sm w-32">
-                        <button onclick="editStudent('${s.id}')" class="text-blue-500 hover:text-blue-700 mr-3" title="แก้ไข"><i class="fas fa-edit"></i></button>
-                        <button onclick="deleteStu('${s.id}')" class="text-red-500 hover:text-red-700" title="ลบถาวร"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>`;
-            }).join('');
+    return `<tr class="${rowClass}">
+        <!-- ซ่อนบนมือถือ -->
+        <td class="hidden md:table-cell px-6 py-4 text-sm text-gray-500 whitespace-nowrap">${s.class} เลขที่ ${s.number}</td>
+        <td class="hidden md:table-cell px-6 py-4 text-sm text-gray-500 whitespace-nowrap">${s.studentId}</td>
+        
+        <!-- คอลัมน์ชื่อ (แสดงตลอด) -->
+        <td class="px-6 py-4">
+            <div class="text-sm font-bold text-gray-800">
+                ${getStudentFullName(s)} ${statusBadge} ${incompleteWarning}
+            </div>
+            <!-- ส่วนนี้จะแสดงเฉพาะบนมือถือ (md:hidden) ดึงข้อมูลคอลัมน์ที่ซ่อนมาไว้ตรงนี้ -->
+            <div class="md:hidden mt-1 text-xs text-gray-500 flex flex-col gap-1">
+                <div>${s.class} | เลขที่ ${s.number} | รหัส: ${s.studentId}</div>
+                ${s.phone ? `<div>📞 ${s.phone}</div>` : `<div class="text-gray-400">ไม่มีเบอร์โทร</div>`}
+            </div>
+        </td>
+        
+        <!-- ซ่อนเบอร์โทรบนมือถือ -->
+        <td class="hidden md:table-cell px-6 py-4 text-sm text-gray-500 whitespace-nowrap">${s.phone || '-'}</td>
+        
+        <!-- คอลัมน์จัดการ (แสดงตลอด) -->
+        <td class="px-6 py-4 text-center text-sm w-auto md:w-32 whitespace-nowrap">
+            <div class="flex items-center justify-center space-x-3">
+                <button onclick="editStudent('${s.id}')" class="text-blue-500 hover:text-blue-700" title="แก้ไข">
+                    <i class="fas fa-edit text-lg"></i>
+                </button>
+                <button onclick="deleteStu('${s.id}')" class="text-red-500 hover:text-red-700" title="ลบถาวร">
+                    <i class="fas fa-trash text-lg"></i>
+                </button>
+            </div>
+        </td>
+    </tr>`;
+}).join('');
         }
 
         function deleteStu(id) {
