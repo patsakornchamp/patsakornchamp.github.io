@@ -2359,11 +2359,19 @@
             tbody.innerHTML = '';
 
             const stuId = currentUser.data.id;
+            const stuClass = currentUser.data.class;
+
+            // ค้นหาข้อมูลชั้นเรียนปัจจุบันของนักเรียน เพื่อดึงรายวิชาที่เรียน
+            const currentClass = allClasses.find(c => c.className === stuClass && c.year == yr && c.semester == sem);
+            let enrolledSubjects = [];
+            if (currentClass && currentClass.subjects) {
+                enrolledSubjects = allSubjects.filter(sub => currentClass.subjects.includes(sub.id));
+            }
 
             // 1. Regular course attendances
-            allSubjects.forEach(sub => {
-                const recs = allRecords.filter(r => r.subject === sub.name && matchRecordYearSemester(r, yr, sem));
-                if(recs.length === 0) return;
+            enrolledSubjects.forEach(sub => {
+                // กรองเฉพาะประวัติการเช็คชื่อของวิชาและ "ชั้นเรียน" ของนักเรียนเท่านั้น
+                const recs = allRecords.filter(r => r.class === stuClass && r.subject === sub.name && matchRecordYearSemester(r, yr, sem));
 
                 let stats = { มา: 0, สาย: 0, ลา: 0, ขาด: 0 };
                 recs.forEach(r => {
