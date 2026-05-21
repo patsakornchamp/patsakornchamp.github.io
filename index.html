@@ -200,7 +200,7 @@
 
     <!-- Main App Header -->
     <header class="bg-green-700 text-white shadow-md relative z-10 w-full hidden" id="app-header">
-        <div class="container mx-auto px-4 py-4 md:py-6 flex flex-col md:flex-row justify-between items-center w-full">
+        <div class="container mx-auto px-4 py-4 md:py-6 flex flex-col md:flex-row justify-between items-start md:items-center w-full">
             <div class="flex items-center gap-4 mb-4 md:mb-0">
                 <img src="logopng.png" alt="School Logo" class="w-16 h-16 flex-shrink-0">
                 <div>
@@ -249,26 +249,26 @@
         <!-- STUDENT PROFILE TAB -->
         <section id="tab-my-profile" class="tab-content">
             <div class="bg-white rounded-xl shadow-lg p-6 md:p-8 border border-green-100">
-                <div class="flex items-center justify-between mb-6 border-b pb-4">
-                    <div class="flex items-center">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 border-b pb-4 gap-4">
+                    <div class="flex items-center w-full">
                         <div class="bg-green-100 p-4 rounded-full text-green-600 mr-4"><i class="fas fa-user-graduate text-3xl"></i></div>
-                        <div>
-                            <h3 class="text-2xl font-bold text-gray-800" id="profile-fullname">ชื่อ - นามสกุล</h3>
+                        <div class="min-w-0 flex-1">
+                            <h3 class="text-xl sm:text-2xl font-bold text-gray-800 break-words" id="profile-fullname">ชื่อ - นามสกุล</h3>
                             <p class="text-gray-500" id="profile-studentid">รหัสประจำตัว: </p>
                         </div>
                     </div>
-                    <div id="profile-status-badge"></div>
+                    <div id="profile-badges" class="text-left md:text-right w-full md:w-auto"></div>
                 </div>
                 
                 <form id="student-self-form" onsubmit="saveMyProfile(event)">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
                             <h4 class="font-bold text-lg text-green-700 mb-4 border-b pb-2"><i class="fas fa-info-circle mr-2"></i>ข้อมูลส่วนตัว</h4>
-                            <div class="grid grid-cols-2 gap-3 mb-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                                 <div><label class="text-sm font-medium text-gray-700">เลข ปชช. (13 หลัก) *</label><input type="text" id="sp-citizenid" maxlength="13" required class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
                                 <div><label class="text-sm font-medium text-gray-700">ชื่อเล่น</label><input type="text" id="sp-nickname" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
                             </div>
-                            <div class="grid grid-cols-2 gap-3 mb-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                                 <div><label class="text-sm font-medium text-gray-500">ชั้นเรียน</label><input type="text" id="sp-class" readonly class="w-full px-3 py-2 border rounded bg-gray-100 text-gray-500"></div>
                                 <div><label class="text-sm font-medium text-gray-500">เลขที่</label><input type="text" id="sp-number" readonly class="w-full px-3 py-2 border rounded bg-gray-100 text-gray-500"></div>
                             </div>
@@ -279,11 +279,11 @@
                         </div>
                         <div>
                             <h4 class="font-bold text-lg text-blue-700 mb-4 border-b pb-2"><i class="fas fa-user-shield mr-2"></i>ข้อมูลผู้ปกครอง</h4>
-                            <div class="grid grid-cols-3 gap-3 mb-3">
-                                <div class="col-span-1"><label class="text-sm font-medium text-gray-700">คำนำหน้า *</label>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                                <div class="sm:col-span-1"><label class="text-sm font-medium text-gray-700">คำนำหน้า *</label>
                                     <select id="sp-p-title" class="w-full px-3 py-2 border rounded"><option value="นาย">นาย</option><option value="นาง">นาง</option><option value="นางสาว">นางสาว</option></select>
                                 </div>
-                                <div class="col-span-2"><label class="text-sm font-medium text-gray-700">ชื่อผู้ปกครอง *</label><input type="text" id="sp-p-fname" required class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                                <div class="sm:col-span-2"><label class="text-sm font-medium text-gray-700">ชื่อผู้ปกครอง *</label><input type="text" id="sp-p-fname" required class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
                             </div>
                             <div class="mb-3"><label class="text-sm font-medium text-gray-700">นามสกุลผู้ปกครอง *</label><input type="text" id="sp-p-lname" required class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
                             <div class="mb-3"><label class="text-sm font-medium text-gray-700">ความสัมพันธ์ *</label>
@@ -294,8 +294,32 @@
                             <div class="mb-3"><label class="text-sm font-medium text-gray-700">เบอร์โทรศัพท์ผู้ปกครอง *</label><input type="text" id="sp-p-phone" required placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
                         </div>
                     </div>
-                    <div class="mt-6 text-center border-t pt-6">
-                        <button type="submit" class="w-full md:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition duration-200"><i class="fas fa-save mr-2"></i> บันทึกข้อมูลประวัติ</button>
+                    
+                    <!-- ข้อมูลบิดาและมารดา (เพิ่มเติม) -->
+                    <div class="mt-8 border-t pt-6">
+                        <h4 class="font-bold text-lg text-blue-700 mb-4 border-b pb-2"><i class="fas fa-male mr-2"></i>ข้อมูลบิดา</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
+                            <div><label class="text-sm font-medium text-gray-700">ชื่อบิดา</label><input type="text" id="sp-f-fname" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                            <div><label class="text-sm font-medium text-gray-700">นามสกุล</label><input type="text" id="sp-f-lname" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                            <div><label class="text-sm font-medium text-gray-700">อายุ (ปี)</label><input type="number" id="sp-f-age" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                            <div><label class="text-sm font-medium text-gray-700">อาชีพ</label><input type="text" id="sp-f-job" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                            <div><label class="text-sm font-medium text-gray-700">เบอร์โทรศัพท์</label><input type="text" id="sp-f-phone" placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                        </div>
+                        
+                        <h4 class="font-bold text-lg text-pink-700 mb-4 border-b pb-2 mt-4"><i class="fas fa-female mr-2"></i>ข้อมูลมารดา</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
+                            <div><label class="text-sm font-medium text-gray-700">ชื่อมารดา</label><input type="text" id="sp-m-fname" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                            <div><label class="text-sm font-medium text-gray-700">นามสกุล</label><input type="text" id="sp-m-lname" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                            <div><label class="text-sm font-medium text-gray-700">อายุ (ปี)</label><input type="number" id="sp-m-age" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                            <div><label class="text-sm font-medium text-gray-700">อาชีพ</label><input type="text" id="sp-m-job" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                            <div><label class="text-sm font-medium text-gray-700">เบอร์โทรศัพท์</label><input type="text" id="sp-m-phone" placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 text-center border-t pt-6 flex flex-col md:flex-row justify-center gap-3" id="profile-action-buttons">
+                        <button type="button" id="btn-edit-profile" onclick="toggleProfileEditMode(true)" class="w-full md:w-auto bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-8 rounded-lg shadow-md transition duration-200"><i class="fas fa-edit mr-2"></i> แก้ไขข้อมูล</button>
+                        <button type="button" id="btn-cancel-profile" onclick="renderStudentProfile()" class="hidden w-full md:w-auto bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-8 rounded-lg shadow-md transition duration-200"><i class="fas fa-times mr-2"></i> ยกเลิก</button>
+                        <button type="submit" id="btn-save-profile" class="hidden w-full md:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition duration-200"><i class="fas fa-save mr-2"></i> บันทึกข้อมูลประวัติ</button>
                     </div>
                 </form>
             </div>
@@ -675,7 +699,7 @@
                         <select id="history-subject" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500"><option value="">ทุกวิชา</option></select>
                     </div>
                     <div class="flex items-end gap-2 sm:col-span-2 lg:col-span-1">
-                        <button onclick="renderHistory()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md font-medium transition-colors text-sm whitespace-nowrap"><i class="fas fa-search mr-1"></i> ค้นหา</button>
+                        <button onclick="searchHistory()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md font-medium transition-colors text-sm whitespace-nowrap"><i class="fas fa-search mr-1"></i> ค้นหา</button>
                         <button onclick="exportHistoryCSV()" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md font-medium transition-colors text-sm whitespace-nowrap" title="ส่งออกเป็นไฟล์ CSV"><i class="fas fa-file-csv mr-1"></i> ส่งออก</button>
                     </div>
                 </div>
@@ -861,6 +885,7 @@
                                     <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ปีการศึกษา/ภาค</th>
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชื่อชั้นเรียน</th>
                                     <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ครูที่ปรึกษา</th>
+                                    <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">วิชาที่เรียน</th>
                                     <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 whitespace-nowrap">จัดการ</th>
                                 </tr>
                             </thead>
@@ -1125,7 +1150,7 @@
     
     <div id="subject-modal" class="modal"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4"><div class="px-6 py-4 border-b flex justify-between bg-blue-50 rounded-t-xl"><h3 class="font-bold text-blue-800" id="sub-modal-title">วิชา</h3><button onclick="closeModal('subject-modal')"><i class="fas fa-times"></i></button></div><div class="p-6"><input type="hidden" id="sub-id"><div class="mb-3"><label class="text-sm font-medium">รหัสวิชา *</label><input type="text" id="sub-code" class="w-full px-3 py-2 border rounded"></div><div class="mb-3"><label class="text-sm font-medium">ชื่อวิชา *</label><input type="text" id="sub-name" class="w-full px-3 py-2 border rounded"></div><div class="mb-3"><label class="text-sm font-medium">หน่วยกิต</label><input type="number" step="0.5" id="sub-credit" class="w-full px-3 py-2 border rounded"></div><div class="flex justify-end gap-2 mt-4"><button onclick="closeModal('subject-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-100">ยกเลิก</button><button onclick="saveSubject()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">บันทึก</button></div></div></div></div>
     <div id="teacher-modal" class="modal"><div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4"><div class="px-6 py-4 border-b flex justify-between bg-blue-50 rounded-t-xl"><h3 class="font-bold text-blue-800" id="t-modal-title">ครูผู้สอน</h3><button onclick="closeModal('teacher-modal')"><i class="fas fa-times"></i></button></div><div class="p-6 max-h-[70vh] overflow-y-auto"><input type="hidden" id="t-id"><div class="grid grid-cols-3 gap-3 mb-3"><div class="col-span-1"><label class="text-sm font-medium">คำนำหน้า</label><select id="t-title" class="w-full px-3 py-2 border rounded"><option value="นาย">นาย</option><option value="นาง">นาง</option><option value="นางสาว">นางสาว</option></select></div><div class="col-span-2"><label class="text-sm font-medium">ชื่อ *</label><input type="text" id="t-fname" class="w-full px-3 py-2 border rounded"></div></div><div class="mb-3"><label class="text-sm font-medium">นามสกุล *</label><input type="text" id="t-lname" class="w-full px-3 py-2 border rounded"></div><h4 class="font-bold text-sm text-gray-700 border-b pb-1 mt-4 mb-2">ข้อมูลการเข้าสู่ระบบ & ติดต่อ</h4><div class="grid grid-cols-2 gap-3 mb-3"><div><label class="text-sm font-medium">อีเมล (ใช้เข้าระบบ) *</label><input type="email" id="t-email" required class="w-full px-3 py-2 border rounded border-blue-300 bg-blue-50"></div><div><label class="text-sm font-medium">โทรศัพท์</label><input type="text" id="t-phone" placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded"></div></div><div class="grid grid-cols-2 gap-3 mb-4"><div><label class="text-sm font-medium">รหัสผ่าน *</label><input type="password" id="t-password" class="w-full px-3 py-2 border rounded"></div><div><label class="text-sm font-medium">ยืนยันรหัสผ่าน *</label><input type="password" id="t-conf-password" class="w-full px-3 py-2 border rounded"></div></div><div><label class="text-sm font-medium block mb-2">วิชาที่สอน (เลือกได้มากกว่า 1)</label><div id="t-subjects-container" class="bg-gray-50 border p-3 rounded h-40 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1"></div></div><div class="flex justify-end gap-2 mt-4"><button onclick="closeModal('teacher-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-100">ยกเลิก</button><button onclick="saveTeacher()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">บันทึก</button></div></div></div></div>
-    <div id="class-modal" class="modal"><div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4"><div class="px-6 py-4 border-b flex justify-between bg-blue-50 rounded-t-xl"><h3 class="text-blue-800 font-bold" id="c-modal-title">ชั้นเรียน</h3><button onclick="closeModal('class-modal')"><i class="fas fa-times"></i></button></div><div class="p-6"><input type="hidden" id="c-id"><div class="grid grid-cols-2 gap-3 mb-3"><div><label class="text-sm font-medium">ปีการศึกษา *</label><input type="number" id="c-year" class="w-full px-3 py-2 border rounded" placeholder="เช่น 2569"></div><div><label class="text-sm font-medium">ภาคเรียน *</label><select id="c-sem" class="w-full px-3 py-2 border rounded"><option value="1">1</option><option value="2">2</option></select></div></div><div class="mb-4"><label class="text-sm font-medium">ชื่อชั้นเรียน *</label><input type="text" id="c-name" class="w-full px-3 py-2 border rounded" placeholder="เช่น ม.1/1"></div><div><label class="text-sm font-medium block mb-2">ครูที่ปรึกษา (เลือกได้มากกว่า 1)</label><div id="c-advisors-container" class="bg-gray-50 border p-3 rounded h-40 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1"></div></div><div class="flex justify-end gap-2 mt-4"><button onclick="closeModal('class-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-100">ยกเลิก</button><button onclick="saveClassRoom()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">บันทึก</button></div></div></div></div>
+    <div id="class-modal" class="modal"><div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] flex flex-col"><div class="px-6 py-4 border-b flex justify-between bg-blue-50 rounded-t-xl"><h3 class="text-blue-800 font-bold" id="c-modal-title">ชั้นเรียน</h3><button onclick="closeModal('class-modal')"><i class="fas fa-times"></i></button></div><div class="p-6 overflow-y-auto"><input type="hidden" id="c-id"><div class="grid grid-cols-2 gap-3 mb-3"><div><label class="text-sm font-medium">ปีการศึกษา *</label><input type="number" id="c-year" class="w-full px-3 py-2 border rounded" placeholder="เช่น 2569"></div><div><label class="text-sm font-medium">ภาคเรียน *</label><select id="c-sem" class="w-full px-3 py-2 border rounded"><option value="1">1</option><option value="2">2</option></select></div></div><div class="mb-4"><label class="text-sm font-medium">ชื่อชั้นเรียน *</label><input type="text" id="c-name" class="w-full px-3 py-2 border rounded" placeholder="เช่น ม.1/1"></div><div class="mb-4"><label class="text-sm font-medium block mb-2">ครูที่ปรึกษา (เลือกได้มากกว่า 1)</label><div id="c-advisors-container" class="bg-gray-50 border p-3 rounded h-32 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1"></div></div><div><label class="text-sm font-medium block mb-2">วิชาที่เรียน (เลือกได้มากกว่า 1)</label><div id="c-subjects-container" class="bg-gray-50 border p-3 rounded h-40 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1"></div></div></div><div class="px-6 py-4 bg-gray-50 flex justify-end gap-2 rounded-b-xl border-t"><button onclick="closeModal('class-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-100">ยกเลิก</button><button onclick="saveClassRoom()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">บันทึก</button></div></div></div>
 
     <script>
         // Database simulation Keys
@@ -1142,7 +1167,7 @@
         const DB_KEY_CLUB_ENROLLMENTS = 'school_club_enrollments';
         const DB_KEY_CLUB_RECORDS = 'school_club_records';
 
-        const DEFAULT_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyMA10lYNtzpac-eYc7PLiaNN6CJD_ho9BFRvrXIjt1_mSD_0XuFpVkcc-EON1x-9T8tQ/exec";
+        const DEFAULT_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyw-ELr3ENR4l8pvDmSUzIoNyLeLhFcAstj8bjjCEw7gUVxyNFeeOR8g_qGGCGZbPnKiQ/exec";
 
         // State variables
         let currentTab = '';
@@ -1238,8 +1263,8 @@
             }
             currentTab = tabId;
 
-            if (tabId === 'history') { onHistoryTypeChange(); renderHistory(); }
-            if (tabId === 'stats') { onStatsTypeChange(); renderStats(); }
+            if (tabId === 'history') { onHistoryTypeChange(); syncDataFromServer(true).then(() => renderHistory()); }
+            if (tabId === 'stats') { onStatsTypeChange(); syncDataFromServer(true).then(() => renderStats()); }
             if (tabId === 'students') renderManageStudents();
             if (tabId === 'master') { switchMasterSubTab('subjects'); renderMasterData(); }
             if (tabId === 'my-profile' && currentUser && currentUser.role === 'student') renderStudentProfile();
@@ -1466,6 +1491,15 @@
             // Fix: ปล่อยหน้าต่างประวัติวันที่ว่างไว้ เพื่อให้แสดงผลรวมทั้งหมดของเทอมนั้นเป็นค่าเริ่มต้น
             document.getElementById('history-date').value = '';
 
+            // ล้างค่าข้อมูลแคชใน Local Storage ทุกครั้งที่รีเฟรช (ยกเว้น Session การเข้าสู่ระบบ และ URL ตั้งค่า)
+            const cacheKeys = [
+                DB_KEY_STUDENTS, DB_KEY_RECORDS, DB_KEY_SUBJECTS, 
+                DB_KEY_TEACHERS, DB_KEY_CLASSES, DB_KEY_CLUBS, 
+                DB_KEY_CLUB_ENROLLMENTS, DB_KEY_CLUB_RECORDS
+            ];
+            cacheKeys.forEach(key => localStorage.removeItem(key));
+            allStudents = []; allRecords = []; allSubjects = []; allTeachers = []; allClasses = []; allClubs = []; allClubEnrollments = []; allClubRecords = [];
+
             googleSheetUrl = localStorage.getItem(DB_KEY_SETTINGS) || DEFAULT_GOOGLE_SCRIPT_URL;
             document.getElementById('google-sheet-url').value = googleSheetUrl;
             
@@ -1477,31 +1511,8 @@
             document.querySelector('#login-screen .bg-white').style.pointerEvents = 'none';
             
             try {
-                if (googleSheetUrl) {
-                    const res = await fetch(`${googleSheetUrl}?action=getData`);
-                    const data = await res.json();
-                    if(data.status === 'success') {
-                        allStudents = data.Students || [];
-                        allRecords = data.Records || [];
-                        allSubjects = data.Subjects || [];
-                        allTeachers = data.Teachers || [];
-                        allClasses = data.Classes || [];
-                        allClubs = data.Clubs || [];
-                        allClubEnrollments = data.ClubEnrollments || [];
-                        allClubRecords = data.ClubRecords || [];
-                        
-                        localStorage.setItem(DB_KEY_STUDENTS, JSON.stringify(allStudents));
-                        localStorage.setItem(DB_KEY_RECORDS, JSON.stringify(allRecords));
-                        localStorage.setItem(DB_KEY_SUBJECTS, JSON.stringify(allSubjects));
-                        localStorage.setItem(DB_KEY_TEACHERS, JSON.stringify(allTeachers));
-                        localStorage.setItem(DB_KEY_CLASSES, JSON.stringify(allClasses));
-                        localStorage.setItem(DB_KEY_CLUBS, JSON.stringify(allClubs));
-                        localStorage.setItem(DB_KEY_CLUB_ENROLLMENTS, JSON.stringify(allClubEnrollments));
-                        localStorage.setItem(DB_KEY_CLUB_RECORDS, JSON.stringify(allClubRecords));
-                    }
-                } else {
-                    loadFromLocalStorage();
-                }
+                // โหลดแบบพื้นหลังเงียบๆ ตอนเข้ามาในระบบใหม่
+                await syncDataFromServer(true);
             } catch (e) {
                 console.error(e); 
                 loadFromLocalStorage();
@@ -1558,6 +1569,59 @@
             }
         }
 
+        // ฟังก์ชันสำหรับดึงข้อมูลล่าสุดจากเซิร์ฟเวอร์
+        async function syncDataFromServer(silent = false) {
+            if (!googleSheetUrl) {
+                loadFromLocalStorage();
+                return false;
+            }
+            if (!silent) showLoading('กำลังอัปเดตข้อมูลล่าสุดจากฐานข้อมูล...');
+            try {
+                // เพิ่มพารามิเตอร์ t (timestamp) และ cache: 'no-store' เพื่อบังคับดึงข้อมูลใหม่เสมอ ป้องกันการติด Cache
+                const res = await fetch(`${googleSheetUrl}?action=getData&t=${new Date().getTime()}`, { cache: 'no-store' });
+                const data = await res.json();
+                if(data.status === 'success') {
+                    allStudents = data.Students || [];
+                    allRecords = data.Records || [];
+                    allSubjects = data.Subjects || [];
+                    allTeachers = data.Teachers || [];
+                    allClasses = data.Classes || [];
+                    allClubs = data.Clubs || [];
+                    allClubEnrollments = data.ClubEnrollments || [];
+                    allClubRecords = data.ClubRecords || [];
+                    
+                    localStorage.setItem(DB_KEY_STUDENTS, JSON.stringify(allStudents));
+                    localStorage.setItem(DB_KEY_RECORDS, JSON.stringify(allRecords));
+                    localStorage.setItem(DB_KEY_SUBJECTS, JSON.stringify(allSubjects));
+                    localStorage.setItem(DB_KEY_TEACHERS, JSON.stringify(allTeachers));
+                    localStorage.setItem(DB_KEY_CLASSES, JSON.stringify(allClasses));
+                    localStorage.setItem(DB_KEY_CLUBS, JSON.stringify(allClubs));
+                    localStorage.setItem(DB_KEY_CLUB_ENROLLMENTS, JSON.stringify(allClubEnrollments));
+                    localStorage.setItem(DB_KEY_CLUB_RECORDS, JSON.stringify(allClubRecords));
+
+                    // อัปเดตข้อมูล Session ของผู้ใช้ปัจจุบัน (ในกรณีนักเรียนถูกเปลี่ยนสถานะหรือข้อมูลจากที่อื่น)
+                    if (currentUser) {
+                        if (currentUser.role === 'student') {
+                            const updatedUser = allStudents.find(s => s.id === currentUser.data.id);
+                            if (updatedUser) currentUser.data = updatedUser;
+                        } else if (currentUser.role === 'teacher') {
+                            const updatedUser = allTeachers.find(t => t.id === currentUser.data.id);
+                            if (updatedUser) currentUser.data = updatedUser;
+                        }
+                        localStorage.setItem(DB_KEY_SESSION, JSON.stringify(currentUser));
+                    }
+                    return true;
+                }
+            } catch (e) {
+                console.error('Sync error:', e);
+                if (!silent) showToast('ไม่สามารถดึงข้อมูลล่าสุดได้ ระบบกำลังใช้ข้อมูลเดิม');
+                loadFromLocalStorage();
+                return false;
+            } finally {
+                if (!silent) hideLoading();
+            }
+        }
+
         function loadFromLocalStorage() {
             allStudents = JSON.parse(localStorage.getItem(DB_KEY_STUDENTS) || '[]');
             allRecords = JSON.parse(localStorage.getItem(DB_KEY_RECORDS) || '[]');
@@ -1570,25 +1634,40 @@
         }
 
         async function saveToDB(key, data, action) {
-            localStorage.setItem(key, JSON.stringify(data));
-            if (googleSheetUrl && action) {
-                showLoading('กำลังบันทึกข้อมูล กรุณารอสักครู่...'); 
-                try {
-                    await fetch(googleSheetUrl, { 
-                        method: 'POST', 
-                        redirect: 'follow', 
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-                        body: JSON.stringify({ action: action, data: data }) 
-                    });
-                } catch(e) { 
-                    console.error(e); 
-                    showToast('บันทึกลงชีตล้มเหลว แต่บันทึกในเครื่องแล้ว');
-                } finally { 
-                    hideLoading(); 
+    localStorage.setItem(key, JSON.stringify(data));
+    if (googleSheetUrl && action) {
+        showLoading('กำลังบันทึกข้อมูล กรุณารอสักครู่...'); 
+        try {
+            const res = await fetch(googleSheetUrl, { 
+                method: 'POST', 
+                redirect: 'follow', 
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+                body: JSON.stringify({ action: action, data: data }) 
+            });
+            
+            const text = await res.text();
+            try {
+                const result = JSON.parse(text);
+                if (result.status === 'error') throw new Error(result.message || 'Server Data Error');
+                return true;
+            } catch(err) {
+                // ถ้าแปลง JSON ไม่สำเร็จ แต่ HTTP Status เป็น 200 (res.ok) 
+                // แสดงว่า Google Sheet บันทึกสำเร็จแล้วแต่ส่งกลับเป็น Text ข้อความธรรมดา
+                if (res.ok) {
+                    return true; 
                 }
+                throw new Error('HTTP ' + res.status);
             }
+        } catch(e) { 
+            console.error(e); 
+            showToast('บันทึกลงฐานข้อมูลล้มเหลว: ' + e.message);
+            return false;
+        } finally { 
+            hideLoading(); 
         }
-
+    }
+    return true;
+}
         function syncDataToGoogleSheet() {
             if(!googleSheetUrl) return customAlert('กรุณาตั้งค่า URL ก่อน');
             customConfirm('ยืนยันการซิงค์ข้อมูล', 'ต้องการนำข้อมูลในเครื่องเขียนทับ Google Sheet หรือไม่?', async () => {
@@ -1646,7 +1725,7 @@
             const checkinTeacher = document.getElementById('checkin-teacher');
             if(checkinTeacher) {
                 checkinTeacher.innerHTML = `<option value="">-- เลือกครูผู้สอน --</option>` + 
-                allTeachers.map(t => `<option value="${t.id}">${t.title}${t.firstName} ${t.lastName}</option>`).join('');
+                allTeachers.map(t => `<option value="${t.id}">${t.title || ''}${t.firstName} ${t.lastName}</option>`).join('');
             }
 
             const stuClass = document.getElementById('stu-class');
@@ -1733,7 +1812,7 @@
         function renderClubList() {
             document.getElementById('tbody-club-list').innerHTML = allClubs.map(c => {
                 const primaryTeacher = allTeachers.find(t => t.id === c.primaryTeacherId);
-                const pTeacherName = primaryTeacher ? `${primaryTeacher.title}${primaryTeacher.firstName} ${primaryTeacher.lastName}` : '-';
+                const pTeacherName = primaryTeacher ? `${primaryTeacher.title || ''}${primaryTeacher.firstName} ${primaryTeacher.lastName}` : '-';
                 
                 const enrolledCount = allClubEnrollments.filter(e => e.clubId === c.id && e.year == c.year && e.semester == c.semester).length;
                 
@@ -1772,7 +1851,7 @@
             
             // Populate Teachers for Primary Teacher
             const primarySelect = document.getElementById('club-primary-teacher');
-            primarySelect.innerHTML = allTeachers.map(t => `<option value="${t.id}">${t.title}${t.firstName} ${t.lastName}</option>`).join('');
+            primarySelect.innerHTML = allTeachers.map(t => `<option value="${t.id}">${t.title || ''}${t.firstName} ${t.lastName}</option>`).join('');
             
             // Auto-assign logged-in teacher as Primary Teacher
             if (currentUser && currentUser.role === 'teacher') {
@@ -1782,7 +1861,7 @@
             // Populate Co-teachers checkbox
             document.getElementById('club-co-teachers-container').innerHTML = allTeachers.map(t => `
                 <label class="checkbox-container">
-                    ${t.title}${t.firstName} ${t.lastName}
+                    ${t.title || ''}${t.firstName} ${t.lastName}
                     <input type="checkbox" value="${t.id}" class="club-co-cb">
                     <span class="checkmark"></span>
                 </label>
@@ -1805,13 +1884,13 @@
             document.getElementById('club-status').value = c.status || 'เปิด';
 
             const primarySelect = document.getElementById('club-primary-teacher');
-            primarySelect.innerHTML = allTeachers.map(t => `<option value="${t.id}">${t.title}${t.firstName} ${t.lastName}</option>`).join('');
+            primarySelect.innerHTML = allTeachers.map(t => `<option value="${t.id}">${t.title || ''}${t.firstName} ${t.lastName}</option>`).join('');
             primarySelect.value = c.primaryTeacherId;
 
             const coTeachers = c.coAdvisorIds || [];
             document.getElementById('club-co-teachers-container').innerHTML = allTeachers.map(t => `
                 <label class="checkbox-container">
-                    ${t.title}${t.firstName} ${t.lastName}
+                    ${t.title || ''}${t.firstName} ${t.lastName}
                     <input type="checkbox" value="${t.id}" class="club-co-cb" ${coTeachers.includes(t.id) ? 'checked' : ''}>
                     <span class="checkmark"></span>
                 </label>
@@ -1842,10 +1921,12 @@
             const idx = allClubs.findIndex(x => x.id === id);
             if(idx > -1) allClubs[idx] = clubObj; else allClubs.push(clubObj);
 
-            await saveToDB(DB_KEY_CLUBS, allClubs, 'saveClubs');
+            const success = await saveToDB(DB_KEY_CLUBS, allClubs, 'saveClubs');
             closeModal('club-form-modal');
             renderClubList();
-            showToast('บันทึกข้อมูลชุมนุมเรียบร้อย');
+            if (success !== false) {
+                showToast('บันทึกข้อมูลชุมนุมเรียบร้อย');
+            }
         }
 
         function deleteClub(id) {
@@ -2022,7 +2103,7 @@
             document.getElementById('club-checkin-table-body').innerHTML = '';
         }
 
-        function loadClubCheckinList() {
+        async function loadClubCheckinList() {
             const date = document.getElementById('club-checkin-date').value;
             const yr = document.getElementById('club-checkin-year').value;
             const sem = document.getElementById('club-checkin-semester').value;
@@ -2033,6 +2114,9 @@
                 return;
             }
             document.getElementById('club-checkin-alert').classList.add('hidden');
+
+            // โหลดข้อมูลล่าสุดก่อนประมวลผลรายชื่อ
+            await syncDataFromServer();
 
             // Find enrolled students
             const enrollments = allClubEnrollments.filter(e => e.clubId === clubId && e.year == yr && e.semester == sem);
@@ -2048,7 +2132,7 @@
             }
             document.getElementById('club-no-students-alert').classList.add('hidden');
 
-            const existRec = allClubRecords.find(r => r.date === date && r.clubId === clubId && matchRecordYearSemester(r, yr, sem));
+            const existRec = allClubRecords.find(r => r.date.split('T')[0] === date && r.clubId === clubId && matchRecordYearSemester(r, yr, sem));
             
             activeCheckinStates = {};
             lastCheckedClubStuId = null; // Reset last checked
@@ -2076,12 +2160,7 @@
             const search = document.getElementById('club-checkin-search').value.toLowerCase().trim();
             let filtered = [...currentCheckinStudents];
 
-            if (search) {
-                filtered = filtered.filter(s => {
-                    const fullName = getStudentFullName(s).toLowerCase();
-                    return s.studentId.toString().includes(search) || fullName.includes(search);
-                });
-            }
+        return s.studentId.toString().includes(search) || fullName.includes(search);
 
             // Support hiding checked students like standard check-in
             const hideChecked = document.getElementById('club-checkin-hide-checked') ? document.getElementById('club-checkin-hide-checked').checked : false;
@@ -2089,13 +2168,8 @@
                 filtered = filtered.filter(s => !activeCheckinStates[s.id] || s.id === lastCheckedClubStuId);
             }
 
-            // Sorting Action: Checked students are pushed to bottom, keeping lastCheckedClubStuId near
-            filtered.sort((a, b) => {
-                const aChecked = (activeCheckinStates[a.id] && a.id !== lastCheckedClubStuId) ? 1 : 0;
-                const bChecked = (activeCheckinStates[b.id] && b.id !== lastCheckedClubStuId) ? 1 : 0;
-                if (aChecked !== bChecked) return aChecked - bChecked; 
-                return a.class.localeCompare(b.class, undefined, { numeric: true }) || a.number - b.number; 
-            });
+            // เรียงตามชั้นเรียนและเลขที่เสมอ (ไม่ต้องขยับคนเช็คแล้วไปไว้ข้างล่าง)
+            filtered.sort((a, b) => a.class.localeCompare(b.class, undefined, { numeric: true }) || a.number - b.number);
 
             const tbody = document.getElementById('club-checkin-table-body');
             tbody.innerHTML = '';
@@ -2157,14 +2231,14 @@
 
             const record = {
                 id: generateId(),
-                date: getThaiLocalTimeISOString(), // Store full timestamp (date and time) in Thai timezone
+                date: date + 'T' + getThaiLocalTimeISOString().split('T')[1], // บังคับใช้วันที่จากช่อง Input แต่เก็บเวลาจริงตอนกดบันทึก
                 clubId,
                 year: yr,
                 semester: sem,
                 attendance: att
             };
 
-            allClubRecords = allClubRecords.filter(r => !(r.date === date && r.clubId === clubId && matchRecordYearSemester(r, yr, sem)));
+            allClubRecords = allClubRecords.filter(r => !(r.date.split('T')[0] === date && r.clubId === clubId && matchRecordYearSemester(r, yr, sem)));
             allClubRecords.push(record);
 
             await saveToDB(DB_KEY_CLUB_RECORDS, allClubRecords, 'saveClubRecords');
@@ -2540,6 +2614,11 @@
             renderHistory();
         }
 
+        async function searchHistory() {
+            await syncDataFromServer(); // โหลดข้อมูลล่าสุดจากเซิร์ฟเวอร์ก่อน
+            renderHistory();
+        }
+
         function renderHistory() {
             const type = document.getElementById('history-type').value;
             const d = document.getElementById('history-date').value;
@@ -2646,7 +2725,7 @@
                 return `<tr>
                 <td class="hidden md:table-cell px-4 py-2 text-sm font-medium text-gray-800 whitespace-nowrap">${t.email||'-'}</td>
                 <td class="px-4 py-2">
-                    <div class="text-sm font-bold text-gray-800 whitespace-nowrap">${t.title}${t.firstName} ${t.lastName}</div>
+                    <div class="text-sm font-bold text-gray-800 whitespace-nowrap">${t.title || ''}${t.firstName} ${t.lastName}</div>
                     <div class="md:hidden mt-1 text-xs text-gray-500 flex flex-col gap-1">
                         <div>📧 ${t.email||'ไม่มีอีเมล'}</div>
                         <div>📞 ${t.phone||'ไม่มีเบอร์โทร'}</div>
@@ -2664,6 +2743,7 @@
             const sortedClasses = [...allClasses].sort((a, b) => a.className.localeCompare(b.className, undefined, { numeric: true }));
             document.getElementById('tbody-classes').innerHTML = sortedClasses.map(c => {
                 const advs = c.advisors ? c.advisors.map(tid => { const t = allTeachers.find(x=>x.id===tid); return t?t.firstName:''; }).filter(Boolean).join(', ') : '-';
+                const subs = c.subjects ? c.subjects.map(sid => { const s = allSubjects.find(x=>x.id===sid); return s?s.name:''; }).filter(Boolean).join(', ') : '-';
                 return `<tr>
                 <td class="hidden md:table-cell px-4 py-2 text-sm whitespace-nowrap">${c.year}/${c.semester}</td>
                 <td class="px-4 py-2">
@@ -2671,9 +2751,11 @@
                     <div class="md:hidden mt-1 text-xs text-gray-500 flex flex-col gap-1">
                         <div>ปี ${c.year}/${c.semester}</div>
                         <div class="truncate w-48">ครูที่ปรึกษา: ${advs}</div>
+                        <div class="truncate w-48">วิชา: ${subs}</div>
                     </div>
                 </td>
                 <td class="hidden md:table-cell px-4 py-2 text-sm whitespace-nowrap">${advs}</td>
+                <td class="hidden md:table-cell px-4 py-2 text-sm text-gray-500 max-w-xs truncate" title="${subs}">${subs}</td>
                 <td class="px-4 py-2 text-center text-sm whitespace-nowrap">
                     <button onclick="editClass('${c.id}')" class="text-blue-500 hover:text-blue-700 mr-3"><i class="fas fa-edit"></i></button>
                     <button onclick="deleteMaster('class', '${c.id}')" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
@@ -2755,17 +2837,20 @@
             document.getElementById('c-sem').value = schoolDefaults.semester;
             document.getElementById('c-name').value='';
             document.getElementById('c-advisors-container').innerHTML = allTeachers.map(t => `<label class="checkbox-container">${t.firstName} ${t.lastName}<input type="checkbox" value="${t.id}" class="c-adv-cb"><span class="checkmark"></span></label>`).join('');
+            document.getElementById('c-subjects-container').innerHTML = allSubjects.map(s => `<label class="checkbox-container">${s.code} - ${s.name}<input type="checkbox" value="${s.id}" class="c-sub-cb"><span class="checkmark"></span></label>`).join('');
             document.getElementById('class-modal').classList.add('show');
         }
         function editClass(id) {
             const c = allClasses.find(x=>x.id===id); if(!c) return;
             document.getElementById('c-id').value=c.id; document.getElementById('c-year').value=c.year; document.getElementById('c-sem').value=c.semester; document.getElementById('c-name').value=c.className;
             document.getElementById('c-advisors-container').innerHTML = allTeachers.map(t => `<label class="checkbox-container">${t.firstName} ${t.lastName}<input type="checkbox" value="${t.id}" class="c-adv-cb" ${c.advisors && c.advisors.includes(t.id)?'checked':''}><span class="checkmark"></span></label>`).join('');
+            document.getElementById('c-subjects-container').innerHTML = allSubjects.map(s => `<label class="checkbox-container">${s.code} - ${s.name}<input type="checkbox" value="${s.id}" class="c-sub-cb" ${c.subjects && c.subjects.includes(s.id)?'checked':''}><span class="checkmark"></span></label>`).join('');
             document.getElementById('class-modal').classList.add('show');
         }
         async function saveClassRoom() {
             const advs = Array.from(document.querySelectorAll('.c-adv-cb:checked')).map(cb=>cb.value);
-            const obj = { id: document.getElementById('c-id').value||generateId(), year: document.getElementById('c-year').value, semester: document.getElementById('c-sem').value, className: document.getElementById('c-name').value, advisors: advs };
+            const subs = Array.from(document.querySelectorAll('.c-sub-cb:checked')).map(cb=>cb.value);
+            const obj = { id: document.getElementById('c-id').value||generateId(), year: document.getElementById('c-year').value, semester: document.getElementById('c-sem').value, className: document.getElementById('c-name').value, advisors: advs, subjects: subs };
             if(!obj.className) return customAlert('กรุณากรอกชื่อชั้นเรียน');
             const idx = allClasses.findIndex(x=>x.id===obj.id); if(idx>-1) allClasses[idx]=obj; else allClasses.push(obj);
             await saveToDB(DB_KEY_CLASSES, allClasses, 'saveClasses');
@@ -2778,12 +2863,22 @@
             document.getElementById('profile-fullname').innerText = getStudentFullName(s);
             document.getElementById('profile-studentid').innerText = `รหัสประจำตัว: ${s.studentId || '-'}`;
             
-            const badgeEl = document.getElementById('profile-status-badge');
+            const badgeEl = document.getElementById('profile-badges');
+            let badgesHtml = '';
             if (s.isProfileComplete) {
-                badgeEl.innerHTML = '<span class="bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full font-medium"><i class="fas fa-check-circle mr-1"></i> ประวัติสมบูรณ์</span>';
+                badgesHtml += '<span class="bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full font-medium inline-block mb-1"><i class="fas fa-check-circle mr-1"></i> ประวัติสมบูรณ์</span><br>';
             } else {
-                badgeEl.innerHTML = '<span class="bg-yellow-100 text-yellow-800 text-sm px-3 py-1 rounded-full font-medium"><i class="fas fa-exclamation-triangle mr-1"></i> กรุณากรอกประวัติให้ครบ</span>';
+                badgesHtml += '<span class="bg-yellow-100 text-yellow-800 text-sm px-3 py-1 rounded-full font-medium inline-block mb-1"><i class="fas fa-exclamation-triangle mr-1"></i> กรุณากรอกประวัติให้ครบ</span><br>';
             }
+            
+            if (s.homeVisit === 'สำเร็จ') {
+                badgesHtml += '<span class="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full font-medium inline-block"><i class="fas fa-home mr-1"></i> เยี่ยมบ้านสำเร็จ</span>';
+            } else if (s.homeVisit === 'ไม่สำเร็จ') {
+                badgesHtml += '<span class="bg-red-100 text-red-800 text-sm px-3 py-1 rounded-full font-medium inline-block"><i class="fas fa-home mr-1"></i> เยี่ยมบ้านไม่สำเร็จ</span>';
+            } else {
+                badgesHtml += '<span class="bg-gray-100 text-gray-600 text-sm px-3 py-1 rounded-full font-medium inline-block"><i class="fas fa-home mr-1"></i> ยังไม่เยี่ยมบ้าน</span>';
+            }
+            badgeEl.innerHTML = badgesHtml;
 
             document.getElementById('sp-citizenid').value = s.citizenId || '';
             document.getElementById('sp-nickname').value = s.nickname || '';
@@ -2800,44 +2895,95 @@
             
             document.getElementById('sp-p-rel').value = s.parentRelation || 'บิดา';
             document.getElementById('sp-p-phone').value = s.parentPhone || '';
+
+            document.getElementById('sp-f-fname').value = s.fatherFirstName || '';
+            document.getElementById('sp-f-lname').value = s.fatherLastName || '';
+            document.getElementById('sp-f-age').value = s.fatherAge || '';
+            document.getElementById('sp-f-job').value = s.fatherJob || '';
+            document.getElementById('sp-f-phone').value = s.fatherPhone || '';
+            
+            document.getElementById('sp-m-fname').value = s.motherFirstName || '';
+            document.getElementById('sp-m-lname').value = s.motherLastName || '';
+            document.getElementById('sp-m-age').value = s.motherAge || '';
+            document.getElementById('sp-m-job').value = s.motherJob || '';
+            document.getElementById('sp-m-phone').value = s.motherPhone || '';
+
+            // ล็อกฟอร์มทุกครั้งเมื่อทำการเรนเดอร์หน้าประวัติ
+            toggleProfileEditMode(false);
         }
 
-        async function saveMyProfile(e) {
+        function toggleProfileEditMode(isEditing) {
+            const form = document.getElementById('student-self-form');
+            const inputs = form.querySelectorAll('input, select, textarea');
+            
+            inputs.forEach(input => {
+                // ข้ามช่องที่ไม่อนุญาตให้แก้อยู่แล้วเสมอ
+                if (input.id === 'sp-class' || input.id === 'sp-number') return;
+                
+                if (isEditing) {
+                    input.removeAttribute('disabled');
+                    input.classList.remove('bg-gray-100');
+                } else {
+                    input.setAttribute('disabled', 'true');
+                    input.classList.add('bg-gray-100');
+                }
+            });
+
+            document.getElementById('btn-edit-profile').classList.toggle('hidden', isEditing);
+            document.getElementById('btn-cancel-profile').classList.toggle('hidden', !isEditing);
+            document.getElementById('btn-save-profile').classList.toggle('hidden', !isEditing);
+        }
+
+        function saveMyProfile(e) {
             e.preventDefault();
-            const s = currentUser.data;
-            const citizenId = document.getElementById('sp-citizenid').value.toString().replace(/\s+/g, '');
-            const phone = document.getElementById('sp-phone').value;
-            const pPhone = document.getElementById('sp-p-phone').value;
+            
+            customConfirm('ยืนยันการบันทึกข้อมูล', 'คุณตรวจสอบข้อมูลครบถ้วนและต้องการบันทึกการแก้ไขใช่หรือไม่?', async () => {
+                const s = currentUser.data;
+                const citizenId = document.getElementById('sp-citizenid').value.toString().replace(/\s+/g, '');
+                const phone = document.getElementById('sp-phone').value;
+                const pPhone = document.getElementById('sp-p-phone').value;
+                const fPhone = document.getElementById('sp-f-phone').value;
+                const mPhone = document.getElementById('sp-m-phone').value;
 
-            if(!validateThaiCitizenId(citizenId)) return customAlert('เลขประจำตัวประชาชน 13 หลัก ไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');
-            if(!validatePhoneNumber(phone)) return customAlert('เบอร์โทรศัพท์ของนักเรียนไม่ถูกต้อง (ต้องเป็นตัวเลข 9-10 หลัก)');
-            if(!validatePhoneNumber(pPhone)) return customAlert('เบอร์โทรศัพท์ของผู้ปกครองไม่ถูกต้อง (ต้องเป็นตัวเลข 9-10 หลัก)');
+                if(!validateThaiCitizenId(citizenId)) return customAlert('เลขประจำตัวประชาชน 13 หลัก ไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');
+                if(!validatePhoneNumber(phone)) return customAlert('เบอร์โทรศัพท์ของนักเรียนไม่ถูกต้อง (ต้องเป็นตัวเลข 9-10 หลัก)');
+                if(!validatePhoneNumber(pPhone)) return customAlert('เบอร์โทรศัพท์ของผู้ปกครองไม่ถูกต้อง (ต้องเป็นตัวเลข 9-10 หลัก)');
+                if(!validatePhoneNumber(fPhone)) return customAlert('เบอร์โทรศัพท์บิดาไม่ถูกต้อง (ต้องเป็นตัวเลข 9-10 หลัก)');
+                if(!validatePhoneNumber(mPhone)) return customAlert('เบอร์โทรศัพท์มารดาไม่ถูกต้อง (ต้องเป็นตัวเลข 9-10 หลัก)');
 
-            s.citizenId = citizenId;
-            s.nickname = document.getElementById('sp-nickname').value.trim();
-            s.dob = document.getElementById('sp-dob').value;
-            s.phone = phone;
-            s.email = document.getElementById('sp-email').value;
-            s.address = document.getElementById('sp-address').value;
-            
-            s.parentTitle = document.getElementById('sp-p-title').value;
-            s.parentFirstName = document.getElementById('sp-p-fname').value;
-            s.parentLastName = document.getElementById('sp-p-lname').value;
-            s.parentRelation = document.getElementById('sp-p-rel').value;
-            s.parentPhone = pPhone;
-            
-            s.isProfileComplete = true; 
+                s.citizenId = citizenId;
+                s.nickname = document.getElementById('sp-nickname').value.trim();
+                s.dob = document.getElementById('sp-dob').value;
+                s.phone = phone;
+                s.email = document.getElementById('sp-email').value;
+                s.address = document.getElementById('sp-address').value;
+                s.parentTitle = document.getElementById('sp-p-title').value;
+                s.parentFirstName = document.getElementById('sp-p-fname').value;
+                s.parentLastName = document.getElementById('sp-p-lname').value;
+                s.parentRelation = document.getElementById('sp-p-rel').value;
+                s.parentPhone = pPhone;
+                s.fatherFirstName = document.getElementById('sp-f-fname').value.trim();
+                s.fatherLastName = document.getElementById('sp-f-lname').value.trim();
+                s.fatherAge = document.getElementById('sp-f-age').value;
+                s.fatherJob = document.getElementById('sp-f-job').value.trim();
+                s.fatherPhone = fPhone.trim();
+                s.motherFirstName = document.getElementById('sp-m-fname').value.trim();
+                s.motherLastName = document.getElementById('sp-m-lname').value.trim();
+                s.motherAge = document.getElementById('sp-m-age').value;
+                s.motherJob = document.getElementById('sp-m-job').value.trim();
+                s.motherPhone = mPhone.trim();
+                s.isProfileComplete = true; 
 
-            const idx = allStudents.findIndex(x => x.id === s.id);
-            if(idx > -1) allStudents[idx] = s;
-            
-            // Update session data
-            currentUser.data = s;
-            localStorage.setItem(DB_KEY_SESSION, JSON.stringify(currentUser));
-            
-            await saveToDB(DB_KEY_STUDENTS, allStudents, 'saveStudents'); 
-            showToast('บันทึกข้อมูลส่วนตัวเรียบร้อยแล้ว');
-            renderStudentProfile();
+                const idx = allStudents.findIndex(x => x.id === s.id);
+                if(idx > -1) allStudents[idx] = s;
+                
+                currentUser.data = s;
+                localStorage.setItem(DB_KEY_SESSION, JSON.stringify(currentUser));
+                
+                await saveToDB(DB_KEY_STUDENTS, allStudents, 'saveStudents'); 
+                showToast('บันทึกข้อมูลส่วนตัวเรียบร้อยแล้ว');
+                renderStudentProfile();
+            });
         }
 
         // --- CSV Upload Logic ---
@@ -2960,7 +3106,7 @@
             document.getElementById('no-students-alert').classList.add('hidden');
         }
 
-        function loadCheckinList() {
+        async function loadCheckinList() {
             const date = document.getElementById('checkin-date').value; 
             const cls = document.getElementById('checkin-class').value; 
             const sub = document.getElementById('checkin-subject').value; 
@@ -2973,12 +3119,15 @@
             if(!date || !cls || !sub || !teacherId || !yr || !sem) { document.getElementById('checkin-alert').classList.remove('hidden'); return; }
             document.getElementById('checkin-alert').classList.add('hidden');
 
+            // โหลดข้อมูลล่าสุดก่อนประมวลผลรายชื่อ
+            await syncDataFromServer();
+
             currentCheckinStudents = allStudents.filter(s => s.class === cls && s.status !== 'ลาออก').sort((a,b)=>a.number - b.number);
             
             if(currentCheckinStudents.length===0) { document.getElementById('no-students-alert').classList.remove('hidden'); document.getElementById('student-list-container').classList.add('hidden'); return; }
             document.getElementById('no-students-alert').classList.add('hidden');
 
-            const existRec = allRecords.find(r => r.date===date && r.class===cls && r.subject===sub && matchRecordYearSemester(r, yr, sem));
+            const existRec = allRecords.find(r => r.date.split('T')[0]===date && r.class===cls && r.subject===sub && matchRecordYearSemester(r, yr, sem));
             
             activeCheckinStates = {};
             lastCheckedStuId = null;
@@ -3017,12 +3166,8 @@
                 filteredStudents = filteredStudents.filter(s => !activeCheckinStates[s.id] || s.id === lastCheckedStuId);
             }
 
-            filteredStudents.sort((a, b) => {
-                const aChecked = (activeCheckinStates[a.id] && a.id !== lastCheckedStuId) ? 1 : 0;
-                const bChecked = (activeCheckinStates[b.id] && b.id !== lastCheckedStuId) ? 1 : 0;
-                if (aChecked !== bChecked) return aChecked - bChecked; 
-                return a.number - b.number; 
-            });
+            // เรียงตามเลขที่เสมอ (ไม่ต้องขยับคนเช็คแล้วไปไว้ข้างล่าง)
+            filteredStudents.sort((a, b) => a.number - b.number);
 
             const tbody = document.getElementById('checkin-table-body');
             tbody.innerHTML = '';
@@ -3113,7 +3258,7 @@ function getThaiLocalTimeISOString() {
             }));
             const record = { 
                 id: generateId(), 
-                date: getThaiLocalTimeISOString(), // Store full timestamp (date and time) in Thai timezone
+                date: date + 'T' + getThaiLocalTimeISOString().split('T')[1], // บังคับใช้วันที่จากช่อง Input แต่เก็บเวลาจริงตอนกดบันทึก
                 class: cls, 
                 subject: sub, 
                 teacher, 
@@ -3121,7 +3266,7 @@ function getThaiLocalTimeISOString() {
                 semester: sem, 
                 attendance: att 
             };
-            allRecords = allRecords.filter(r => !(r.date===date && r.class===cls && r.subject===sub && matchRecordYearSemester(r, yr, sem)));
+            allRecords = allRecords.filter(r => !(r.date.split('T')[0]===date && r.class===cls && r.subject===sub && matchRecordYearSemester(r, yr, sem)));
             allRecords.push(record);
             await saveToDB(DB_KEY_RECORDS, allRecords, 'saveRecords');
             showToast('บันทึกการเช็คชื่อเรียบร้อย');
@@ -3182,7 +3327,7 @@ function getThaiLocalTimeISOString() {
 
             if(type === 'regular') {
                 let textRecs = allRecords;
-                if(d) textRecs=textRecs.filter(r=>r.date===d);
+                if(d) textRecs=textRecs.filter(r=>r.date.split('T')[0]===d);
                 if(c) textRecs=textRecs.filter(r=>r.class===c);
                 if(s) textRecs=textRecs.filter(r=>r.subject===s);
                 if(yr && sem) textRecs=textRecs.filter(r => matchRecordYearSemester(r, yr, sem));
@@ -3197,12 +3342,12 @@ function getThaiLocalTimeISOString() {
                 const headers = ['วันที่', 'ปีการศึกษา', 'ภาคเรียน', 'ชั้นเรียน', 'วิชา', 'ครูผู้สอน', 'จำนวนนักเรียน', 'มา (คน)', 'สาย (คน)', 'ลา (คน)', 'ขาด (คน)'];
                 const rows = textRecs.map(r => {
                     let stat={มา:0,สาย:0,ลา:0,ขาด:0}; r.attendance.forEach(a=>stat[a.status]++);
-                    return [r.date, r.year || '', r.semester || '', r.class, r.subject, r.teacher || '-', r.attendance.length, stat['มา'], stat['สาย'], stat['ลา'], stat['ขาด']];
+                    return [r.date.split('T')[0], r.year || '', r.semester || '', r.class, r.subject, r.teacher || '-', r.attendance.length, stat['มา'], stat['สาย'], stat['ลา'], stat['ขาด']];
                 });
                 exportToCSV(`ประวัติเช็คชื่อปกติ.csv`, headers, rows);
             } else {
                 let textRecs = allClubRecords;
-                if(d) textRecs = textRecs.filter(r => r.date === d);
+                if(d) textRecs = textRecs.filter(r => r.date.split('T')[0] === d);
                 if(c) textRecs = textRecs.filter(r => r.clubId === c);
                 if(yr && sem) textRecs = textRecs.filter(r => matchRecordYearSemester(r, yr, sem));
 
@@ -3212,7 +3357,7 @@ function getThaiLocalTimeISOString() {
                 const rows = textRecs.map(r => {
                     let stat={มา:0,สาย:0,ลา:0,ขาด:0}; r.attendance.forEach(a=>stat[a.status]++);
                     const club = allClubs.find(cl => cl.id === r.clubId);
-                    return [r.date, r.year || '', r.semester || '', club ? club.name : '', r.attendance.length, stat['มา'], stat['สาย'], stat['ลา'], stat['ขาด']];
+                    return [r.date.split('T')[0], r.year || '', r.semester || '', club ? club.name : '', r.attendance.length, stat['มา'], stat['สาย'], stat['ลา'], stat['ขาด']];
                 });
                 exportToCSV(`ประวัติกิจกรรมชุมนุม.csv`, headers, rows);
             }
