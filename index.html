@@ -2652,10 +2652,6 @@
 
                 if (currentUser && currentUser.role === 'teacher') {
                     const teacherFullName = `${currentUser.data.firstName} ${currentUser.data.lastName}`;
-                    // Note: If r.teacher is stored as "ครูสมชาย ใจดี" and currentUser.data.firstName is "สมชาย",
-                    // this comparison might need adjustment if the full name format differs.
-                    // Assuming r.teacher is already in the format "FirstName LastName" or "Title FirstName LastName"
-                    // as constructed in saveAttendance.
                     recs = recs.filter(r => r.teacher === teacherFullName); 
                 }
 
@@ -3252,7 +3248,9 @@ function getThaiLocalTimeISOString() {
             const cls = document.getElementById('checkin-class').value; 
             const sub = document.getElementById('checkin-subject').value; 
             const teacherSelect = document.getElementById('checkin-teacher');
-            const teacher = teacherSelect.options[teacherSelect.selectedIndex].text; // Get teacher's full name from text
+            const tId = teacherSelect.value;
+            const tObj = allTeachers.find(t => t.id === tId);
+            const teacher = tObj ? `${tObj.firstName} ${tObj.lastName}` : teacherSelect.options[teacherSelect.selectedIndex].text;
             const yr = parseInt(document.getElementById('checkin-year').value);
             const sem = parseInt(document.getElementById('checkin-semester').value);
 
@@ -3309,7 +3307,9 @@ function getThaiLocalTimeISOString() {
             const cls = document.getElementById('checkin-class').value;
             const sub = document.getElementById('checkin-subject').value;
             const teacherSelect = document.getElementById('checkin-teacher');
-            const teacher = teacherSelect.options[teacherSelect.selectedIndex].text; // Get teacher's full name from text
+            const tId = teacherSelect.value;
+            const tObj = allTeachers.find(t => t.id === tId);
+            const teacher = tObj ? `${tObj.firstName} ${tObj.lastName}` : teacherSelect.options[teacherSelect.selectedIndex].text;
             const yr = document.getElementById('checkin-year').value;
             const sem = document.getElementById('checkin-semester').value;
 
