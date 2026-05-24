@@ -11,4 +11,5 @@ export const DB_KEYS = {
     CLUB_RECORDS: 'school_club_records'
 };
 
-export const DEFAULT_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxP1FLTxox4hddq5E_5ZmHhEYXScymQYzCbXG5VAFqWgL7mEg9foBQ88enSu93xbwfm8g/exec";
+// export const DEFAULT_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxP1FLTxox4hddq5E_5ZmHhEYXScymQYzCbXG5VAFqWgL7mEg9foBQ88enSu93xbwfm8g/exec";  //uat
+export const DEFAULT_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyw-ELr3ENR4l8pvDmSUzIoNyLeLhFcAstj8bjjCEw7gUVxyNFeeOR8g_qGGCGZbPnKiQ/exec";

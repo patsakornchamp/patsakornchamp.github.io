@@ -1,7 +1,7 @@
 import { DB_KEYS, DEFAULT_GOOGLE_SCRIPT_URL } from './core/config.js';
 import { AppState } from './core/state.js';
-import { syncDataFromServer } from './services/api.js';
-import { getBangkokDate, getDefaultAcademicYearAndSemester } from './utils/helpers.js'; // 🌟 นำเข้าฟังก์ชันจัดการวันที่ของไทย
+import { syncDataFromServer, saveToDB } from './services/api.js';
+import { getBangkokDate, getDefaultAcademicYearAndSemester, showToast, customAlert, customConfirm } from './utils/helpers.js'; // 🌟 นำเข้าฟังก์ชันจัดการวันที่ของไทย
 
 // 🌟 1. นำเข้าไฟล์ Features ทั้งหมดเพื่อให้ฟังก์ชันของมันทำงานและผูกเข้ากับ window
 import * as auth from './features/auth.js';
@@ -80,7 +80,6 @@ function switchTab(tabId) {
         nav.classList.add('active', 'border-white', 'text-white');
     }
     AppState.currentTab = tabId;
-
     // 🔥 บังคับล้างค่าที่กรอกไว้และสั่งวาดตารางใหม่ทันทีเมื่อกดเปลี่ยนสลับแท็บ
     const today = getBangkokDate(new Date());
 
@@ -136,6 +135,9 @@ function switchTab(tabId) {
         window.renderStudentClubDashboard();
     } else if (tabId === 'academic' && window.renderStudentAcademicPortal) {
         window.renderStudentAcademicPortal();
+    } else if (tabId === 'settings') {
+        const el = document.getElementById('google-sheet-url');
+        if (el) el.value = AppState.googleSheetUrl || '';
     }
 }
 window.switchTab = switchTab;
@@ -275,6 +277,39 @@ export function onStatsYearSemesterChange() {
     if (window.onStatsTypeChange) window.onStatsTypeChange();
 }
 
+export function saveSettings() {
+    const url = document.getElementById('google-sheet-url').value.trim();
+    if (!url) return customAlert('กรุณากรอก URL ก่อนบันทึก');
+    AppState.googleSheetUrl = url;
+    localStorage.setItem(DB_KEYS.SETTINGS, url);
+    showToast('บันทึกการตั้งค่า URL เรียบร้อย');
+}
+
+export async function syncDataToGoogleSheet() {
+    if (!AppState.googleSheetUrl) return customAlert('กรุณาตั้งค่า URL ก่อนการซิงค์');
+    
+    customConfirm('ยืนยันการซิงค์ข้อมูล', 'ระบบจะส่งข้อมูลทั้งหมดจากเครื่องขึ้นไปทับบน Google Sheets ยืนยันหรือไม่? (อาจใช้เวลาสักครู่)', async () => {
+        let success = true;
+        const ops = [
+            { key: DB_KEYS.STUDENTS, data: AppState.allStudents, action: 'saveStudents' },
+            { key: DB_KEYS.RECORDS, data: AppState.allRecords, action: 'saveRecords' },
+            { key: DB_KEYS.SUBJECTS, data: AppState.allSubjects, action: 'saveSubjects' },
+            { key: DB_KEYS.TEACHERS, data: AppState.allTeachers, action: 'saveTeachers' },
+            { key: DB_KEYS.CLASSES, data: AppState.allClasses, action: 'saveClasses' },
+            { key: DB_KEYS.CLUBS, data: AppState.allClubs, action: 'saveClubs' },
+            { key: DB_KEYS.CLUB_ENROLLMENTS, data: AppState.allClubEnrollments, action: 'saveClubEnrollments' },
+            { key: DB_KEYS.CLUB_RECORDS, data: AppState.allClubRecords, action: 'saveClubRecords' }
+        ];
+        
+        for (const op of ops) {
+            const result = await saveToDB(op.key, op.data, op.action);
+            if (result === false) success = false;
+        }
+        
+        if (success) showToast('ซิงค์ข้อมูลขึ้น Google Sheets สำเร็จ');
+    });
+}
+
 window.autoSelectPeriod = autoSelectPeriod;
 window.updateClassDropdown = updateClassDropdown;
 window.populateCheckinSubjectDropdown = populateCheckinSubjectDropdown;
@@ -282,3 +317,5 @@ window.onCheckinYearSemesterChange = onCheckinYearSemesterChange;
 window.onTeacherChange = onTeacherChange;
 window.onHistoryYearSemesterChange = onHistoryYearSemesterChange;
 window.onStatsYearSemesterChange = onStatsYearSemesterChange;
+window.saveSettings = saveSettings;
+window.syncDataToGoogleSheet = syncDataToGoogleSheet;
