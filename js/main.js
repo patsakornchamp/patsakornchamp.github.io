@@ -1,0 +1,284 @@
+import { DB_KEYS, DEFAULT_GOOGLE_SCRIPT_URL } from './core/config.js';
+import { AppState } from './core/state.js';
+import { syncDataFromServer } from './services/api.js';
+import { getBangkokDate, getDefaultAcademicYearAndSemester } from './utils/helpers.js'; // 🌟 นำเข้าฟังก์ชันจัดการวันที่ของไทย
+
+// 🌟 1. นำเข้าไฟล์ Features ทั้งหมดเพื่อให้ฟังก์ชันของมันทำงานและผูกเข้ากับ window
+import * as auth from './features/auth.js';
+import './features/checkin.js'; 
+import './features/students.js';
+import './features/master.js';
+import './features/club.js';
+import './features/stats.js';
+import './features/history.js';
+
+// 🌟 2. ฟังก์ชันช่วยป้อนข้อมูลใส่ Dropdown ทั่วทั้งระบบ
+export function updateAllDropdowns() {
+    let latestYear = new Date().getFullYear() + 543;
+    if (AppState.allClasses && AppState.allClasses.length > 0) {
+        latestYear = Math.max(...AppState.allClasses.map(c => parseInt(c.year) || latestYear));
+    }
+
+    const populateYear = (selectId) => {
+        const el = document.getElementById(selectId);
+        if(!el) return;
+        const currentVal = el.value;
+        el.innerHTML = '';
+        for(let i = latestYear + 1; i >= latestYear - 3; i--) {
+            el.innerHTML += `<option value="${i}" ${i === latestYear ? 'selected' : ''}>${i}</option>`;
+        }
+        if (currentVal) el.value = currentVal;
+    };
+
+    ['checkin-year', 'club-checkin-year', 'enroll-year', 'history-year', 'stats-year', 'aca-year'].forEach(populateYear);
+
+    const subjectOptions = '<option value="">-- เลือกวิชา --</option>' + AppState.allSubjects.map(s => `<option value="${s.name}">${s.code} - ${s.name}</option>`).join('');
+    ['checkin-subject', 'history-subject', 'stats-subject'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) {
+            const currentVal = el.value;
+            el.innerHTML = subjectOptions;
+            if (currentVal) el.value = currentVal;
+        }
+    });
+
+    const teacherOptions = '<option value="">-- เลือกครูผู้สอน --</option>' + AppState.allTeachers.map(t => `<option value="${t.id}">${t.firstName} ${t.lastName}</option>`).join('');
+    const elTeacher = document.getElementById('checkin-teacher');
+    if(elTeacher) {
+        const currentVal = elTeacher.value;
+        elTeacher.innerHTML = teacherOptions;
+        if (currentVal) elTeacher.value = currentVal;
+    }
+
+    // ดึงค่าจาก AppState.allClasses โดยใช้ className (ค่าจริงจากฐานข้อมูล) และจำค่าเดิมไว้
+    const classOptions = '<option value="">-- เลือกชั้นเรียน --</option>' + [...new Set(AppState.allClasses.map(c => c.className))].sort((a,b)=>a.localeCompare(b, undefined, {numeric: true})).map(c => `<option value="${c}">${c}</option>`).join('');
+    ['checkin-class', 'history-class', 'stats-class'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) {
+            const currentVal = el.value;
+            el.innerHTML = classOptions;
+            if (currentVal) el.value = currentVal;
+        }
+    });
+}
+window.updateAllDropdowns = updateAllDropdowns;
+
+// 🌟 3. ฟังก์ชันควบคุมเมนูหลัก (แก้ไขให้เรียก Render ข้อมูลของแต่ละหน้าตาราง)
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(el => {
+        el.classList.remove('active', 'border-white', 'text-white');
+        el.classList.add('border-transparent', 'text-green-200');
+    });
+    
+    const targetContent = document.getElementById(`tab-${tabId}`);
+    if(targetContent) targetContent.classList.add('active');
+    
+    const nav = document.getElementById(`nav-${tabId}`);
+    if(nav) {
+        nav.classList.remove('border-transparent', 'text-green-200');
+        nav.classList.add('active', 'border-white', 'text-white');
+    }
+    AppState.currentTab = tabId;
+
+    // 🔥 บังคับล้างค่าที่กรอกไว้และสั่งวาดตารางใหม่ทันทีเมื่อกดเปลี่ยนสลับแท็บ
+    const today = getBangkokDate(new Date());
+
+    if (tabId === 'checkin') {
+        ['checkin-search', 'checkin-class', 'checkin-subject', 'checkin-teacher'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.value = '';
+        });
+        const dateEl = document.getElementById('checkin-date'); if (dateEl) dateEl.value = today;
+        const cb = document.getElementById('checkin-hide-checked'); if (cb) cb.checked = false;
+        if (window.autoSelectPeriod) window.autoSelectPeriod();
+        if (window.resetCheckinTable) window.resetCheckinTable();
+    } else if (tabId === 'club-checkin') {
+        ['club-checkin-search', 'club-checkin-id'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.value = '';
+        });
+        const dateEl = document.getElementById('club-checkin-date'); if (dateEl) dateEl.value = today;
+        const cb = document.getElementById('club-checkin-hide-checked'); if (cb) cb.checked = false;
+        if (window.onClubCheckinYearSemesterChange) window.onClubCheckinYearSemesterChange();
+        if (window.resetClubCheckinTable) window.resetClubCheckinTable();
+    } else if (tabId === 'history') {
+        ['history-date', 'history-class', 'history-subject'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.value = '';
+        });
+        const cont = document.getElementById('history-records-container'); if (cont) cont.innerHTML = '';
+        if (window.onHistoryTypeChange) window.onHistoryTypeChange(); 
+    } else if (tabId === 'stats') {
+        ['stats-class', 'stats-subject'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.value = '';
+        });
+        const msg = document.getElementById('stats-empty-msg'); if (msg) msg.classList.remove('hidden');
+        const cont = document.getElementById('stats-content'); if (cont) cont.classList.add('hidden');
+        const btn = document.getElementById('btn-export-stats'); if (btn) btn.classList.add('hidden');
+        if (window.onStatsTypeChange) window.onStatsTypeChange(true); 
+    } else if (tabId === 'students') {
+        ['manage-search', 'manage-filter-class'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.value = '';
+        });
+        if (window.renderManageStudents) window.renderManageStudents(); 
+    } else if (tabId === 'club-manage') {
+        ['enroll-search', 'enroll-filter-class'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.value = '';
+        });
+        const st = document.getElementById('enroll-filter-status'); if (st) st.value = 'all';
+        if (window.switchClubSubTab) window.switchClubSubTab('list'); 
+    } else if (tabId === 'master') {
+        ['search-subject', 'search-teacher', 'search-class'].forEach(id => {
+            const el = document.getElementById(id); if (el) el.value = '';
+        });
+        if (window.switchMasterSubTab) window.switchMasterSubTab('subjects'); 
+    } else if (tabId === 'my-profile' && window.renderStudentProfile) {
+        window.renderStudentProfile();
+    } else if (tabId === 'my-club' && window.renderStudentClubDashboard) {
+        window.renderStudentClubDashboard();
+    } else if (tabId === 'academic' && window.renderStudentAcademicPortal) {
+        window.renderStudentAcademicPortal();
+    }
+}
+window.switchTab = switchTab;
+
+// 1. เพิ่มฟังก์ชันหาคาบเรียนอัตโนมัติ
+export function autoSelectPeriod() {
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Bangkok', hour12: false, hour: 'numeric', minute: 'numeric' });
+    const timeParts = formatter.formatToParts(now);
+    let hour = parseInt(timeParts.find(p => p.type === 'hour').value);
+    let minute = parseInt(timeParts.find(p => p.type === 'minute').value);
+    if (hour === 24) hour = 0;
+    
+    const timeNum = hour * 100 + minute;
+    let period = '1';
+    if (timeNum < 830) period = 'โฮมรูม';
+    else if (timeNum >= 830 && timeNum < 920) period = '1';
+    else if (timeNum >= 920 && timeNum < 1010) period = '2';
+    else if (timeNum >= 1010 && timeNum < 1100) period = '3';
+    else if (timeNum >= 1100 && timeNum < 1150) period = '4';
+    else if (timeNum >= 1150 && timeNum < 1240) period = 'พักเที่ยง';
+    else if (timeNum >= 1240 && timeNum < 1330) period = '5';
+    else if (timeNum >= 1330 && timeNum < 1420) period = '6';
+    else if (timeNum >= 1420 && timeNum < 1510) period = '7';
+    else if (timeNum >= 1510 && timeNum < 1600) period = '8';
+    else period = 'กิจกรรม';
+    
+    const periodSelect = document.getElementById('checkin-period');
+    if (periodSelect) periodSelect.value = period;
+}
+
+// 🌟 4. เริ่มการทำงานของแอป
+async function initApp() {
+    AppState.googleSheetUrl = localStorage.getItem(DB_KEYS.SETTINGS) || DEFAULT_GOOGLE_SCRIPT_URL;
+    
+    // ตั้งค่าเวลาปกติ แต่หน้าประวัติให้ปล่อยว่างไว้
+    const today = getBangkokDate(new Date());
+    document.getElementById('checkin-date').value = today;
+    document.getElementById('club-checkin-date').value = today;
+    document.getElementById('history-date').value = ''; 
+    autoSelectPeriod();
+
+    try {
+        await syncDataFromServer(true);
+        updateAllDropdowns();
+
+        // 🌟 1. ตั้งค่าเริ่มต้นให้ปี/ภาคเรียน เป็นเทอมปัจจุบัน
+        const schoolDefaults = getDefaultAcademicYearAndSemester();
+        ['checkin-year', 'club-checkin-year', 'enroll-year', 'history-year', 'stats-year', 'aca-year'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.value = schoolDefaults.year;
+        });
+        ['checkin-semester', 'club-checkin-semester', 'enroll-semester', 'history-semester', 'stats-semester', 'aca-semester'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.value = schoolDefaults.semester;
+        });
+
+        // 🌟 2. กระตุ้นฟังก์ชันเปลี่ยนปี/เทอม เพื่อให้ Dropdown ย่อยๆ (เช่น วิชา, ชุมนุม) โหลดข้อมูลเข้าตัวมันเอง
+        if (window.onCheckinYearSemesterChange) window.onCheckinYearSemesterChange();
+        if (window.onClubCheckinYearSemesterChange) window.onClubCheckinYearSemesterChange();
+        if (window.onHistoryYearSemesterChange) window.onHistoryYearSemesterChange();
+        if (window.onStatsYearSemesterChange) window.onStatsYearSemesterChange();
+        if (window.onEnrollFilterChange) window.onEnrollFilterChange();
+
+    } catch (e) {
+        console.error(e); 
+    }
+
+    // ตรวจสอบ Session แบบเข้มงวด
+    const savedSession = localStorage.getItem(DB_KEYS.SESSION);
+    if (savedSession) {
+        try {
+            const parsedUser = JSON.parse(savedSession);
+            let isValidSession = false;
+            if (parsedUser.role === 'admin') isValidSession = true;
+            else if (parsedUser.role === 'teacher') isValidSession = AppState.allTeachers.some(t => t.id === parsedUser.data.id);
+            else if (parsedUser.role === 'student') isValidSession = AppState.allStudents.some(s => s.id === parsedUser.data.id && s.status !== 'ลาออก'); // เช็คพ้นสภาพ
+            
+            if (isValidSession) {
+                auth.loginSuccess(parsedUser);
+                if (parsedUser.role === 'admin' || parsedUser.role === 'teacher') {
+                     if(window.loadCheckinList) window.loadCheckinList();
+                }
+            } else {
+                localStorage.removeItem(DB_KEYS.SESSION);
+            }
+        } catch(e) { localStorage.removeItem(DB_KEYS.SESSION); }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', initApp);
+
+// ==========================================
+// ฟังก์ชันควบคุมการทำงานของ Dropdown ความสัมพันธ์
+// ==========================================
+export function updateClassDropdown(yearVal, semVal, targetId, defaultText) {
+    const el = document.getElementById(targetId);
+    if (!el) return;
+    const filtered = AppState.allClasses.filter(c => c.year == yearVal && c.semester == semVal);
+    filtered.sort((a,b) => a.className.localeCompare(b.className, undefined, {numeric:true}));
+    el.innerHTML = `<option value="">${defaultText}</option>` + 
+        filtered.map(c => `<option value="${c.className}">${c.className}</option>`).join('');
+}
+
+export function onCheckinYearSemesterChange() {
+    const yr = document.getElementById('checkin-year').value;
+    const sem = document.getElementById('checkin-semester').value;
+    updateClassDropdown(yr, sem, 'checkin-class', '-- เลือกชั้นเรียน --');
+    if (window.resetCheckinTable) window.resetCheckinTable();
+}
+
+// 3. ฟังก์ชันกรองวิชาตามครู (สมบูรณ์)
+export function populateCheckinSubjectDropdown(teacherId) {
+    const subjectSelect = document.getElementById('checkin-subject');
+    if (!subjectSelect) return;
+    subjectSelect.innerHTML = '<option value="">-- เลือกวิชา --</option>';
+    if (!teacherId) return;
+    
+    const teacher = AppState.allTeachers.find(t => t.id === teacherId);
+    if (!teacher || !teacher.subjects) return;
+    
+    const teacherSubjects = AppState.allSubjects.filter(s => teacher.subjects.includes(s.id));
+    teacherSubjects.sort((a, b) => (a.code || a.name).localeCompare(b.code || b.name));
+    subjectSelect.innerHTML += teacherSubjects.map(s => `<option value="${s.name}">${s.code} - ${s.name}</option>`).join('');
+}
+export function onTeacherChange() {
+    const teacherId = document.getElementById('checkin-teacher').value;
+    populateCheckinSubjectDropdown(teacherId);
+    if (window.resetCheckinTable) window.resetCheckinTable();
+}
+
+export function onHistoryYearSemesterChange() {
+    if (window.onHistoryTypeChange) window.onHistoryTypeChange();
+}
+
+export function onStatsYearSemesterChange() {
+    if (window.onStatsTypeChange) window.onStatsTypeChange();
+}
+
+window.autoSelectPeriod = autoSelectPeriod;
+window.updateClassDropdown = updateClassDropdown;
+window.populateCheckinSubjectDropdown = populateCheckinSubjectDropdown;
+window.onCheckinYearSemesterChange = onCheckinYearSemesterChange;
+window.onTeacherChange = onTeacherChange;
+window.onHistoryYearSemesterChange = onHistoryYearSemesterChange;
+window.onStatsYearSemesterChange = onStatsYearSemesterChange;
