@@ -12,6 +12,35 @@ import './features/club.js';
 import './features/stats.js';
 import './features/history.js';
 
+// New function to populate the stats subject dropdown based on selected class and user role
+export function populateStatsSubjectDropdown(selectedClass, currentSubjectValue = '') {
+    const subjectSelect = document.getElementById('stats-subject');
+    if (!subjectSelect) return;
+
+    let filteredSubjects = AppState.allSubjects;
+
+    // Filter by subjects associated with the selected class
+    if (selectedClass) {
+        const targetClass = AppState.allClasses.find(c => c.className === selectedClass);
+        if (targetClass && targetClass.subjects) {
+            filteredSubjects = filteredSubjects.filter(s => targetClass.subjects.includes(s.id));
+        } else {
+            filteredSubjects = []; // No subjects if class not found or has no subjects
+        }
+    }
+
+    // Further filter by teacher's assigned subjects if current user is a teacher
+    if (AppState.currentUser && AppState.currentUser.role === 'teacher') {
+        const teacherSubjects = AppState.currentUser.data.subjects || [];
+        filteredSubjects = filteredSubjects.filter(s => teacherSubjects.includes(s.id));
+    }
+
+    filteredSubjects.sort((a, b) => (a.code || a.name).localeCompare(b.code || b.name));
+
+    subjectSelect.innerHTML = '<option value="">-- เลือกวิชา --</option>' + 
+                              filteredSubjects.map(s => `<option value="${s.name}">${s.code} - ${s.name}</option>`).join('');
+    subjectSelect.value = currentSubjectValue; // Attempt to retain previous selection
+}
 // 🌟 2. ฟังก์ชันช่วยป้อนข้อมูลใส่ Dropdown ทั่วทั้งระบบ
 export function updateAllDropdowns() {
     let latestYear = new Date().getFullYear() + 543;
@@ -31,7 +60,7 @@ export function updateAllDropdowns() {
     };
 
     ['checkin-year', 'club-checkin-year', 'enroll-year', 'history-year', 'stats-year', 'aca-year'].forEach(populateYear);
-
+    
     const subjectOptions = '<option value="">-- เลือกวิชา --</option>' + AppState.allSubjects.map(s => `<option value="${s.name}">${s.code} - ${s.name}</option>`).join('');
     ['checkin-subject', 'history-subject', 'stats-subject'].forEach(id => {
         const el = document.getElementById(id);
@@ -60,6 +89,9 @@ export function updateAllDropdowns() {
             if (currentVal) el.value = currentVal;
         }
     });
+
+    // Initial call for stats-subject after all other dropdowns are populated
+    populateStatsSubjectDropdown(document.getElementById('stats-class')?.value, document.getElementById('stats-subject')?.value);
 }
 window.updateAllDropdowns = updateAllDropdowns;
 
@@ -322,6 +354,7 @@ window.populateCheckinSubjectDropdown = populateCheckinSubjectDropdown;
 window.onCheckinYearSemesterChange = onCheckinYearSemesterChange;
 window.onTeacherChange = onTeacherChange;
 window.onHistoryYearSemesterChange = onHistoryYearSemesterChange;
+window.populateStatsSubjectDropdown = populateStatsSubjectDropdown; // Make new function globally accessible
 window.onStatsYearSemesterChange = onStatsYearSemesterChange;
 window.saveSettings = saveSettings;
 window.syncDataToGoogleSheet = syncDataToGoogleSheet;

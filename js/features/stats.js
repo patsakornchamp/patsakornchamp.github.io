@@ -7,6 +7,8 @@ export function onStatsTypeChange(skipSync = false) {
     const yr = document.getElementById('stats-year').value;
     const sem = document.getElementById('stats-semester').value;
 
+    const currentSubjectValue = document.getElementById('stats-subject')?.value; // Get current subject value to try and retain it
+
     if (type === 'regular') {
         document.getElementById('lbl-stats-class-or-club').innerText = 'ชั้นเรียน';
         document.getElementById('lbl-stats-sub').style.display = 'block';

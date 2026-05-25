@@ -303,11 +303,43 @@ export async function saveStudent() {
     const homeVisit = document.getElementById('stu-homevisit').value;
 
     if(!studentId || !fname || !lname) return customAlert('กรุณากรอกรหัสประจำตัว ชื่อ และนามสกุลให้ครบถ้วน');
-    if(!validateThaiCitizenId(citizenId)) return customAlert('เลขประจำตัวประชาชน 13 หลัก ไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');
-    if(!validatePhoneNumber(phone)) return customAlert('เบอร์โทรศัพท์นักเรียนไม่ถูกต้อง (ต้องเป็นตัวเลข 9-10 หลักเท่านั้น)');
-    if(!validatePhoneNumber(fPhone)) return customAlert('เบอร์โทรศัพท์บิดาไม่ถูกต้อง');
-    if(!validatePhoneNumber(mPhone)) return customAlert('เบอร์โทรศัพท์มารดาไม่ถูกต้อง');
-    if(!validatePhoneNumber(pPhone)) return customAlert('เบอร์โทรศัพท์ผู้ปกครองไม่ถูกต้อง');
+
+    const isAdmin = AppState.currentUser && AppState.currentUser.role === 'admin';
+
+    // Citizen ID validation
+    if (citizenId && !validateThaiCitizenId(citizenId)) {
+        return customAlert('เลขประจำตัวประชาชน 13 หลัก ไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');
+    } else if (!isAdmin && !citizenId) {
+        return customAlert('กรุณากรอกเลขประจำตัวประชาชน 13 หลัก');
+    }
+
+    // Student Phone validation
+    if (phone && !validatePhoneNumber(phone)) {
+        return customAlert('เบอร์โทรศัพท์นักเรียนไม่ถูกต้อง (ต้องเป็นตัวเลข 9-10 หลักเท่านั้น)');
+    } else if (!isAdmin && !phone) {
+        return customAlert('กรุณากรอกเบอร์โทรศัพท์นักเรียน');
+    }
+
+    // Father Phone validation
+    if (fPhone && !validatePhoneNumber(fPhone)) {
+        return customAlert('เบอร์โทรศัพท์บิดาไม่ถูกต้อง');
+    } else if (!isAdmin && !fPhone) {
+        return customAlert('กรุณากรอกเบอร์โทรศัพท์บิดา');
+    }
+
+    // Mother Phone validation
+    if (mPhone && !validatePhoneNumber(mPhone)) {
+        return customAlert('เบอร์โทรศัพท์มารดาไม่ถูกต้อง');
+    } else if (!isAdmin && !mPhone) {
+        return customAlert('กรุณากรอกเบอร์โทรศัพท์มารดา');
+    }
+
+    // Parent Phone validation
+    if (pPhone && !validatePhoneNumber(pPhone)) {
+        return customAlert('เบอร์โทรศัพท์ผู้ปกครองไม่ถูกต้อง');
+    } else if (!isAdmin && !pPhone) {
+        return customAlert('กรุณากรอกเบอร์โทรศัพท์ผู้ปกครอง');
+    }
 
     const objId = document.getElementById('stu-id').value || generateId();
     const existStu = AppState.allStudents.find(x => x.id === objId);
