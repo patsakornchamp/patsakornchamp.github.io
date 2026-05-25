@@ -305,39 +305,41 @@ export async function saveStudent() {
     if(!studentId || !fname || !lname) return customAlert('กรุณากรอกรหัสประจำตัว ชื่อ และนามสกุลให้ครบถ้วน');
 
     const isAdmin = AppState.currentUser && AppState.currentUser.role === 'admin';
+    const isTeacher = AppState.currentUser && AppState.currentUser.role === 'teacher';
+    const isAdminOrTeacher = isAdmin || isTeacher;
 
     // Citizen ID validation
     if (citizenId && !validateThaiCitizenId(citizenId)) {
         return customAlert('เลขประจำตัวประชาชน 13 หลัก ไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');
-    } else if (!isAdmin && !citizenId) {
+    } else if (!isAdminOrTeacher && !citizenId) {
         return customAlert('กรุณากรอกเลขประจำตัวประชาชน 13 หลัก');
     }
 
     // Student Phone validation
     if (phone && !validatePhoneNumber(phone)) {
         return customAlert('เบอร์โทรศัพท์นักเรียนไม่ถูกต้อง (ต้องเป็นตัวเลข 9-10 หลักเท่านั้น)');
-    } else if (!isAdmin && !phone) {
+    } else if (!isAdminOrTeacher && !phone) {
         return customAlert('กรุณากรอกเบอร์โทรศัพท์นักเรียน');
     }
 
     // Father Phone validation
     if (fPhone && !validatePhoneNumber(fPhone)) {
         return customAlert('เบอร์โทรศัพท์บิดาไม่ถูกต้อง');
-    } else if (!isAdmin && !fPhone) {
+    } else if (!isAdminOrTeacher && !fPhone) {
         return customAlert('กรุณากรอกเบอร์โทรศัพท์บิดา');
     }
 
     // Mother Phone validation
     if (mPhone && !validatePhoneNumber(mPhone)) {
         return customAlert('เบอร์โทรศัพท์มารดาไม่ถูกต้อง');
-    } else if (!isAdmin && !mPhone) {
+    } else if (!isAdminOrTeacher && !mPhone) {
         return customAlert('กรุณากรอกเบอร์โทรศัพท์มารดา');
     }
 
     // Parent Phone validation
     if (pPhone && !validatePhoneNumber(pPhone)) {
         return customAlert('เบอร์โทรศัพท์ผู้ปกครองไม่ถูกต้อง');
-    } else if (!isAdmin && !pPhone) {
+    } else if (!isAdminOrTeacher && !pPhone) {
         return customAlert('กรุณากรอกเบอร์โทรศัพท์ผู้ปกครอง');
     }
 
