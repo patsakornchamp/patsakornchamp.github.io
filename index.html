@@ -146,7 +146,7 @@
 <body class="min-h-screen flex flex-col w-full">
 
     <!-- Login Screen -->
-    <div id="login-screen">
+    <div id="login-screen" class="hidden">
         <div class="text-center mb-8 text-white w-full px-4">
             <img src="logopng.png" alt="School Logo" class="w-48 h-48 mb-4 mx-auto">
             <h1 class="text-3xl md:text-4xl font-bold tracking-tight">MAKHRAB</h1>
@@ -775,10 +775,10 @@
                     <div class="mb-2 text-xs text-blue-800 bg-blue-50 p-2 rounded"><i class="fas fa-info-circle"></i> เคล็ดลับ: คุณสามารถคลิกที่ชื่อของนักเรียนเพื่อดูประวัติเวลาเข้าเรียนแบบเจาะลึกเฉพาะรายบุคคล (Drill-Down Detail)</div>
                     
                     <div class="overflow-x-auto bg-white rounded-lg border border-gray-200 shadow-sm w-full">
-                        <table class="min-w-full divide-y divide-gray-200">
+                        <table class="min-w-full divide-y divide-gray-200 mobile-card-table">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase" id="lbl-th-class">ชั้น/เลขที่</th>
+                                    <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase" id="lbl-th-class">ชั้น/เลขที่</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ชื่อ - นามสกุล</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-green-600 uppercase">มา</th>
                                     <th class="px-6 py-3 text-center text-xs font-medium text-yellow-600 uppercase">สาย</th>
@@ -1056,10 +1056,17 @@
     </div>
 
     <!-- UI TOAST, SPINNERS, ALERTS, CONFIRMS -->
-    <div id="loading-overlay" class="loading-overlay"><div class="spinner mb-4"></div><div class="bg-white px-6 py-2 rounded-full shadow-md font-bold text-green-800" id="loading-text">กำลังโหลด...</div></div>
+    <div id="loading-overlay" class="loading-overlay show">
+        <div class="spinner mb-4"></div>
+        <div class="bg-white px-6 py-2 rounded-full shadow-md font-bold text-green-800" id="loading-text">กำลังเตรียมข้อมูลระบบ...</div>
+    </div>
     <div id="toast" class="toast"><i class="fas fa-check-circle"></i><span id="toast-msg"></span></div>
-    <div id="custom-alert-modal" class="modal"><div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 text-center p-6"><div class="text-blue-500 mb-4"><i class="fas fa-info-circle text-5xl"></i></div><h3 class="text-lg font-bold text-gray-800 mb-2">แจ้งเตือน</h3><p class="text-sm text-gray-600 mb-6" id="alert-message">ข้อความ</p><button onclick="closeModal('custom-alert-modal')" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium w-full">ตกลง</button></div></div>
-    <div id="custom-confirm-modal" class="modal"><div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 text-center p-6"><div class="text-yellow-500 mb-4"><i class="fas fa-exclamation-circle text-5xl"></i></div><h3 class="text-lg font-bold text-gray-800 mb-2" id="confirm-title">ยืนยันการดำเนินการ</h3><p class="text-sm text-gray-600 mb-6" id="confirm-message">คุณแน่ใจหรือไม่?</p><div class="flex justify-center gap-3"><button onclick="closeModal('custom-confirm-modal')" class="flex-1 px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 font-medium">ยกเลิก</button><button id="confirm-ok-btn" class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium">ยืนยัน</button></div></div></div>
+    <div id="custom-alert-modal" class="modal">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 text-center p-6"><div class="text-blue-500 mb-4"><i class="fas fa-info-circle text-5xl"></i></div><h3 class="text-lg font-bold text-gray-800 mb-2">แจ้งเตือน</h3><p class="text-sm text-gray-600 mb-6" id="alert-message">ข้อความ</p><button onclick="closeModal('custom-alert-modal')" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium w-full">ตกลง</button></div>
+    </div>
+    <div id="custom-confirm-modal" class="modal">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 text-center p-6"><div class="text-yellow-500 mb-4"><i class="fas fa-exclamation-circle text-5xl"></i></div><h3 class="text-lg font-bold text-gray-800 mb-2" id="confirm-title">ยืนยันการดำเนินการ</h3><p class="text-sm text-gray-600 mb-6" id="confirm-message">คุณแน่ใจหรือไม่?</p><div class="flex justify-center gap-3"><button onclick="closeModal('custom-confirm-modal')" class="flex-1 px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 font-medium">ยกเลิก</button><button id="confirm-ok-btn" class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium">ยืนยัน</button></div></div>
+    </div>
 
     <!-- CLASS MODAL & EXTRAS -->
     <div id="csv-upload-modal" class="modal"><div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl mx-4 flex flex-col max-h-[90vh]"><div class="px-6 py-4 border-b flex justify-between bg-blue-50 rounded-t-xl"><h3 class="text-xl font-bold text-blue-800"><i class="fas fa-upload mr-2"></i>อัปโหลดรายชื่อนักเรียน (CSV)</h3><button onclick="closeModal('csv-upload-modal')"><i class="fas fa-times"></i></button></div><div class="p-6 overflow-y-auto flex-grow"><div class="mb-4 bg-yellow-50 border border-yellow-200 p-4 rounded text-sm text-yellow-800"><p class="font-bold mb-1"><i class="fas fa-info-circle mr-1"></i> รูปแบบไฟล์ที่รองรับ (CSV)</p><p>หัวคอลัมน์ต้องเป็น: <span class="font-mono bg-white px-1">เลขที่, รหัสประจำตัว, คำนำหน้า, ชื่อ, นามสกุล, ชื่อเล่น(ไม่จำเป็น)</span> (ห้ามสลับลำดับ)</p></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div><label class="block text-sm font-medium text-gray-700 mb-1">เลือกชั้นเรียนที่ต้องการเพิ่ม *</label><select id="upload-class" class="w-full px-3 py-2 border rounded-md focus:ring-blue-500"><option value="">-- เลือกชั้นเรียน --</option></select></div><div><label class="block text-sm font-medium text-gray-700 mb-1">การอ่านภาษาไทย *</label><select id="upload-encoding" class="w-full px-3 py-2 border rounded-md focus:ring-blue-500" onchange="if(document.getElementById('upload-file').files[0]) previewCSV({target: document.getElementById('upload-file')})"><option value="windows-874">Excel ทั่วไป (Windows-874)</option><option value="UTF-8">Google Sheets (UTF-8)</option></select></div><div><label class="block text-sm font-medium text-gray-700 mb-1">เลือกไฟล์ CSV *</label><input type="file" id="upload-file" accept=".csv" class="w-full px-3 py-1.5 border rounded-md focus:ring-blue-500" onchange="previewCSV(event)"></div></div><div id="upload-preview-container" class="hidden w-full"><h4 class="font-bold text-gray-700 mb-2">พรีวิวข้อมูล (<span id="upload-count">0</span> รายการ)</h4><div class="overflow-x-auto border rounded-lg max-h-64 w-full"><table class="min-w-full divide-y divide-gray-200 text-sm"><thead class="bg-gray-50 sticky top-0"><tr><th class="px-4 py-2 text-left font-medium text-gray-500">เลขที่</th><th class="px-4 py-2 text-left font-medium text-gray-500">รหัสประจำตัว</th><th class="px-4 py-2 text-left font-medium text-gray-500">ชื่อ - สกุล (ชื่อเล่น)</th><th class="px-4 py-2 text-center font-medium text-gray-500">สถานะ</th></tr></thead><tbody id="upload-preview-body" class="bg-white divide-y divide-gray-200"></tbody></table></div></div></div><div class="px-6 py-4 bg-gray-50 flex justify-end gap-2 rounded-b-xl border-t"><button onclick="closeModal('csv-upload-modal')" class="px-4 py-2 border rounded hover:bg-gray-100 font-medium">ยกเลิก</button><button onclick="saveCsvUpload()" id="btn-save-upload" disabled class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded font-medium transition">บันทึกข้อมูล</button></div></div></div>

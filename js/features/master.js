@@ -13,17 +13,26 @@ export function renderMasterData() {
         filteredSubjects = filteredSubjects.filter(s => (s.code || '').toLowerCase().includes(searchSub) || (s.name || '').toLowerCase().includes(searchSub));
     }
 
-    document.getElementById('tbody-subjects').innerHTML = filteredSubjects.map(s => `<tr>
+    document.getElementById('tbody-subjects').innerHTML = filteredSubjects.map(s => {
+        let subjectButtonsHtml = '';
+        if (AppState.currentUser && AppState.currentUser.role === 'admin') {
+            subjectButtonsHtml = `<button onclick="editSubject('${s.id}')" class="text-blue-500 hover:text-blue-700 mr-3"><i class="fas fa-edit"></i></button>
+                                  <button onclick="deleteMaster('subject', '${s.id}')" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>`;
+        } else if (AppState.currentUser && AppState.currentUser.role === 'teacher') {
+            if (AppState.currentUser.data.subjects && AppState.currentUser.data.subjects.includes(s.id)) {
+                subjectButtonsHtml = `<button onclick="editSubject('${s.id}')" class="text-blue-500 hover:text-blue-700 mr-3"><i class="fas fa-edit"></i></button>
+                                      <button onclick="deleteMaster('subject', '${s.id}')" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>`;
+            }
+        }
+        return `<tr>
         <td class="hidden md:table-cell px-4 py-2 text-sm whitespace-nowrap">${s.code}</td>
         <td class="px-4 py-2">
             <div class="text-sm font-bold text-gray-800 whitespace-nowrap">${s.name}</div>
             <div class="md:hidden mt-1 text-xs text-gray-500">รหัส: ${s.code} | ${s.credit} หน่วยกิต</div>
         </td>
-        <td class="hidden md:table-cell px-4 py-2 text-sm whitespace-nowrap">${s.credit}</td>
-        <td class="px-4 py-2 text-center text-sm whitespace-nowrap">
-            <button onclick="editSubject('${s.id}')" class="text-blue-500 hover:text-blue-700 mr-3"><i class="fas fa-edit"></i></button>
-            <button onclick="deleteMaster('subject', '${s.id}')" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
-        </td></tr>`).join('');
+        <td class="hidden md:table-cell px-4 py-2 text-sm whitespace-nowrap" data-label="หน่วยกิต">${s.credit}</td>
+        <td class="px-4 py-2 text-center text-sm whitespace-nowrap">${subjectButtonsHtml}</td></tr>`;
+    }).join('');
     
     let filteredTeachers = AppState.allTeachers;
     if (searchTeacher) {

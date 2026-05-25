@@ -223,8 +223,14 @@ async function initApp() {
                 }
             } else {
                 localStorage.removeItem(DB_KEYS.SESSION);
+                    document.getElementById('login-screen').classList.remove('hidden');
             }
-        } catch(e) { localStorage.removeItem(DB_KEYS.SESSION); }
+            } catch(e) { 
+                localStorage.removeItem(DB_KEYS.SESSION); 
+                document.getElementById('login-screen').classList.remove('hidden');
+            }
+        } else {
+            document.getElementById('login-screen').classList.remove('hidden');
     }
 }
 

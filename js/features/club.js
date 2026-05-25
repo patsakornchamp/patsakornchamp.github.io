@@ -379,7 +379,7 @@ export function renderClubCheckinTable() {
         tbody.innerHTML += `<tr class="hover:bg-gray-50 transition-colors">
             <td class="px-6 py-4 text-sm font-semibold text-gray-500 hidden md:table-cell" data-label="ชั้น/เลขที่">${stu.class} เลขที่ ${stu.number}</td>
             <td class="px-6 py-4 text-sm font-mono text-gray-600 hidden md:table-cell" data-label="รหัสประจำตัว">${stu.studentId}</td>
-            <td class="px-6 py-4 td-name">
+            <td class="px-6 py-4 td-name" data-label="ชื่อ - นามสกุล">
                 <div class="td-name-content">${fullName}</div>
                 <div class="td-meta-content md:hidden">${stu.class} เลขที่ ${stu.number} | รหัส: ${stu.studentId}</div>
             </td>

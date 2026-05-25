@@ -57,6 +57,7 @@ export async function renderStats(skipSync = false) {
         let summary = {มา:0,สาย:0,ลา:0,ขาด:0}; 
         const tbody = document.getElementById('stats-table-body'); 
         tbody.innerHTML='';
+        const lblThClass = document.getElementById('lbl-th-class').innerText;
         
         stus.forEach(stu => {
             let mstat = {มา:0,สาย:0,ลา:0,ขาด:0};
@@ -64,15 +65,18 @@ export async function renderStats(skipSync = false) {
             ['มา','สาย','ลา','ขาด'].forEach(k=>summary[k]+=mstat[k]);
             const pct = recs.length===0 ? 0 : Math.round(((mstat['มา']+mstat['สาย'])/recs.length)*100);
             tbody.innerHTML += `<tr>
-                <td class="px-6 py-4 text-sm">${stu.class} เลขที่ ${stu.number}</td>
-                <td class="px-6 py-4 text-sm font-semibold text-blue-700 cursor-pointer hover:underline" onclick="openDrilldownModal('${stu.id}', 'regular', '${statsSub}', '${yr}', '${sem}')">
-                    <i class="fas fa-search-plus mr-1"></i> ${getStudentFullName(stu)}
+                <td class="hidden md:table-cell px-6 py-4 text-sm" data-label="${lblThClass}">${stu.class} เลขที่ ${stu.number}</td>
+                <td class="px-6 py-4 td-name" data-label="ชื่อ - นามสกุล">
+                    <div class="td-name-content font-semibold text-blue-700 cursor-pointer hover:underline" onclick="openDrilldownModal('${stu.id}', 'regular', '${statsSub}', '${yr}', '${sem}')">
+                        <i class="fas fa-search-plus mr-1"></i> ${getStudentFullName(stu)}
+                    </div>
+                    <div class="td-meta-content hidden md:block">รหัส: ${stu.studentId}</div>
                 </td>
-                <td class="text-center">${mstat['มา']}</td>
-                <td class="text-center">${mstat['สาย']}</td>
-                <td class="text-center">${mstat['ลา']}</td>
-                <td class="text-center">${mstat['ขาด']}</td>
-                <td class="text-center font-bold text-green-700">${pct}%</td>
+                <td class="text-center" data-label="มา">${mstat['มา']}</td>
+                <td class="text-center" data-label="สาย">${mstat['สาย']}</td>
+                <td class="text-center" data-label="ลา">${mstat['ลา']}</td>
+                <td class="text-center" data-label="ขาด">${mstat['ขาด']}</td>
+                <td class="text-center font-bold text-green-700" data-label="% เข้าเรียน">${pct}%</td>
             </tr>`;
         });
         
@@ -104,6 +108,7 @@ export async function renderStats(skipSync = false) {
         let summary = {มา:0,สาย:0,ลา:0,ขาด:0}; 
         const tbody = document.getElementById('stats-table-body'); 
         tbody.innerHTML='';
+        const lblThClass = document.getElementById('lbl-th-class').innerText;
 
         stus.forEach(stu => {
             let mstat = {มา:0,สาย:0,ลา:0,ขาด:0};
@@ -112,15 +117,18 @@ export async function renderStats(skipSync = false) {
             const pct = recs.length===0 ? 0 : Math.round(((mstat['มา']+mstat['สาย'])/recs.length)*100);
             
             tbody.innerHTML += `<tr>
-                <td class="px-6 py-4 text-sm">${stu.class} เลขที่ ${stu.number}</td>
-                <td class="px-6 py-4 text-sm font-semibold text-green-700 cursor-pointer hover:underline" onclick="openDrilldownModal('${stu.id}', 'club', '${statsClassOrClub}', '${yr}', '${sem}')">
-                    <i class="fas fa-search-plus mr-1"></i> ${getStudentFullName(stu)}
+                <td class="hidden md:table-cell px-6 py-4 text-sm" data-label="${lblThClass}">${stu.class} เลขที่ ${stu.number}</td>
+                <td class="px-6 py-4 td-name" data-label="ชื่อ - นามสกุล">
+                    <div class="td-name-content font-semibold text-green-700 cursor-pointer hover:underline" onclick="openDrilldownModal('${stu.id}', 'club', '${statsClassOrClub}', '${yr}', '${sem}')">
+                        <i class="fas fa-search-plus mr-1"></i> ${getStudentFullName(stu)}
+                    </div>
+                    <div class="td-meta-content hidden md:block">รหัส: ${stu.studentId}</div>
                 </td>
-                <td class="text-center">${mstat['มา']}</td>
-                <td class="text-center">${mstat['สาย']}</td>
-                <td class="text-center">${mstat['ลา']}</td>
-                <td class="text-center">${mstat['ขาด']}</td>
-                <td class="text-center font-bold text-green-700">${pct}%</td>
+                <td class="text-center" data-label="มา">${mstat['มา']}</td>
+                <td class="text-center" data-label="สาย">${mstat['สาย']}</td>
+                <td class="text-center" data-label="ลา">${mstat['ลา']}</td>
+                <td class="text-center" data-label="ขาด">${mstat['ขาด']}</td>
+                <td class="text-center font-bold text-green-700" data-label="% เข้าร่วม">${pct}%</td>
             </tr>`;
         });
 

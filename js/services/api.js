@@ -1,5 +1,6 @@
 import { DB_KEYS } from '../core/config.js';
 import { AppState } from '../core/state.js';
+import { loginSuccess } from '../features/auth.js';
 import { showLoading, hideLoading, showToast } from '../utils/helpers.js';
 
 export function loadFromLocalStorage() {
@@ -17,9 +18,13 @@ export function loadFromLocalStorage() {
 export async function syncDataFromServer(silent = false) {
     if (!AppState.googleSheetUrl) {
         loadFromLocalStorage();
+        if (!silent) hideLoading(); // Ensure loading is hidden even if no URL
         return false;
     }
-    if (!silent) showLoading('กำลังอัปเดตข้อมูลล่าสุด...');
+    if (!silent) showLoading('กำลังซิงค์ข้อมูลล่าสุด...');
+
+    // อ่านข้อมูล session ที่มีอยู่จาก localStorage ก่อน
+    AppState.currentUser = JSON.parse(localStorage.getItem(DB_KEYS.SESSION));
     try {
         const res = await fetch(`${AppState.googleSheetUrl}?action=getData&t=${new Date().getTime()}`, { cache: 'no-store' });
         const data = await res.json();
@@ -46,7 +51,7 @@ export async function syncDataFromServer(silent = false) {
             localStorage.setItem(DB_KEYS.CLUB_RECORDS, JSON.stringify(AppState.allClubRecords));
             
             // อัปเดตข้อมูลผู้ใช้ปัจจุบัน (currentUser)
-            if (AppState.currentUser) {
+            if (AppState.currentUser) { // ตรวจสอบข้อมูล user ที่ล็อกอินค้างไว้กับข้อมูลใหม่
                 if (AppState.currentUser.role === 'student') {
                     const updatedUser = AppState.allStudents.find(s => s.id === AppState.currentUser.data.id);
                     if (updatedUser) AppState.currentUser.data = updatedUser;
@@ -64,7 +69,7 @@ export async function syncDataFromServer(silent = false) {
         loadFromLocalStorage();
         return false;
     } finally {
-        if (!silent) hideLoading();
+        hideLoading();
     }
 }
 

@@ -1,6 +1,7 @@
 import { AppState } from '../core/state.js';
 import { DB_KEYS } from '../core/config.js';
-import { getStudentFullName } from '../utils/helpers.js';
+import { getStudentFullName, showLoading, hideLoading } from '../utils/helpers.js';
+import { syncDataFromServer } from '../services/api.js';
 
 export function switchLoginTab(type) {
     document.getElementById('form-login-student').classList.add('hidden');
@@ -18,10 +19,14 @@ export function switchLoginTab(type) {
     document.getElementById('login-error-msg').classList.add('hidden');
 }
 
-export function handleLogin(e, role) {
+export async function handleLogin(e, role) {
     e.preventDefault();
     const errorMsg = document.getElementById('login-error-msg');
     errorMsg.classList.add('hidden');
+
+    showLoading('กำลังตรวจสอบข้อมูลการเข้าสู่ระบบ...');
+    await syncDataFromServer(true); // ดึงข้อมูลล่าสุดจากฐานข้อมูลมาอัปเดต state แบบ background
+    hideLoading();
 
     if (role === 'teacher') {
         const user = document.getElementById('login-tc-user').value.trim();
