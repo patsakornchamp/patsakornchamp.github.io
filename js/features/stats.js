@@ -48,14 +48,9 @@ export async function renderStats(skipSync = false) {
         document.getElementById('stats-content').classList.remove('hidden');
         if (btnExport) btnExport.classList.remove('hidden');
         
-        const stus = AppState.allStudents.filter(x=>x.class===statsClassOrClub && x.status !== 'ลาออก').sort((a,b)=>a.number-b.number);
-        let recs = AppState.allRecords.filter(x=>x.class===statsClassOrClub && x.subject===statsSub && matchRecordYearSemester(x, yr, sem));
+        const stus = AppState.allStudents.filter(x=>x.class===statsClassOrClub && x.status !== 'ลาออก' && x.deleted_flg !== 'Y').sort((a,b)=>a.number-b.number);
+        let recs = AppState.allRecords.filter(x=>x.class===statsClassOrClub && (statsSub === 'all' || x.subject===statsSub) && matchRecordYearSemester(x, yr, sem) && x.deleted_flg !== 'Y');
         
-        if (AppState.currentUser && AppState.currentUser.role === 'teacher') {
-            const teacherFullName = `${AppState.currentUser.data.firstName} ${AppState.currentUser.data.lastName}`;
-            recs = recs.filter(r => r.teacher === teacherFullName);
-        }
-
         let summary = {มา:0,สาย:0,ลา:0,ขาด:0}; 
         const tbody = document.getElementById('stats-table-body'); 
         tbody.innerHTML='';
@@ -101,11 +96,11 @@ export async function renderStats(skipSync = false) {
         document.getElementById('stats-content').classList.remove('hidden');
         if (btnExport) btnExport.classList.remove('hidden');
 
-        const enrollments = AppState.allClubEnrollments.filter(e => e.clubId === statsClassOrClub && e.year == yr && e.semester == sem);
+        const enrollments = AppState.allClubEnrollments.filter(e => e.clubId === statsClassOrClub && e.year == yr && e.semester == sem && e.deleted_flg !== 'Y');
         const enrolledStudentIds = enrollments.map(e => e.studentId);
-        const stus = AppState.allStudents.filter(x => enrolledStudentIds.includes(x.id) && x.status !== 'ลาออก').sort((a,b)=>a.class.localeCompare(b.class, undefined, { numeric: true }) || a.number-b.number);
+        const stus = AppState.allStudents.filter(x => enrolledStudentIds.includes(x.id) && x.status !== 'ลาออก' && x.deleted_flg !== 'Y').sort((a,b)=>a.class.localeCompare(b.class, undefined, { numeric: true }) || a.number-b.number);
         
-        let recs = AppState.allClubRecords.filter(x => x.clubId === statsClassOrClub && matchRecordYearSemester(x, yr, sem));
+        let recs = AppState.allClubRecords.filter(x => x.clubId === statsClassOrClub && matchRecordYearSemester(x, yr, sem) && x.deleted_flg !== 'Y');
 
         let summary = {มา:0,สาย:0,ลา:0,ขาด:0}; 
         const tbody = document.getElementById('stats-table-body'); 
@@ -150,24 +145,24 @@ export function exportStatsCSV() {
 
     if(type === 'regular') {
         if(!c || !s || !yr || !sem) return customAlert('กรุณาเลือกเงื่อนไขก่อนส่งออก');
-        const stus = AppState.allStudents.filter(x=>x.class===c && x.status !== 'ลาออก').sort((a,b)=>a.number-b.number);
-        let textRecs = AppState.allRecords.filter(x=>x.class===c && x.subject===s && matchRecordYearSemester(x, yr, sem));
+        const stus = AppState.allStudents.filter(x=>x.class===c && x.status !== 'ลาออก' && x.deleted_flg !== 'Y').sort((a,b)=>a.number-b.number);
+        let textRecs = AppState.allRecords.filter(x=>x.class===c && (s === 'all' || x.subject===s) && matchRecordYearSemester(x, yr, sem) && x.deleted_flg !== 'Y');
 
         const headers = ['เลขที่', 'รหัสประจำตัว', 'ชื่อ-นามสกุล', 'มาเรียน', 'มาสาย', 'ลา', 'ขาดเรียน', 'เปอร์เซ็นต์เข้าเรียน', 'ชั้นเรียน', 'วิชา', 'ปีการศึกษา', 'ภาคเรียน', 'จำนวนครั้งทั้งหมด'];
         const rows = stus.map(stu => {
             let mstat = {มา:0,สาย:0,ลา:0,ขาด:0};
             textRecs.forEach(r => { const a=r.attendance.find(x=>x.studentId===stu.id); if(a) mstat[a.status]++; else mstat['ขาด']++; });
             const pct = textRecs.length===0 ? 0 : Math.round(((mstat['มา']+mstat['สาย'])/textRecs.length)*100);
-            return [stu.number, stu.studentId, getStudentFullName(stu), mstat['มา'], mstat['สาย'], mstat['ลา'], mstat['ขาด'], `${pct}%`, c, s, yr, sem, textRecs.length];
+            return [stu.number, stu.studentId, getStudentFullName(stu), mstat['มา'], mstat['สาย'], mstat['ลา'], mstat['ขาด'], `${pct}%`, c, s === 'all' ? 'รวมทุกวิชา' : s, yr, sem, textRecs.length];
         });
-        exportToCSV(`สถิติปกติ_${c}_${s}.csv`, headers, rows);
+        exportToCSV(`สถิติปกติ_${c}_${s === 'all' ? 'รวมทุกวิชา' : s}.csv`, headers, rows);
     } else {
         if(!c || !yr || !sem) return customAlert('กรุณาเลือกเงื่อนไขก่อนส่งออก');
-        const enrollments = AppState.allClubEnrollments.filter(e => e.clubId === c && e.year == yr && e.semester == sem);
+        const enrollments = AppState.allClubEnrollments.filter(e => e.clubId === c && e.year == yr && e.semester == sem && e.deleted_flg !== 'Y');
         const enrolledStudentIds = enrollments.map(e => e.studentId);
-        const stus = AppState.allStudents.filter(x => enrolledStudentIds.includes(x.id) && x.status !== 'ลาออก');
-        let textRecs = AppState.allClubRecords.filter(x => x.clubId === c && matchRecordYearSemester(x, yr, sem));
-        const club = AppState.allClubs.find(cl => cl.id === c);
+        const stus = AppState.allStudents.filter(x => enrolledStudentIds.includes(x.id) && x.status !== 'ลาออก' && x.deleted_flg !== 'Y');
+        let textRecs = AppState.allClubRecords.filter(x => x.clubId === c && matchRecordYearSemester(x, yr, sem) && x.deleted_flg !== 'Y');
+        const club = AppState.allClubs.find(cl => cl.id === c && cl.deleted_flg !== 'Y');
 
         const headers = ['ชั้นเรียน', 'เลขที่', 'รหัสประจำตัว', 'ชื่อ-นามสกุล', 'มาชุมนุม', 'มาสาย', 'ลา', 'ขาดชุมนุม', 'เปอร์เซ็นต์เข้าร่วม', 'ชุมนุม', 'ปีการศึกษา', 'ภาคเรียน', 'จำนวนครั้งกิจกรรม'];
         const rows = stus.map(stu => {
@@ -182,7 +177,7 @@ export function exportStatsCSV() {
 }
 
 export function openDrilldownModal(stuId, type, filterValue, academicYear, academicSemester) {
-    const student = AppState.allStudents.find(s => s.id === stuId);
+    const student = AppState.allStudents.find(s => s.id === stuId && s.deleted_flg !== 'Y');
     if(!student) return;
 
     document.getElementById('dd-student-name').innerText = getStudentFullName(student);
@@ -192,31 +187,34 @@ export function openDrilldownModal(stuId, type, filterValue, academicYear, acade
     tbody.innerHTML = '';
 
     if (type === 'regular') {
-        document.getElementById('dd-subject-title').innerHTML = `<i class="fas fa-book mr-1 text-blue-600"></i> วิชาเรียนปกติ: ${filterValue}`;
+        document.getElementById('dd-subject-title').innerHTML = `<i class="fas fa-book mr-1 text-blue-600"></i> วิชาเรียนปกติ: ${filterValue === 'all' ? 'รวมทุกวิชา' : filterValue}`;
         
-        const recs = AppState.allRecords.filter(r => r.subject === filterValue && matchRecordYearSemester(r, academicYear, academicSemester));
+        const recs = AppState.allRecords.filter(r => (filterValue === 'all' || r.subject === filterValue) && matchRecordYearSemester(r, academicYear, academicSemester) && r.deleted_flg !== 'Y');
         recs.sort((a,b) => new Date(a.date) - new Date(b.date));
         
         recs.forEach(r => {
             const myAtt = r.attendance.find(a => a.studentId === stuId);
-            const statusVal = myAtt ? myAtt.status : 'ไม่ได้เช็คชื่อ (ขาด)';
+            if (!myAtt) return; // ข้ามคาบที่ไม่ได้มีการเช็คชื่อนักเรียนคนนี้
+            const statusVal = myAtt.status;
             const colorMap = { 'มา': 'text-green-600', 'สาย': 'text-yellow-600', 'ลา': 'text-blue-600', 'ขาด': 'text-red-600' };
+            const subLabel = filterValue === 'all' ? `<br><span class="text-xs text-blue-500">${r.subject}</span>` : '';
             
             tbody.innerHTML += `<tr>
-                <td class="px-4 py-2 font-mono text-sm">${getBangkokDateTime(r.date)}</td>
+                <td class="px-4 py-2 font-mono text-sm">${getBangkokDateTime(r.date)}${subLabel}</td>
                 <td class="px-4 py-2 text-center font-bold text-sm ${colorMap[statusVal] || 'text-red-500'}">${statusVal}</td>
             </tr>`;
         });
     } else {
-        const club = AppState.allClubs.find(c => c.id === filterValue);
+        const club = AppState.allClubs.find(c => c.id === filterValue && c.deleted_flg !== 'Y');
         document.getElementById('dd-subject-title').innerHTML = `<i class="fas fa-users mr-1 text-green-600"></i> วิชาชุมนุม: ${club ? club.name : 'ไม่ระบุ'}`;
         
-        const recs = AppState.allClubRecords.filter(r => r.clubId === filterValue && matchRecordYearSemester(r, academicYear, academicSemester));
+        const recs = AppState.allClubRecords.filter(r => r.clubId === filterValue && matchRecordYearSemester(r, academicYear, academicSemester) && r.deleted_flg !== 'Y');
         recs.sort((a,b) => new Date(a.date) - new Date(b.date));
         
         recs.forEach(r => {
             const myAtt = r.attendance.find(a => a.studentId === stuId);
-            const statusVal = myAtt ? myAtt.status : 'ขาดเรียน';
+            if (!myAtt) return; // ข้ามคาบที่ไม่ได้มีการเช็คชื่อนักเรียนคนนี้
+            const statusVal = myAtt.status;
             const colorMap = { 'มา': 'text-green-600', 'สาย': 'text-yellow-600', 'ลา': 'text-blue-600', 'ขาด': 'text-red-600' };
 
             tbody.innerHTML += `<tr>
@@ -241,16 +239,16 @@ export function openSessionDrilldownModal(recordId, type) {
     
     let record;
     if (type === 'regular') {
-        record = AppState.allRecords.find(r => r.id === recordId);
+        record = AppState.allRecords.find(r => r.id === recordId && r.deleted_flg !== 'Y');
         if (!record) return;
         const rYr = record.year !== undefined ? record.year : getYearSemesterFromDate(record.date).year;
         const rSem = record.semester !== undefined ? record.semester : getYearSemesterFromDate(record.date).semester;
         document.querySelectorAll('#sd-session-title').forEach(el => el.innerHTML = `<i class="fas fa-calendar-day mr-2 text-blue-600"></i>${getBangkokDate(record.date)} (คาบ: ${record.period || '-'} | ปีการศึกษา ${rYr} ภาคเรียน ${rSem})`);
         document.querySelectorAll('#sd-session-meta').forEach(el => el.innerText = `ชั้นเรียน: ${record.class} | วิชา: ${record.subject} | ครู: ${record.teacher||'-'}`);
     } else {
-        record = AppState.allClubRecords.find(r => r.id === recordId);
+        record = AppState.allClubRecords.find(r => r.id === recordId && r.deleted_flg !== 'Y');
         if (!record) return;
-        const club = AppState.allClubs.find(c => c.id === record.clubId);
+        const club = AppState.allClubs.find(c => c.id === record.clubId && c.deleted_flg !== 'Y');
         const rYr = record.year !== undefined ? record.year : getYearSemesterFromDate(record.date).year;
         const rSem = record.semester !== undefined ? record.semester : getYearSemesterFromDate(record.date).semester;
         document.querySelectorAll('#sd-session-title').forEach(el => el.innerHTML = `<i class="fas fa-calendar-day mr-2 text-green-600"></i>${getBangkokDate(record.date)} (กิจกรรมวิชาชุมนุม - ปี ${rYr}/${rSem})`);
@@ -258,9 +256,12 @@ export function openSessionDrilldownModal(recordId, type) {
     }
 
     const badgeColorMap = { 'มา': 'bg-green-100 text-green-800', 'สาย': 'bg-yellow-100 text-yellow-800', 'ลา': 'bg-blue-100 text-blue-800', 'ขาด': 'bg-red-100 text-red-800' };
-    const attendanceDetails = record.attendance.map(a => {
-        const stu = AppState.allStudents.find(s => s.id === a.studentId);
-        return { number: stu ? (stu.number || 999) : (a.studentNumber || 999), name: stu ? getStudentFullName(stu) : (a.studentName || 'ไม่ทราบชื่อ'), status: a.status };
+    const attendanceDetails = [];
+    record.attendance.forEach(a => {
+        const stu = AppState.allStudents.find(s => s.id === a.studentId && s.deleted_flg !== 'Y');
+        if (stu) {
+            attendanceDetails.push({ number: stu.number || 999, name: getStudentFullName(stu), status: a.status });
+        }
     });
 
     let summary = { 'มา': 0, 'สาย': 0, 'ลา': 0, 'ขาด': 0 };
@@ -287,6 +288,16 @@ export function openSessionDrilldownModal(recordId, type) {
     document.querySelectorAll('#sd-summary-late').forEach(el => el.innerText = summary['สาย']);
     document.querySelectorAll('#sd-summary-leave').forEach(el => el.innerText = summary['ลา']);
     document.querySelectorAll('#sd-summary-absent').forEach(el => el.innerText = summary['ขาด']);
+
+    const delBtn = document.getElementById('btn-delete-record');
+    if (delBtn) {
+        if (AppState.currentUser && (AppState.currentUser.role === 'admin' || AppState.currentUser.role === 'teacher')) {
+            delBtn.classList.remove('hidden');
+            delBtn.onclick = () => { if (window.deleteSessionRecord) window.deleteSessionRecord(recordId, type); };
+        } else {
+            delBtn.classList.add('hidden');
+        }
+    }
 
     document.getElementById('session-drilldown-modal').classList.add('show');
 }

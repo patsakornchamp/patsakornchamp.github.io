@@ -1,15 +1,15 @@
 import { AppState } from '../core/state.js';
 import { DB_KEYS } from '../core/config.js';
-import { generateId, getStudentFullName, showToast, customAlert, customConfirm, closeModal, exportToCSV, getBangkokDate, getDefaultAcademicYearAndSemester, matchRecordYearSemester, getBangkokCurrentTime } from '../utils/helpers.js';
+import { generateId, getStudentFullName, showToast, customAlert, customConfirm, closeModal, exportToCSV, getBangkokDate, getDefaultAcademicYearAndSemester, matchRecordYearSemester, getBangkokCurrentTime, getISOTimestamp, getCurrentUserId } from '../utils/helpers.js';
 import { saveToDB, syncDataFromServer } from '../services/api.js';
 
 // --- 1. Club Master Management ---
 export function renderClubList() {
-    document.getElementById('tbody-club-list').innerHTML = AppState.allClubs.map(c => {
-        const primaryTeacher = AppState.allTeachers.find(t => t.id === c.primaryTeacherId);
+    document.getElementById('tbody-club-list').innerHTML = AppState.allClubs.filter(c => c.deleted_flg !== 'Y').map(c => {
+        const primaryTeacher = AppState.allTeachers.find(t => t.id === c.primaryTeacherId && t.deleted_flg !== 'Y');
         const pTeacherName = primaryTeacher ? `${primaryTeacher.title || ''}${primaryTeacher.firstName} ${primaryTeacher.lastName}` : '-';
         
-        const enrolledCount = AppState.allClubEnrollments.filter(e => e.clubId === c.id && e.year == c.year && e.semester == c.semester).length;
+        const enrolledCount = AppState.allClubEnrollments.filter(e => e.clubId === c.id && e.year == c.year && e.semester == sem && e.deleted_flg !== 'Y').length;
         
         return `<tr>
             <td class="hidden md:table-cell px-4 py-2 text-sm whitespace-nowrap">${c.year}/${c.semester}</td>
@@ -44,14 +44,15 @@ export function openClubFormModal() {
     document.getElementById('club-desc').value = '';
     document.getElementById('club-status').value = 'เปิด';
     
+    const activeTeachers = AppState.allTeachers.filter(t => t.deleted_flg !== 'Y');
     const primarySelect = document.getElementById('club-primary-teacher');
-    primarySelect.innerHTML = AppState.allTeachers.map(t => `<option value="${t.id}">${t.title || ''}${t.firstName} ${t.lastName}</option>`).join('');
+    primarySelect.innerHTML = activeTeachers.map(t => `<option value="${t.id}">${t.title || ''}${t.firstName} ${t.lastName}</option>`).join('');
     
     if (AppState.currentUser && AppState.currentUser.role === 'teacher') {
         primarySelect.value = AppState.currentUser.data.id;
     }
 
-    document.getElementById('club-co-teachers-container').innerHTML = AppState.allTeachers.map(t => `
+    document.getElementById('club-co-teachers-container').innerHTML = activeTeachers.map(t => `
         <label class="checkbox-container">
             ${t.title || ''}${t.firstName} ${t.lastName}
             <input type="checkbox" value="${t.id}" class="club-co-cb">
@@ -64,7 +65,7 @@ export function openClubFormModal() {
 }
 
 export function editClub(id) {
-    const c = AppState.allClubs.find(x => x.id === id);
+    const c = AppState.allClubs.find(x => x.id === id && x.deleted_flg !== 'Y');
     if(!c) return;
     document.getElementById('club-id').value = c.id;
     document.getElementById('club-year').value = c.year;
@@ -75,12 +76,13 @@ export function editClub(id) {
     document.getElementById('club-desc').value = c.desc || '';
     document.getElementById('club-status').value = c.status || 'เปิด';
 
+    const activeTeachers = AppState.allTeachers.filter(t => t.deleted_flg !== 'Y');
     const primarySelect = document.getElementById('club-primary-teacher');
-    primarySelect.innerHTML = AppState.allTeachers.map(t => `<option value="${t.id}">${t.title || ''}${t.firstName} ${t.lastName}</option>`).join('');
+    primarySelect.innerHTML = activeTeachers.map(t => `<option value="${t.id}">${t.title || ''}${t.firstName} ${t.lastName}</option>`).join('');
     primarySelect.value = c.primaryTeacherId;
 
     const coTeachers = c.coAdvisorIds || [];
-    document.getElementById('club-co-teachers-container').innerHTML = AppState.allTeachers.map(t => `
+    document.getElementById('club-co-teachers-container').innerHTML = activeTeachers.map(t => `
         <label class="checkbox-container">
             ${t.title || ''}${t.firstName} ${t.lastName}
             <input type="checkbox" value="${t.id}" class="club-co-cb" ${coTeachers.includes(t.id) ? 'checked' : ''}>
@@ -109,21 +111,48 @@ export async function saveClub() {
         return customAlert('กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน (*)');
     }
 
-    const clubObj = { id, year, semester, name, primaryTeacherId, coAdvisorIds, credit, capacity, desc, status };
+    let clubObj;
     const idx = AppState.allClubs.findIndex(x => x.id === id);
-    if(idx > -1) AppState.allClubs[idx] = clubObj; else AppState.allClubs.push(clubObj);
+
+    const commonData = {
+        year, semester, name, primaryTeacherId, coAdvisorIds, credit, capacity, desc, status,
+        updatedAt: getISOTimestamp(),
+        updatedBy: getCurrentUserId(),
+    };
+
+    if (idx > -1) { // Update
+        clubObj = { ...AppState.allClubs[idx], ...commonData };
+        AppState.allClubs[idx] = clubObj;
+    } else { // Create
+        clubObj = {
+            id, ...commonData,
+            createdAt: getISOTimestamp(), createdBy: getCurrentUserId(),
+            deleted_flg: 'N', deletedAt: null, deletedBy: null,
+        };
+        AppState.allClubs.push(clubObj);
+    }
 
     const success = await saveToDB(DB_KEYS.CLUBS, AppState.allClubs, 'saveClubs');
     closeModal('club-form-modal');
     renderClubList();
+    onEnrollFilterChange(); // Update dropdowns in other tabs
     if (success !== false) showToast('บันทึกข้อมูลชุมนุมเรียบร้อย');
 }
 
 export function deleteClub(id) {
-    customConfirm('ยืนยันการลบชุมนุม', 'ประวัติเข้าเรียนและการลงทะเบียนในชุมนุมนี้จะถูกลบทั้งหมด ยืนยันที่จะลบ?', async () => {
-        AppState.allClubs = AppState.allClubs.filter(x => x.id !== id);
-        AppState.allClubEnrollments = AppState.allClubEnrollments.filter(x => x.clubId !== id);
-        AppState.allClubRecords = AppState.allClubRecords.filter(x => x.clubId !== id);
+    customConfirm('ยืนยันการลบชุมนุม', 'ข้อมูลชุมนุม, ประวัติเข้าเรียน และการลงทะเบียนในชุมนุมนี้จะถูกซ่อน ยืนยันหรือไม่?', async () => {
+        const now = getISOTimestamp();
+        const userId = getCurrentUserId();
+
+        const clubIdx = AppState.allClubs.findIndex(x => x.id === id);
+        if (clubIdx > -1) {
+            AppState.allClubs[clubIdx].deleted_flg = 'Y';
+            AppState.allClubs[clubIdx].deletedAt = now;
+            AppState.allClubs[clubIdx].deletedBy = userId;
+        }
+
+        AppState.allClubEnrollments.forEach((item, i) => { if (item.clubId === id) { AppState.allClubEnrollments[i].deleted_flg = 'Y'; AppState.allClubEnrollments[i].deletedAt = now; AppState.allClubEnrollments[i].deletedBy = userId; } });
+        AppState.allClubRecords.forEach((item, i) => { if (item.clubId === id) { AppState.allClubRecords[i].deleted_flg = 'Y'; AppState.allClubRecords[i].deletedAt = now; AppState.allClubRecords[i].deletedBy = userId; } });
         
         await saveToDB(DB_KEYS.CLUBS, AppState.allClubs, 'saveClubs');
         await saveToDB(DB_KEYS.CLUB_ENROLLMENTS, AppState.allClubEnrollments, 'saveClubEnrollments');
@@ -140,13 +169,13 @@ export function onEnrollFilterChange() {
     const sem = document.getElementById('enroll-semester').value;
     
     const assignSelect = document.getElementById('enroll-assign-club');
-    const filteredClubs = AppState.allClubs.filter(c => c.year == yr && c.semester == sem && c.status === 'เปิด');
+    const filteredClubs = AppState.allClubs.filter(c => c.year == yr && c.semester == sem && c.status === 'เปิด' && c.deleted_flg !== 'Y');
     
     assignSelect.innerHTML = `<option value="">-- ปล่อยว่าง (ไม่ระบุชุมนุม) --</option>` + 
         filteredClubs.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
 
     const classDropdown = document.getElementById('enroll-filter-class');
-    const filteredClasses = AppState.allClasses.filter(c => c.year == yr && c.semester == sem);
+    const filteredClasses = AppState.allClasses.filter(c => c.year == yr && c.semester == sem && c.deleted_flg !== 'Y');
     filteredClasses.sort((a, b) => a.className.localeCompare(b.className, undefined, { numeric: true }));
     classDropdown.innerHTML = `<option value="">ทุกชั้นเรียน</option>` + 
         filteredClasses.map(c => `<option value="${c.className}">${c.className}</option>`).join('');
@@ -161,19 +190,19 @@ export function renderEnrollStudents() {
     const statusFilter = document.getElementById('enroll-filter-status').value;
     const search = document.getElementById('enroll-search').value.toLowerCase().trim();
 
-    let filteredStudents = AppState.allStudents.filter(s => s.status !== 'ลาออก');
+    let filteredStudents = AppState.allStudents.filter(s => s.status !== 'ลาออก' && s.deleted_flg !== 'Y');
     if(classFilter) filteredStudents = filteredStudents.filter(s => s.class === classFilter);
 
     if(search) {
         filteredStudents = filteredStudents.filter(s => {
             const fullName = getStudentFullName(s).toLowerCase();
-            return s.studentId.toString().includes(search) || fullName.includes(search);
+            return (s.studentId || '').toString().includes(search) || fullName.includes(search);
         });
     }
 
     const mappedStudents = filteredStudents.map(s => {
-        const enrollment = AppState.allClubEnrollments.find(e => e.studentId === s.id && e.year == yr && e.semester == sem);
-        const club = enrollment ? AppState.allClubs.find(c => c.id === enrollment.clubId) : null;
+        const enrollment = AppState.allClubEnrollments.find(e => e.studentId === s.id && e.year == yr && e.semester == sem && e.deleted_flg !== 'Y');
+        const club = enrollment ? AppState.allClubs.find(c => c.id === enrollment.clubId && c.deleted_flg !== 'Y') : null;
         return { student: s, club: club, enrollment: enrollment };
     });
 
@@ -215,22 +244,38 @@ export async function bulkAssignClub() {
     const sem = parseInt(document.getElementById('enroll-semester').value);
     const clubId = document.getElementById('enroll-assign-club').value;
     
+    const now = getISOTimestamp();
+    const userId = getCurrentUserId();
+
     const selectedStudentIds = Array.from(document.querySelectorAll('.enroll-select-cb:checked')).map(cb => cb.value);
 
     if(selectedStudentIds.length === 0) return customAlert('กรุณาเลือกนักเรียนอย่างน้อย 1 คน');
 
     if(clubId) {
-        const targetClub = AppState.allClubs.find(c => c.id === clubId);
-        const currentEnrolled = AppState.allClubEnrollments.filter(e => e.clubId === clubId && e.year == yr && e.semester == sem).length;
+        const targetClub = AppState.allClubs.find(c => c.id === clubId && c.deleted_flg !== 'Y');
+        if (!targetClub) return customAlert('ไม่พบข้อมูลชุมนุมที่เลือก');
+        const currentEnrolled = AppState.allClubEnrollments.filter(e => e.clubId === clubId && e.year == yr && e.semester == sem && e.deleted_flg !== 'Y').length;
         if(currentEnrolled + selectedStudentIds.length > targetClub.capacity) {
             return customAlert(`ไม่สามารถลงทะเบียนได้เนื่องจากเกินความจุห้องชุมนุม (ความจุคงเหลือ: ${targetClub.capacity - currentEnrolled} คน)`);
         }
     }
 
     selectedStudentIds.forEach(stuId => {
-        AppState.allClubEnrollments = AppState.allClubEnrollments.filter(e => !(e.studentId === stuId && e.year == yr && e.semester == sem));
+        // Soft-delete any existing enrollment for this student in this semester
+        const existingEnrollmentIdx = AppState.allClubEnrollments.findIndex(e => e.studentId === stuId && e.year == yr && e.semester == sem && e.deleted_flg !== 'Y');
+        if (existingEnrollmentIdx > -1) {
+            AppState.allClubEnrollments[existingEnrollmentIdx].deleted_flg = 'Y';
+            AppState.allClubEnrollments[existingEnrollmentIdx].deletedAt = now;
+            AppState.allClubEnrollments[existingEnrollmentIdx].deletedBy = userId;
+        }
+
+        // Add new one if a club is selected
         if(clubId) {
-            AppState.allClubEnrollments.push({ id: generateId(), studentId: stuId, clubId: clubId, year: yr, semester: sem });
+            AppState.allClubEnrollments.push({ 
+                id: generateId(), studentId: stuId, clubId: clubId, year: yr, semester: sem,
+                createdAt: now, createdBy: userId, updatedAt: now, updatedBy: userId,
+                deleted_flg: 'N', deletedAt: null, deletedBy: null,
+            });
         }
     });
 
@@ -244,10 +289,10 @@ export function updateClubDropdown(yearVal, semVal, targetId, defaultText) {
     const el = document.getElementById(targetId);
     if (!el) return;
     
-    let filtered = AppState.allClubs.filter(c => c.year == yearVal && c.semester == semVal);
+    let filtered = AppState.allClubs.filter(c => c.year == yearVal && c.semester == semVal && c.deleted_flg !== 'Y');
     
     if(AppState.currentUser && AppState.currentUser.role === 'teacher') {
-        filtered = filtered.filter(c => c.primaryTeacherId === AppState.currentUser.data.id || (c.coAdvisorIds && c.coAdvisorIds.includes(AppState.currentUser.data.id)));
+        filtered = filtered.filter(c => (c.primaryTeacherId === AppState.currentUser.data.id || (c.coAdvisorIds && c.coAdvisorIds.includes(AppState.currentUser.data.id))) && c.deleted_flg !== 'Y');
     }
 
     const clubOptions = filtered.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
@@ -281,10 +326,10 @@ export async function loadClubCheckinList() {
 
     await syncDataFromServer();
 
-    const enrollments = AppState.allClubEnrollments.filter(e => e.clubId === clubId && e.year == yr && e.semester == sem);
+    const enrollments = AppState.allClubEnrollments.filter(e => e.clubId === clubId && e.year == yr && e.semester == sem && e.deleted_flg !== 'Y');
     const enrolledStudentIds = enrollments.map(e => e.studentId);
     
-    AppState.currentCheckinStudents = AppState.allStudents.filter(s => enrolledStudentIds.includes(s.id) && s.status !== 'ลาออก');
+    AppState.currentCheckinStudents = AppState.allStudents.filter(s => enrolledStudentIds.includes(s.id) && s.status !== 'ลาออก' && s.deleted_flg !== 'Y');
     AppState.currentCheckinStudents.sort((a, b) => {
         const classCompare = a.class.localeCompare(b.class, undefined, { numeric: true });
         if (classCompare !== 0) return classCompare;
@@ -301,7 +346,7 @@ export async function loadClubCheckinList() {
     }
     document.getElementById('club-no-students-alert').classList.add('hidden');
 
-    const existRec = AppState.allClubRecords.find(r => getBangkokDate(r.date) === date && r.clubId === clubId && matchRecordYearSemester(r, yr, sem));
+    const existRec = AppState.allClubRecords.find(r => getBangkokDate(r.date) === date && r.clubId === clubId && matchRecordYearSemester(r, yr, sem) && r.deleted_flg !== 'Y');
     
     AppState.activeCheckinStates = {};
     AppState.lastCheckedClubStuId = null;
@@ -420,15 +465,35 @@ export async function saveClubAttendance() {
         status: AppState.activeCheckinStates[stu.id] || 'ขาด'
     }));
 
-    const localTimestampStr = date + 'T' + getBangkokCurrentTime();
-    const utcDate = new Date(localTimestampStr + "+07:00").toISOString();
+    const now = getISOTimestamp();
+    const userId = getCurrentUserId();
 
-    const record = {
-        id: generateId(), date: utcDate, clubId, year: yr, semester: sem, attendance: att
-    };
+    const existRecIdx = AppState.allClubRecords.findIndex(r => getBangkokDate(r.date) === date && r.clubId === clubId && matchRecordYearSemester(r, yr, sem) && r.deleted_flg !== 'Y');
 
-    AppState.allClubRecords = AppState.allClubRecords.filter(r => !(getBangkokDate(r.date) === date && r.clubId === clubId && matchRecordYearSemester(r, yr, sem)));
-    AppState.allClubRecords.push(record);
+    let record;
+    if (existRecIdx > -1) { // Update existing record
+        record = {
+            ...AppState.allClubRecords[existRecIdx],
+            attendance: att,
+            updatedAt: now,
+            updatedBy: userId,
+        };
+        AppState.allClubRecords[existRecIdx] = record;
+    } else { // Create new record
+        const localTimestampStr = date + 'T' + getBangkokCurrentTime();
+        const utcDate = new Date(localTimestampStr + "+07:00").toISOString();
+        record = {
+            id: generateId(), date: utcDate, clubId, year: yr, semester: sem, attendance: att,
+            createdAt: now,
+            createdBy: userId,
+            updatedAt: now,
+            updatedBy: userId,
+            deleted_flg: 'N',
+            deletedAt: null,
+            deletedBy: null,
+        };
+        AppState.allClubRecords.push(record);
+    }
 
     await saveToDB(DB_KEYS.CLUB_RECORDS, AppState.allClubRecords, 'saveClubRecords');
     showToast('บันทึกการเข้ากิจกรรมชุมนุมเสร็จสิ้น');
@@ -439,7 +504,7 @@ export function exportClubCheckinCSV() {
     const yr = document.getElementById('club-checkin-year').value;
     const sem = document.getElementById('club-checkin-semester').value;
     const clubId = document.getElementById('club-checkin-id').value;
-    const club = AppState.allClubs.find(c => c.id === clubId);
+    const club = AppState.allClubs.find(c => c.id === clubId && c.deleted_flg !== 'Y');
 
     if(!AppState.currentCheckinStudents || AppState.currentCheckinStudents.length === 0) return;
 
@@ -458,9 +523,9 @@ export function renderStudentClubDashboard() {
     const container = document.getElementById('my-club-info-container');
     const schoolDefaults = getDefaultAcademicYearAndSemester();
     
-    const enrollment = AppState.allClubEnrollments.find(e => e.studentId === AppState.currentUser.data.id && e.year == schoolDefaults.year && e.semester == schoolDefaults.semester);
+    const enrollment = AppState.allClubEnrollments.find(e => e.studentId === AppState.currentUser.data.id && e.year == schoolDefaults.year && e.semester == schoolDefaults.semester && e.deleted_flg !== 'Y');
     
-    if(!enrollment) {
+    if (!enrollment) {
         container.innerHTML = `
             <div class="text-center py-8">
                 <i class="fas fa-users-slash text-5xl text-gray-300 mb-3"></i>
@@ -474,13 +539,13 @@ export function renderStudentClubDashboard() {
         return;
     }
 
-    const club = AppState.allClubs.find(c => c.id === enrollment.clubId);
+    const club = AppState.allClubs.find(c => c.id === enrollment.clubId && c.deleted_flg !== 'Y');
     if(!club) return;
 
-    const primaryTeacher = AppState.allTeachers.find(t => t.id === club.primaryTeacherId);
+    const primaryTeacher = AppState.allTeachers.find(t => t.id === club.primaryTeacherId && t.deleted_flg !== 'Y');
     const pTeacherName = primaryTeacher ? `${primaryTeacher.title}${primaryTeacher.firstName} ${primaryTeacher.lastName}` : '-';
     const coTeachers = (club.coAdvisorIds || []).map(id => {
-        const t = AppState.allTeachers.find(x => x.id === id);
+        const t = AppState.allTeachers.find(x => x.id === id && x.deleted_flg !== 'Y');
         return t ? `${t.title}${t.firstName} ${t.lastName}` : '';
     }).filter(Boolean).join(', ') || 'ไม่มี';
 
@@ -509,7 +574,7 @@ export function renderStudentClubDashboard() {
         </div>
     `;
 
-    const myRecords = AppState.allClubRecords.filter(r => r.clubId === club.id && matchRecordYearSemester(r, club.year, club.semester));
+    const myRecords = AppState.allClubRecords.filter(r => r.clubId === club.id && matchRecordYearSemester(r, club.year, club.semester) && r.deleted_flg !== 'Y');
     let presentCount = 0;
     let absentCount = 0;
     

@@ -53,10 +53,10 @@ export async function syncDataFromServer(silent = false) {
             // อัปเดตข้อมูลผู้ใช้ปัจจุบัน (currentUser)
             if (AppState.currentUser) { // ตรวจสอบข้อมูล user ที่ล็อกอินค้างไว้กับข้อมูลใหม่
                 if (AppState.currentUser.role === 'student') {
-                    const updatedUser = AppState.allStudents.find(s => s.id === AppState.currentUser.data.id);
+                    const updatedUser = AppState.allStudents.find(s => s.id === AppState.currentUser.data.id && s.deleted_flg !== 'Y');
                     if (updatedUser) AppState.currentUser.data = updatedUser;
                 } else if (AppState.currentUser.role === 'teacher') {
-                    const updatedUser = AppState.allTeachers.find(t => t.id === AppState.currentUser.data.id);
+                    const updatedUser = AppState.allTeachers.find(t => t.id === AppState.currentUser.data.id && t.deleted_flg !== 'Y');
                     if (updatedUser) AppState.currentUser.data = updatedUser;
                 }
                 localStorage.setItem(DB_KEYS.SESSION, JSON.stringify(AppState.currentUser));

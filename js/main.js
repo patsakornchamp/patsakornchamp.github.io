@@ -1,7 +1,7 @@
 import { DB_KEYS, DEFAULT_GOOGLE_SCRIPT_URL } from './core/config.js';
 import { AppState } from './core/state.js';
 import { syncDataFromServer, saveToDB } from './services/api.js';
-import { getBangkokDate, getDefaultAcademicYearAndSemester, showToast, customAlert, customConfirm } from './utils/helpers.js'; // 🌟 นำเข้าฟังก์ชันจัดการวันที่ของไทย
+import { getBangkokDate, getDefaultAcademicYearAndSemester, showToast, customAlert, customConfirm, getISOTimestamp, getCurrentUserId } from './utils/helpers.js'; // 🌟 นำเข้าฟังก์ชันจัดการวันที่ของไทย
 
 // 🌟 1. นำเข้าไฟล์ Features ทั้งหมดเพื่อให้ฟังก์ชันของมันทำงานและผูกเข้ากับ window
 import * as auth from './features/auth.js';
@@ -12,39 +12,10 @@ import './features/club.js';
 import './features/stats.js';
 import './features/history.js';
 
-// New function to populate the stats subject dropdown based on selected class and user role
-export function populateStatsSubjectDropdown(selectedClass, currentSubjectValue = '') {
-    const subjectSelect = document.getElementById('stats-subject');
-    if (!subjectSelect) return;
-
-    let filteredSubjects = AppState.allSubjects;
-
-    // Filter by subjects associated with the selected class
-    if (selectedClass) {
-        const targetClass = AppState.allClasses.find(c => c.className === selectedClass);
-        if (targetClass && targetClass.subjects) {
-            filteredSubjects = filteredSubjects.filter(s => targetClass.subjects.includes(s.id));
-        } else {
-            filteredSubjects = []; // No subjects if class not found or has no subjects
-        }
-    }
-
-    // Further filter by teacher's assigned subjects if current user is a teacher
-    if (AppState.currentUser && AppState.currentUser.role === 'teacher') {
-        const teacherSubjects = AppState.currentUser.data.subjects || [];
-        filteredSubjects = filteredSubjects.filter(s => teacherSubjects.includes(s.id));
-    }
-
-    filteredSubjects.sort((a, b) => (a.code || a.name).localeCompare(b.code || b.name));
-
-    subjectSelect.innerHTML = '<option value="">-- เลือกวิชา --</option>' + 
-                              filteredSubjects.map(s => `<option value="${s.name}">${s.code} - ${s.name}</option>`).join('');
-    subjectSelect.value = currentSubjectValue; // Attempt to retain previous selection
-}
 // 🌟 2. ฟังก์ชันช่วยป้อนข้อมูลใส่ Dropdown ทั่วทั้งระบบ
 export function updateAllDropdowns() {
     let latestYear = new Date().getFullYear() + 543;
-    if (AppState.allClasses && AppState.allClasses.length > 0) {
+    if (AppState.allClasses && AppState.allClasses.filter(c => c.deleted_flg !== 'Y').length > 0) {
         latestYear = Math.max(...AppState.allClasses.map(c => parseInt(c.year) || latestYear));
     }
 
@@ -61,17 +32,30 @@ export function updateAllDropdowns() {
 
     ['checkin-year', 'club-checkin-year', 'enroll-year', 'history-year', 'stats-year', 'aca-year'].forEach(populateYear);
     
-    const subjectOptions = '<option value="">-- เลือกวิชา --</option>' + AppState.allSubjects.map(s => `<option value="${s.name}">${s.code} - ${s.name}</option>`).join('');
+    let activeSubjects = AppState.allSubjects.filter(s => s.deleted_flg !== 'Y');
+    if (AppState.currentUser && AppState.currentUser.role === 'teacher') {
+        const teacherSubjects = AppState.currentUser.data.subjects || [];
+        activeSubjects = activeSubjects.filter(s => teacherSubjects.includes(s.id));
+    }
+    activeSubjects.sort((a, b) => (a.code || a.name).localeCompare(b.code || b.name));
+    const subjectOptionsStr = activeSubjects.map(s => `<option value="${s.name}">${s.code} - ${s.name}</option>`).join('');
+
     ['checkin-subject', 'history-subject', 'stats-subject'].forEach(id => {
         const el = document.getElementById(id);
         if(el) {
             const currentVal = el.value;
-            el.innerHTML = subjectOptions;
+            if (id === 'stats-subject') {
+                el.innerHTML = '<option value="all">-- รวมทุกวิชา --</option>' + subjectOptionsStr;
+            } else if (id === 'history-subject') {
+                el.innerHTML = '<option value="">-- ดูทุกวิชา --</option>' + subjectOptionsStr;
+            } else {
+                el.innerHTML = '<option value="">-- เลือกวิชา --</option>' + subjectOptionsStr;
+            }
             if (currentVal) el.value = currentVal;
         }
     });
 
-    const teacherOptions = '<option value="">-- เลือกครูผู้สอน --</option>' + AppState.allTeachers.map(t => `<option value="${t.id}">${t.firstName} ${t.lastName}</option>`).join('');
+    const teacherOptions = '<option value="">-- เลือกครูผู้สอน --</option>' + AppState.allTeachers.filter(t => t.deleted_flg !== 'Y').map(t => `<option value="${t.id}">${t.firstName} ${t.lastName}</option>`).join('');
     const elTeacher = document.getElementById('checkin-teacher');
     if(elTeacher) {
         const currentVal = elTeacher.value;
@@ -80,7 +64,7 @@ export function updateAllDropdowns() {
     }
 
     // ดึงค่าจาก AppState.allClasses โดยใช้ className (ค่าจริงจากฐานข้อมูล) และจำค่าเดิมไว้
-    const classOptions = '<option value="">-- เลือกชั้นเรียน --</option>' + [...new Set(AppState.allClasses.map(c => c.className))].sort((a,b)=>a.localeCompare(b, undefined, {numeric: true})).map(c => `<option value="${c}">${c}</option>`).join('');
+    const classOptions = '<option value="">-- เลือกชั้นเรียน --</option>' + [...new Set(AppState.allClasses.filter(c => c.deleted_flg !== 'Y').map(c => c.className))].sort((a,b)=>a.localeCompare(b, undefined, {numeric: true})).map(c => `<option value="${c}">${c}</option>`).join('');
     ['checkin-class', 'history-class', 'stats-class'].forEach(id => {
         const el = document.getElementById(id);
         if(el) {
@@ -89,9 +73,6 @@ export function updateAllDropdowns() {
             if (currentVal) el.value = currentVal;
         }
     });
-
-    // Initial call for stats-subject after all other dropdowns are populated
-    populateStatsSubjectDropdown(document.getElementById('stats-class')?.value, document.getElementById('stats-subject')?.value);
 }
 window.updateAllDropdowns = updateAllDropdowns;
 
@@ -245,8 +226,8 @@ async function initApp() {
             const parsedUser = JSON.parse(savedSession);
             let isValidSession = false;
             if (parsedUser.role === 'admin') isValidSession = true;
-            else if (parsedUser.role === 'teacher') isValidSession = AppState.allTeachers.some(t => t.id === parsedUser.data.id);
-            else if (parsedUser.role === 'student') isValidSession = AppState.allStudents.some(s => s.id === parsedUser.data.id && s.status !== 'ลาออก'); // เช็คพ้นสภาพ
+            else if (parsedUser.role === 'teacher') isValidSession = AppState.allTeachers.some(t => t.id === parsedUser.data.id && t.deleted_flg !== 'Y');
+            else if (parsedUser.role === 'student') isValidSession = AppState.allStudents.some(s => s.id === parsedUser.data.id && s.status !== 'ลาออก' && s.deleted_flg !== 'Y'); // เช็คพ้นสภาพ
             
             if (isValidSession) {
                 auth.loginSuccess(parsedUser);
@@ -274,7 +255,7 @@ document.addEventListener('DOMContentLoaded', initApp);
 export function updateClassDropdown(yearVal, semVal, targetId, defaultText) {
     const el = document.getElementById(targetId);
     if (!el) return;
-    const filtered = AppState.allClasses.filter(c => c.year == yearVal && c.semester == semVal);
+    const filtered = AppState.allClasses.filter(c => c.year == yearVal && c.semester == semVal && c.deleted_flg !== 'Y');
     filtered.sort((a,b) => a.className.localeCompare(b.className, undefined, {numeric:true}));
     el.innerHTML = `<option value="">${defaultText}</option>` + 
         filtered.map(c => `<option value="${c.className}">${c.className}</option>`).join('');
@@ -294,10 +275,10 @@ export function populateCheckinSubjectDropdown(teacherId) {
     subjectSelect.innerHTML = '<option value="">-- เลือกวิชา --</option>';
     if (!teacherId) return;
     
-    const teacher = AppState.allTeachers.find(t => t.id === teacherId);
+    const teacher = AppState.allTeachers.find(t => t.id === teacherId && t.deleted_flg !== 'Y');
     if (!teacher || !teacher.subjects) return;
     
-    const teacherSubjects = AppState.allSubjects.filter(s => teacher.subjects.includes(s.id));
+    const teacherSubjects = AppState.allSubjects.filter(s => teacher.subjects.includes(s.id) && s.deleted_flg !== 'Y');
     teacherSubjects.sort((a, b) => (a.code || a.name).localeCompare(b.code || b.name));
     subjectSelect.innerHTML += teacherSubjects.map(s => `<option value="${s.name}">${s.code} - ${s.name}</option>`).join('');
 }
@@ -354,7 +335,6 @@ window.populateCheckinSubjectDropdown = populateCheckinSubjectDropdown;
 window.onCheckinYearSemesterChange = onCheckinYearSemesterChange;
 window.onTeacherChange = onTeacherChange;
 window.onHistoryYearSemesterChange = onHistoryYearSemesterChange;
-window.populateStatsSubjectDropdown = populateStatsSubjectDropdown; // Make new function globally accessible
 window.onStatsYearSemesterChange = onStatsYearSemesterChange;
 window.saveSettings = saveSettings;
 window.syncDataToGoogleSheet = syncDataToGoogleSheet;

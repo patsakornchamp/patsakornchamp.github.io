@@ -1,7 +1,7 @@
 import { AppState } from '../core/state.js';
 import { DB_KEYS } from '../core/config.js';
-import { generateId, getStudentFullName, showToast, customAlert, customConfirm, closeModal, validateThaiCitizenId, validatePhoneNumber, matchRecordYearSemester } from '../utils/helpers.js';
-import { saveToDB } from '../services/api.js';
+import { generateId, getStudentFullName, showToast, customAlert, customConfirm, closeModal, validateThaiCitizenId, validatePhoneNumber, matchRecordYearSemester, getISOTimestamp, getCurrentUserId } from '../utils/helpers.js';
+import { saveToDB, syncDataFromServer } from '../services/api.js';
 
 // --- Student Self Service ---
 export function renderStudentProfile() {
@@ -115,6 +115,8 @@ export function saveMyProfile(e) {
         s.motherAge = document.getElementById('sp-m-age').value;
         s.motherJob = document.getElementById('sp-m-job').value.trim();
         s.motherPhone = mPhone.trim();
+        s.updatedAt = getISOTimestamp();
+        s.updatedBy = getCurrentUserId();
         s.isProfileComplete = true; 
 
         const idx = AppState.allStudents.findIndex(x => x.id === s.id);
@@ -183,7 +185,7 @@ export function previewCSV(event) {
                  errorFound = true;
             } 
             else {
-                const existInSystem = AppState.allStudents.find(s => s.studentId.toString().trim() === studentId.toString().trim());
+                const existInSystem = AppState.allStudents.find(s => s.studentId.toString().trim() === studentId.toString().trim() && s.deleted_flg !== 'Y');
                 const existInFile = AppState.pendingUploadStudents.find(s => s.studentId.toString().trim() === studentId.toString().trim());
                 if (existInSystem || existInFile) {
                     statusHtml = `<span class="text-red-600 font-bold"><i class="fas fa-times-circle"></i> รหัส ${studentId} ซ้ำ</span>`;
@@ -196,7 +198,10 @@ export function previewCSV(event) {
                 AppState.pendingUploadStudents.push({
                     id: generateId(), class: cls, number: number, studentId: studentId,
                     title: title, firstName: fname, lastName: lname, nickname: nickname,
-                    status: 'ปกติ', isProfileComplete: false
+                    status: 'ปกติ', isProfileComplete: false,
+                    createdAt: getISOTimestamp(), createdBy: getCurrentUserId(),
+                    updatedAt: getISOTimestamp(), updatedBy: getCurrentUserId(),
+                    deleted_flg: 'N', deletedAt: null, deletedBy: null,
                 });
             }
 
@@ -219,7 +224,7 @@ export function previewCSV(event) {
 
 export async function saveCsvUpload() {
     if (AppState.pendingUploadStudents.length === 0) return;
-    AppState.allStudents = [...AppState.allStudents, ...AppState.pendingUploadStudents];
+    AppState.allStudents.push(...AppState.pendingUploadStudents);
     await saveToDB(DB_KEYS.STUDENTS, AppState.allStudents, 'saveStudents'); 
     closeModal('csv-upload-modal'); 
     renderManageStudents(); 
@@ -241,11 +246,10 @@ export function openStudentModal() {
 }
 
 export function editStudent(id) {
-const s = AppState.allStudents.find(x => x.id === id);
+const s = AppState.allStudents.find(x => x.id === id && x.deleted_flg !== 'Y');
     if (!s) return;
 
-    // 🌟 เพิ่มการวาด Dropdown ชั้นเรียนให้เป็นปัจจุบันก่อนเลือกค่า
-    const uniqueClasses = [...new Set(AppState.allClasses.map(c => c.className))].filter(Boolean).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    const uniqueClasses = [...new Set(AppState.allClasses.filter(c => c.deleted_flg !== 'Y').map(c => c.className))].filter(Boolean).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
     const classSelect = document.getElementById('stu-class');
     classSelect.innerHTML = '<option value="">-- เลือกชั้นเรียน --</option>' + 
         uniqueClasses.map(c => `<option value="${c}">${c}</option>`).join('');
@@ -344,29 +348,54 @@ export async function saveStudent() {
     }
 
     const objId = document.getElementById('stu-id').value || generateId();
-    const existStu = AppState.allStudents.find(x => x.id === objId);
+    const existStu = AppState.allStudents.find(x => x.id === objId && x.deleted_flg !== 'Y');
     const isComp = existStu ? existStu.isProfileComplete : (citizenId && phone ? true : false); 
+    
+    let obj;
+    const idx = AppState.allStudents.findIndex(x=>x.id===objId);
 
-    const obj = {
-        id: objId, status: status, homeVisit: homeVisit, isProfileComplete: isComp, studentId: studentId,
+    const commonData = {
+        status: status, homeVisit: homeVisit, isProfileComplete: isComp, studentId: studentId,
         title: document.getElementById('stu-title').value, firstName: fname, lastName: lname, nickname: nickname,
         citizenId: citizenId, class: document.getElementById('stu-class').value, number: parseInt(document.getElementById('stu-number').value),
         dob: document.getElementById('stu-dob').value, phone: phone, email: document.getElementById('stu-email').value.trim(),
         address: document.getElementById('stu-address').value.trim(),
         fatherFirstName: document.getElementById('stu-f-fname').value.trim(), fatherLastName: document.getElementById('stu-f-lname').value.trim(), fatherAge: document.getElementById('stu-f-age').value, fatherJob: document.getElementById('stu-f-job').value.trim(), fatherPhone: fPhone,
         motherFirstName: document.getElementById('stu-m-fname').value.trim(), motherLastName: document.getElementById('stu-m-lname').value.trim(), motherAge: document.getElementById('stu-m-age').value, motherJob: document.getElementById('stu-m-job').value.trim(), motherPhone: mPhone,
-        parentTitle: document.getElementById('stu-p-title').value, parentFirstName: document.getElementById('stu-p-fname').value.trim(), parentLastName: document.getElementById('stu-p-lname').value.trim(), parentRelation: document.getElementById('stu-p-rel').value, parentPhone: pPhone
+        parentTitle: document.getElementById('stu-p-title').value, parentFirstName: document.getElementById('stu-p-fname').value.trim(), parentLastName: document.getElementById('stu-p-lname').value.trim(), parentRelation: document.getElementById('stu-p-rel').value, parentPhone: pPhone,
+        updatedAt: getISOTimestamp(),
+        updatedBy: getCurrentUserId(),
     };
 
-    const idx = AppState.allStudents.findIndex(x=>x.id===obj.id); if(idx>-1) AppState.allStudents[idx]=obj; else AppState.allStudents.push(obj);
+    if (idx > -1) { // Update
+        obj = { ...AppState.allStudents[idx], ...commonData };
+        AppState.allStudents[idx] = obj;
+    } else { // Create
+        obj = {
+            id: objId,
+            ...commonData,
+            createdAt: getISOTimestamp(),
+            createdBy: getCurrentUserId(),
+            deleted_flg: 'N',
+            deletedAt: null,
+            deletedBy: null,
+        };
+        AppState.allStudents.push(obj);
+    }
+
     await saveToDB(DB_KEYS.STUDENTS, AppState.allStudents, 'saveStudents'); 
     closeModal('student-modal'); renderManageStudents(); showToast('บันทึกข้อมูลนักเรียนเรียบร้อย');
+}
+
+export async function searchManageStudents() {
+    await syncDataFromServer();
+    renderManageStudents();
 }
 
 export function renderManageStudents() {
     const f = document.getElementById('manage-filter-class').value;
     const txt = document.getElementById('manage-search').value.toLowerCase();
-    let stus = AppState.allStudents; 
+    let stus = AppState.allStudents.filter(s => s.deleted_flg !== 'Y'); 
     
     if(f) stus = stus.filter(s=>s.class===f); 
     if(txt) stus = stus.filter(s => getStudentFullName(s).toLowerCase().includes(txt) || (s.studentId && s.studentId.toString().includes(txt)));
@@ -374,7 +403,7 @@ export function renderManageStudents() {
     stus.sort((a,b)=> a.class.localeCompare(b.class, undefined, { numeric: true }) || a.number-b.number);
     
     const filterClassDropdown = document.getElementById('manage-filter-class');
-    const classList = [...new Set(AppState.allStudents.map(s => s.class))].filter(Boolean).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    const classList = [...new Set(stus.map(s => s.class))].filter(Boolean).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
     const currentSelected = filterClassDropdown.value;
     filterClassDropdown.innerHTML = `<option value="">ดูทุกชั้นเรียน</option>` + classList.map(c => `<option value="${c}">${c}</option>`).join('');
     filterClassDropdown.value = currentSelected;
@@ -399,7 +428,7 @@ export function renderManageStudents() {
             <td class="px-6 py-4 text-center text-sm w-auto md:w-32 whitespace-nowrap">
                 <div class="flex items-center justify-center space-x-3">
                     <button onclick="editStudent('${s.id}')" class="text-blue-500 hover:text-blue-700" title="แก้ไข"><i class="fas fa-edit text-lg"></i></button>
-                    <button onclick="deleteStu('${s.id}')" class="text-red-500 hover:text-red-700" title="ลบถาวร"><i class="fas fa-trash text-lg"></i></button>
+                    <button onclick="deleteStu('${s.id}')" class="text-red-500 hover:text-red-700" title="ลบ (ซ่อนข้อมูล)"><i class="fas fa-trash text-lg"></i></button>
                 </div>
             </td>
         </tr>`;
@@ -407,13 +436,29 @@ export function renderManageStudents() {
 }
 
 export function deleteStu(id) {
-    customConfirm('ยืนยันการลบข้อมูลนักเรียน', 'คุณต้องการลบข้อมูลนักเรียนคนนี้ใช่หรือไม่?', async () => {
-        AppState.allStudents = AppState.allStudents.filter(x=>x.id!==id);
-        AppState.allClubEnrollments = AppState.allClubEnrollments.filter(x => x.studentId !== id);
-        await saveToDB(DB_KEYS.STUDENTS, AppState.allStudents, 'saveStudents');
-        await saveToDB(DB_KEYS.CLUB_ENROLLMENTS, AppState.allClubEnrollments, 'saveClubEnrollments');
-        renderManageStudents();
-        showToast('ลบข้อมูลนักเรียนเรียบร้อยแล้ว');
+    customConfirm('ยืนยันการลบข้อมูลนักเรียน', 'คุณต้องการลบข้อมูลนักเรียนคนนี้ใช่หรือไม่? ข้อมูลจะถูกซ่อนและไม่สามารถเข้าระบบได้อีก', async () => {
+        const studentIdx = AppState.allStudents.findIndex(x => x.id === id);
+        if (studentIdx > -1) {
+            const now = getISOTimestamp();
+            const userId = getCurrentUserId();
+            AppState.allStudents[studentIdx].deleted_flg = 'Y';
+            AppState.allStudents[studentIdx].deletedAt = now;
+            AppState.allStudents[studentIdx].deletedBy = userId;
+
+            // Also soft-delete their club enrollments
+            AppState.allClubEnrollments.forEach((enrollment, index) => {
+                if (enrollment.studentId === id && enrollment.deleted_flg !== 'Y') {
+                    AppState.allClubEnrollments[index].deleted_flg = 'Y';
+                    AppState.allClubEnrollments[index].deletedAt = now;
+                    AppState.allClubEnrollments[index].deletedBy = userId;
+                }
+            });
+
+            await saveToDB(DB_KEYS.STUDENTS, AppState.allStudents, 'saveStudents');
+            await saveToDB(DB_KEYS.CLUB_ENROLLMENTS, AppState.allClubEnrollments, 'saveClubEnrollments');
+            renderManageStudents();
+            showToast('ลบข้อมูลนักเรียนเรียบร้อยแล้ว');
+        }
     });
 }
 
@@ -426,14 +471,14 @@ export function renderStudentAcademicPortal() {
     const stuId = AppState.currentUser.data.id;
     const stuClass = AppState.currentUser.data.class;
 
-    const currentClass = AppState.allClasses.find(c => c.className === stuClass && c.year == yr && c.semester == sem);
+    const currentClass = AppState.allClasses.find(c => c.className === stuClass && c.year == yr && c.semester == sem && c.deleted_flg !== 'Y');
     let enrolledSubjects = [];
     if (currentClass && currentClass.subjects) {
-        enrolledSubjects = AppState.allSubjects.filter(sub => currentClass.subjects.includes(sub.id));
+        enrolledSubjects = AppState.allSubjects.filter(sub => currentClass.subjects.includes(sub.id) && sub.deleted_flg !== 'Y');
     }
 
     enrolledSubjects.forEach(sub => {
-        const recs = AppState.allRecords.filter(r => r.class === stuClass && r.subject === sub.name && matchRecordYearSemester(r, yr, sem));
+        const recs = AppState.allRecords.filter(r => r.class === stuClass && r.subject === sub.name && matchRecordYearSemester(r, yr, sem) && r.deleted_flg !== 'Y');
 
         let stats = { มา: 0, สาย: 0, ลา: 0, ขาด: 0 };
         recs.forEach(r => {
@@ -467,12 +512,12 @@ export function renderStudentAcademicPortal() {
         </tr>`;
     });
 
-    const myEnrollments = AppState.allClubEnrollments.filter(e => e.studentId === stuId && e.year == yr && e.semester == sem);
+    const myEnrollments = AppState.allClubEnrollments.filter(e => e.studentId === stuId && e.year == yr && e.semester == sem && e.deleted_flg !== 'Y');
     myEnrollments.forEach(enroll => {
-        const club = AppState.allClubs.find(c => c.id === enroll.clubId);
+        const club = AppState.allClubs.find(c => c.id === enroll.clubId && c.deleted_flg !== 'Y');
         if(!club) return;
 
-        const recs = AppState.allClubRecords.filter(r => r.clubId === club.id && matchRecordYearSemester(r, yr, sem));
+        const recs = AppState.allClubRecords.filter(r => r.clubId === club.id && matchRecordYearSemester(r, yr, sem) && r.deleted_flg !== 'Y');
         let stats = { มา: 0, สาย: 0, ลา: 0, ขาด: 0 };
         
         recs.forEach(r => {
@@ -523,4 +568,5 @@ window.editStudent = editStudent;
 window.saveStudent = saveStudent;
 window.renderManageStudents = renderManageStudents;
 window.deleteStu = deleteStu;
+window.searchManageStudents = searchManageStudents;
 window.renderStudentAcademicPortal = renderStudentAcademicPortal;

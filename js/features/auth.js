@@ -40,7 +40,7 @@ export async function handleLogin(e, role) {
         const teacher = AppState.allTeachers.find(t => {
             const tEmail = t.email ? t.email.toString().trim() : '';
             const tPass = t.password ? t.password.toString().trim() : '';
-            return tEmail === user && tPass === pass;
+            return tEmail === user && tPass === pass && t.deleted_flg !== 'Y';
         });
         
         if (teacher) {
@@ -58,7 +58,7 @@ export async function handleLogin(e, role) {
         const student = AppState.allStudents.find(s => {
             if (!s.studentId) return false;
             const cleanStudentId = s.studentId.toString().trim();
-            return cleanStudentId === user && cleanStudentId === pass;
+            return cleanStudentId === user && cleanStudentId === pass && s.deleted_flg !== 'Y';
         });
         
         if (student) {
@@ -96,6 +96,7 @@ export function loginSuccess(userObj) {
     }
 
     updateMenuVisibility();
+    if(window.updateAllDropdowns) window.updateAllDropdowns();
 }
 
 export function logout() {
@@ -114,16 +115,28 @@ export function updateMenuVisibility() {
         document.getElementById(id).classList.add('hidden');
     });
 
+    const periodSelect = document.getElementById('checkin-period');
+
     if(AppState.currentUser.role === 'admin') {
         ['menu-checkin', 'menu-club-checkin', 'menu-club-manage', 'menu-history', 'menu-stats', 'menu-students', 'menu-master', 'menu-settings'].forEach(id => document.getElementById(id).classList.remove('hidden'));
         const msubTeacher = document.getElementById('msub-teachers');
         if(msubTeacher) msubTeacher.classList.remove('hidden');
+        
+        if (periodSelect) {
+            periodSelect.removeAttribute('disabled');
+            periodSelect.classList.remove('bg-gray-100', 'text-gray-500', 'cursor-not-allowed');
+        }
         if(window.switchTab) window.switchTab('checkin');
     } 
     else if (AppState.currentUser.role === 'teacher') {
         ['menu-checkin', 'menu-club-checkin', 'menu-club-manage', 'menu-history', 'menu-stats', 'menu-students', 'menu-master'].forEach(id => document.getElementById(id).classList.remove('hidden'));
         const msubTeacher = document.getElementById('msub-teachers');
         if(msubTeacher) msubTeacher.classList.add('hidden');
+        
+        if (periodSelect) {
+            periodSelect.setAttribute('disabled', 'true');
+            periodSelect.classList.add('bg-gray-100', 'text-gray-500', 'cursor-not-allowed');
+        }
         if(window.switchTab) window.switchTab('checkin');
     }
     else if (AppState.currentUser.role === 'student') {

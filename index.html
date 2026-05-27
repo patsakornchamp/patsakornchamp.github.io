@@ -804,14 +804,17 @@
                         <button onclick="openStudentModal()" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm whitespace-nowrap"><i class="fas fa-plus mr-2"></i> เพิ่มนักเรียน</button>
                     </div>
                 </div>
-                <div class="mb-6 flex gap-4 bg-gray-50 p-4 rounded-lg flex-col sm:flex-row w-full">
-                    <div class="w-full sm:w-1/3">
+                <div class="mb-6 flex gap-4 bg-gray-50 p-4 rounded-lg flex-col sm:flex-row w-full items-end">
+                    <div class="w-full sm:flex-1">
                         <label class="block text-sm font-medium text-gray-700 mb-1">กรองตามชั้นเรียน</label>
                         <select id="manage-filter-class" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500" onchange="renderManageStudents()"><option value="">ดูทุกชั้นเรียน</option></select>
                     </div>
-                    <div class="w-full sm:w-2/3">
+                    <div class="w-full sm:flex-1">
                         <label class="block text-sm font-medium text-gray-700 mb-1">ค้นหาชื่อ/รหัส</label>
                         <input type="text" id="manage-search" placeholder="พิมพ์ชื่อ นามสกุล หรือรหัสประจำตัว..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500" onkeyup="renderManageStudents()">
+                    </div>
+                    <div class="w-full sm:w-auto mt-4 sm:mt-0">
+                        <button onclick="searchManageStudents()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm whitespace-nowrap"><i class="fas fa-sync-alt mr-2"></i> รีเฟรช</button>
                     </div>
                 </div>
                 <div class="overflow-x-auto w-full"> <!-- เพิ่ม div คลุมไว้เผื่อจอเล็กมาก ๆ จะได้ปัดซ้ายขวาได้นิดหน่อย -->
@@ -859,7 +862,10 @@
                                 <input type="text" id="search-subject" placeholder="ค้นหารหัส หรือ ชื่อวิชา..." class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-green-500 focus:border-green-500" onkeyup="renderMasterData()">
                             </div>
                         </div>
-                        <button onclick="openSubjectModal()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm whitespace-nowrap"><i class="fas fa-plus"></i> เพิ่มวิชา</button>
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <button onclick="searchMasterData()" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm whitespace-nowrap"><i class="fas fa-sync-alt mr-1"></i> รีเฟรช</button>
+                            <button onclick="openSubjectModal()" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm whitespace-nowrap"><i class="fas fa-plus mr-1"></i> เพิ่มวิชา</button>
+                        </div>
                     </div>
                     <div class="overflow-x-auto rounded-lg border w-full">
                         <table class="min-w-full divide-y divide-gray-200">
@@ -886,7 +892,10 @@
                                 <input type="text" id="search-teacher" placeholder="ค้นหาชื่อ, สกุล หรืออีเมล..." class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-green-500 focus:border-green-500" onkeyup="renderMasterData()">
                             </div>
                         </div>
-                        <button onclick="openTeacherModal()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm whitespace-nowrap"><i class="fas fa-plus"></i> เพิ่มครู</button>
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <button onclick="searchMasterData()" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm whitespace-nowrap"><i class="fas fa-sync-alt mr-1"></i> รีเฟรช</button>
+                            <button onclick="openTeacherModal()" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm whitespace-nowrap"><i class="fas fa-plus mr-1"></i> เพิ่มครู</button>
+                        </div>
                     </div>
                     <div class="overflow-x-auto rounded-lg border w-full">
                         <table class="min-w-full divide-y divide-gray-200">
@@ -914,7 +923,10 @@
                                 <input type="text" id="search-class" placeholder="ค้นหาชื่อชั้นเรียน..." class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-green-500 focus:border-green-500" onkeyup="renderMasterData()">
                             </div>
                         </div>
-                        <button onclick="openClassModal()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm whitespace-nowrap"><i class="fas fa-plus"></i> สร้างชั้นเรียน</button>
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <button onclick="searchMasterData()" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm whitespace-nowrap"><i class="fas fa-sync-alt mr-1"></i> รีเฟรช</button>
+                            <button onclick="openClassModal()" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm whitespace-nowrap"><i class="fas fa-plus mr-1"></i> สร้างชั้นเรียน</button>
+                        </div>
                     </div>
                     <div class="overflow-x-auto rounded-lg border w-full">
                         <table class="min-w-full divide-y divide-gray-200">
@@ -971,7 +983,8 @@
                 </div>
                 <div id="sd-list-container" class="space-y-2"></div>
             </div>
-            <div class="px-6 py-4 border-t bg-gray-50 flex justify-end">
+            <div class="px-6 py-4 border-t bg-gray-50 flex justify-between items-center">
+                <button id="btn-delete-record" class="text-red-500 hover:text-red-700 font-medium text-sm hidden px-2 py-1 rounded transition-colors"><i class="fas fa-trash-alt mr-1"></i> ลบประวัตินี้</button>
                 <button onclick="closeModal('session-drilldown-modal')" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold text-sm">ปิดหน้าต่าง</button>
             </div>
         </div>
@@ -1222,6 +1235,7 @@
     </div>
     
     <div id="subject-modal" class="modal"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4"><div class="px-6 py-4 border-b flex justify-between bg-blue-50 rounded-t-xl"><h3 class="font-bold text-blue-800" id="sub-modal-title">วิชา</h3><button onclick="closeModal('subject-modal')"><i class="fas fa-times"></i></button></div><div class="p-6"><input type="hidden" id="sub-id"><div class="mb-3"><label class="text-sm font-medium">รหัสวิชา *</label><input type="text" id="sub-code" class="w-full px-3 py-2 border rounded"></div><div class="mb-3"><label class="text-sm font-medium">ชื่อวิชา *</label><input type="text" id="sub-name" class="w-full px-3 py-2 border rounded"></div><div class="mb-3"><label class="text-sm font-medium">หน่วยกิต</label><input type="number" step="0.5" id="sub-credit" class="w-full px-3 py-2 border rounded"></div><div class="flex justify-end gap-2 mt-4"><button onclick="closeModal('subject-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-100">ยกเลิก</button><button onclick="saveSubject()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">บันทึก</button></div></div></div></div>
+    <div id="subject-modal" class="modal"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4"><div class="px-6 py-4 border-b flex justify-between bg-blue-50 rounded-t-xl"><h3 class="font-bold text-blue-800" id="sub-modal-title">วิชา</h3><button onclick="closeModal('subject-modal')"><i class="fas fa-times"></i></button></div><div class="p-6"><input type="hidden" id="sub-id"><div class="mb-3"><label class="text-sm font-medium">รหัสวิชา *</label><input type="text" id="sub-code" class="w-full px-3 py-2 border rounded"></div><div class="mb-3"><label class="text-sm font-medium">ชื่อวิชา *</label><input type="text" id="sub-name" class="w-full px-3 py-2 border rounded"></div><div id="sub-name-edit-warning" class="text-red-500 text-xs mt-1 hidden"><i class="fas fa-exclamation-circle mr-1"></i> หากต้องการแก้ไขชื่อวิชา กรุณาติดต่อ Admin</div></div><div class="mb-3"><label class="text-sm font-medium">หน่วยกิต</label><input type="number" step="0.5" id="sub-credit" class="w-full px-3 py-2 border rounded"></div><div class="flex justify-end gap-2 mt-4"><button onclick="closeModal('subject-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-100">ยกเลิก</button><button onclick="saveSubject()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">บันทึก</button></div></div></div></div>
     <div id="teacher-modal" class="modal"><div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4"><div class="px-6 py-4 border-b flex justify-between bg-blue-50 rounded-t-xl"><h3 class="font-bold text-blue-800" id="t-modal-title">ครูผู้สอน</h3><button onclick="closeModal('teacher-modal')"><i class="fas fa-times"></i></button></div><div class="p-6 max-h-[70vh] overflow-y-auto"><input type="hidden" id="t-id"><div class="grid grid-cols-3 gap-3 mb-3"><div class="col-span-1"><label class="text-sm font-medium">คำนำหน้า</label><select id="t-title" class="w-full px-3 py-2 border rounded"><option value="นาย">นาย</option><option value="นาง">นาง</option><option value="นางสาว">นางสาว</option></select></div><div class="col-span-2"><label class="text-sm font-medium">ชื่อ *</label><input type="text" id="t-fname" class="w-full px-3 py-2 border rounded"></div></div><div class="mb-3"><label class="text-sm font-medium">นามสกุล *</label><input type="text" id="t-lname" class="w-full px-3 py-2 border rounded"></div><h4 class="font-bold text-sm text-gray-700 border-b pb-1 mt-4 mb-2">ข้อมูลการเข้าสู่ระบบ & ติดต่อ</h4><div class="grid grid-cols-2 gap-3 mb-3"><div><label class="text-sm font-medium">อีเมล (ใช้เข้าระบบ) *</label><input type="email" id="t-email" required class="w-full px-3 py-2 border rounded border-blue-300 bg-blue-50"></div><div><label class="text-sm font-medium">โทรศัพท์</label><input type="text" id="t-phone" placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded"></div></div><div class="grid grid-cols-2 gap-3 mb-4"><div><label class="text-sm font-medium">รหัสผ่าน *</label><input type="password" id="t-password" class="w-full px-3 py-2 border rounded"></div><div><label class="text-sm font-medium">ยืนยันรหัสผ่าน *</label><input type="password" id="t-conf-password" class="w-full px-3 py-2 border rounded"></div></div><div><label class="text-sm font-medium block mb-2">วิชาที่สอน (เลือกได้มากกว่า 1)</label><div id="t-subjects-container" class="bg-gray-50 border p-3 rounded h-40 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1"></div></div><div class="flex justify-end gap-2 mt-4"><button onclick="closeModal('teacher-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-100">ยกเลิก</button><button onclick="saveTeacher()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">บันทึก</button></div></div></div></div>
     <div id="class-modal" class="modal"><div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] flex flex-col"><div class="px-6 py-4 border-b flex justify-between bg-blue-50 rounded-t-xl"><h3 class="text-blue-800 font-bold" id="c-modal-title">ชั้นเรียน</h3><button onclick="closeModal('class-modal')"><i class="fas fa-times"></i></button></div><div class="p-6 overflow-y-auto"><input type="hidden" id="c-id"><div class="grid grid-cols-2 gap-3 mb-3"><div><label class="text-sm font-medium">ปีการศึกษา *</label><input type="number" id="c-year" class="w-full px-3 py-2 border rounded" placeholder="เช่น 2569"></div><div><label class="text-sm font-medium">ภาคเรียน *</label><select id="c-sem" class="w-full px-3 py-2 border rounded"><option value="1">1</option><option value="2">2</option></select></div></div><div class="mb-4"><label class="text-sm font-medium">ชื่อชั้นเรียน *</label><input type="text" id="c-name" class="w-full px-3 py-2 border rounded" placeholder="เช่น ม.1/1"></div><div class="mb-4"><label class="text-sm font-medium block mb-2">ครูที่ปรึกษา (เลือกได้มากกว่า 1)</label><div id="c-advisors-container" class="bg-gray-50 border p-3 rounded h-32 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1"></div></div><div><label class="text-sm font-medium block mb-2">วิชาที่เรียน (เลือกได้มากกว่า 1)</label><div id="c-subjects-container" class="bg-gray-50 border p-3 rounded h-40 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1"></div></div></div><div class="px-6 py-4 bg-gray-50 flex justify-end gap-2 rounded-b-xl border-t"><button onclick="closeModal('class-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-100">ยกเลิก</button><button onclick="saveClassRoom()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">บันทึก</button></div></div></div>
 

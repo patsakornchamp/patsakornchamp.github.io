@@ -1,6 +1,6 @@
 import { AppState } from '../core/state.js';
 import { DB_KEYS } from '../core/config.js';
-import { generateId, getStudentFullName, showToast, matchRecordYearSemester, getBangkokDate, getBangkokCurrentTime, exportToCSV } from '../utils/helpers.js';
+import { generateId, getStudentFullName, showToast, matchRecordYearSemester, getBangkokDate, getBangkokCurrentTime, exportToCSV, getISOTimestamp, getCurrentUserId } from '../utils/helpers.js';
 import { syncDataFromServer, saveToDB } from '../services/api.js';
 
 export function resetCheckinTable() {
@@ -31,7 +31,7 @@ export async function loadCheckinList() {
 
     await syncDataFromServer();
 
-    AppState.currentCheckinStudents = AppState.allStudents.filter(s => s.class === cls && s.status !== 'ลาออก').sort((a,b) => {
+    AppState.currentCheckinStudents = AppState.allStudents.filter(s => s.class === cls && s.status !== 'ลาออก' && s.deleted_flg !== 'Y').sort((a,b) => {
         const numA = parseInt(a.number) || 9999;
         const numB = parseInt(b.number) || 9999;
         if (numA !== numB) return numA - numB;
@@ -45,7 +45,7 @@ export async function loadCheckinList() {
     }
     document.getElementById('no-students-alert').classList.add('hidden');
 
-    const existRec = AppState.allRecords.find(r => getBangkokDate(r.date)===date && String(r.period||'')===String(period||'') && r.class===cls && r.subject===sub && matchRecordYearSemester(r, yr, sem));
+    const existRec = AppState.allRecords.find(r => getBangkokDate(r.date)===date && String(r.period||'')===String(period||'') && r.class===cls && r.subject===sub && matchRecordYearSemester(r, yr, sem) && r.deleted_flg !== 'Y');
     
     AppState.activeCheckinStates = {};
     AppState.lastCheckedStuId = null;
@@ -151,10 +151,13 @@ export async function saveAttendance() {
     const sub = document.getElementById('checkin-subject').value; 
     const teacherSelect = document.getElementById('checkin-teacher');
     const tId = teacherSelect.value;
-    const tObj = AppState.allTeachers.find(t => t.id === tId);
+    const tObj = AppState.allTeachers.find(t => t.id === tId && t.deleted_flg !== 'Y');
     const teacher = tObj ? `${tObj.firstName} ${tObj.lastName}` : teacherSelect.options[teacherSelect.selectedIndex].text;
     const yr = parseInt(document.getElementById('checkin-year').value);
     const sem = parseInt(document.getElementById('checkin-semester').value);
+
+    const now = getISOTimestamp();
+    const userId = getCurrentUserId();
 
     if (!AppState.currentCheckinStudents || AppState.currentCheckinStudents.length === 0) return;
 
@@ -162,32 +165,32 @@ export async function saveAttendance() {
         studentId: stu.id, 
         studentName: getStudentFullName(stu), 
         studentNumber: stu.number, 
-        status: AppState.activeCheckinStates[stu.id] || 'ขาด' 
+        status: AppState.activeCheckinStates[stu.id] || 'ขาด'
     }));
 
-    const existRecIdx = AppState.allRecords.findIndex(r => getBangkokDate(r.date)===date && String(r.period||'')===String(period||'') && r.class===cls && r.subject===sub && matchRecordYearSemester(r, yr, sem));
+    const existRecIdx = AppState.allRecords.findIndex(r => getBangkokDate(r.date)===date && String(r.period||'')===String(period||'') && r.class===cls && r.subject===sub && matchRecordYearSemester(r, yr, sem) && r.deleted_flg !== 'Y');
     
-    let recordId = generateId();
-    if (existRecIdx > -1) {
-        recordId = AppState.allRecords[existRecIdx].id; 
-        AppState.allRecords.splice(existRecIdx, 1);     
+    let record;
+    if (existRecIdx > -1) { // Update
+        record = {
+            ...AppState.allRecords[existRecIdx],
+            attendance: att,
+            updatedAt: now,
+            updatedBy: userId,
+        };
+        AppState.allRecords[existRecIdx] = record;
+    } else { // Create
+        const localTimestampStr = date + 'T' + getBangkokCurrentTime();
+        const utcDate = new Date(localTimestampStr + "+07:00").toISOString();
+        record = { 
+            id: generateId(), date: utcDate, period: period, class: cls, subject: sub, teacher, year: yr, semester: sem, attendance: att,
+            createdAt: now, createdBy: userId,
+            updatedAt: now, updatedBy: userId,
+            deleted_flg: 'N', deletedAt: null, deletedBy: null,
+        };
+        AppState.allRecords.push(record);
     }
 
-    const localTimestampStr = date + 'T' + getBangkokCurrentTime();
-    const utcDate = new Date(localTimestampStr + "+07:00").toISOString();
-
-    const record = { 
-        id: recordId, 
-        date: utcDate,
-        period: period,
-        class: cls, 
-        subject: sub, 
-        teacher, 
-        year: yr, 
-        semester: sem, 
-        attendance: att 
-    };
-    AppState.allRecords.push(record);
     await saveToDB(DB_KEYS.RECORDS, AppState.allRecords, 'saveRecords');
     showToast('บันทึกการเช็คชื่อเรียบร้อย');
 }
@@ -199,7 +202,7 @@ export function exportCheckinCSV() {
     const sub = document.getElementById('checkin-subject').value;
     const teacherSelect = document.getElementById('checkin-teacher');
     const tId = teacherSelect.value;
-    const tObj = AppState.allTeachers.find(t => t.id === tId);
+    const tObj = AppState.allTeachers.find(t => t.id === tId && t.deleted_flg !== 'Y');
     const teacher = tObj ? `${tObj.firstName} ${tObj.lastName}` : teacherSelect.options[teacherSelect.selectedIndex].text;
     const yr = document.getElementById('checkin-year').value;
     const sem = document.getElementById('checkin-semester').value;

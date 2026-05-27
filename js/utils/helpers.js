@@ -2,6 +2,7 @@
 // ไฟล์: test/js/utils/helpers.js
 // หน้าที่: รวมฟังก์ชันตัวช่วย (Utility Functions)
 // ==========================================
+import { AppState } from '../core/state.js';
 
 export function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -11,6 +12,17 @@ export function getStudentFullName(s) {
     if(!s) return '';
     const nick = s.nickname ? ` (${s.nickname})` : '';
     return s.firstName ? `${s.title || ''}${s.firstName} ${s.lastName || ''}${nick}` : `${s.name || ''}${nick}`;
+}
+
+export function getCurrentUserId() {
+    if (!AppState.currentUser) return 'system';
+    if (AppState.currentUser.role === 'admin') return 'admin';
+    return AppState.currentUser.data.id;
+}
+
+export function getISOTimestamp() {
+    // Returns a UTC ISO 8601 string for database consistency.
+    return new Date().toISOString();
 }
 
 export function showLoading(text = 'กำลังประมวลผล...') {
