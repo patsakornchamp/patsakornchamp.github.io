@@ -13,6 +13,7 @@ export function onHistoryTypeChange() {
         document.getElementById('lbl-history-sub').style.display = 'block';
         document.getElementById('history-subject').style.display = 'block';
         if(window.updateClassDropdown) window.updateClassDropdown(yr, sem, 'history-class', 'ทุกชั้นเรียน');
+        document.getElementById('history-subject').innerHTML = '<option value="">-- กรุณาเลือกชั้นเรียนก่อน --</option>';
     } else {
         document.getElementById('lbl-history-class-or-club').innerText = 'ชุมนุม';
         document.getElementById('lbl-history-sub').style.display = 'none';
@@ -30,8 +31,8 @@ export async function searchHistory() {
 export function renderHistory() {
     const type = document.getElementById('history-type').value;
     const d = document.getElementById('history-date').value;
-    const classOrClub = document.getElementById('history-class').value;
-    const s = document.getElementById('history-subject').value;
+    const classOrClubId = document.getElementById('history-class').value;
+    const subId = document.getElementById('history-subject').value;
     const yr = document.getElementById('history-year').value;
     const sem = document.getElementById('history-semester').value;
 
@@ -41,22 +42,29 @@ export function renderHistory() {
     if (type === 'regular') {
         let recs = AppState.allRecords.filter(r => 
             r.deleted_flg !== 'Y' && 
-            AppState.allClasses.some(c => c.className === r.class && c.deleted_flg !== 'Y') &&
-            AppState.allSubjects.some(s => s.name === r.subject && s.deleted_flg !== 'Y')
+            AppState.allClasses.some(c => (r.classId ? c.id === r.classId : c.className === r.class) && c.deleted_flg !== 'Y') &&
+            AppState.allSubjects.some(s => (r.subjectId ? s.id === r.subjectId : s.name === r.subject) && s.deleted_flg !== 'Y')
         ); 
+
+        const clsObj = AppState.allClasses.find(c => c.id === classOrClubId);
+        const clsName = clsObj ? clsObj.className : classOrClubId;
+        const subObj = AppState.allSubjects.find(s => s.id === subId);
+        const subName = subObj ? subObj.name : subId;
+
         if (d) {
             recs = recs.filter(r => {
                 const recordDate = getBangkokDate(r.date); 
                 return recordDate === d;
             });
         }
-        if(classOrClub) recs=recs.filter(r=>r.class===classOrClub); 
-        if(s) recs=recs.filter(r=>r.subject===s);
+        if(classOrClubId) recs=recs.filter(r => r.classId === classOrClubId || (!r.classId && r.class === clsName)); 
+        if(subId) recs=recs.filter(r => r.subjectId === subId || (!r.subjectId && r.subject === subName));
         if(yr && sem) recs=recs.filter(r => matchRecordYearSemester(r, yr, sem));
 
         if (AppState.currentUser && AppState.currentUser.role === 'teacher') {
+            const tId = AppState.currentUser.data.id;
             const teacherFullName = `${AppState.currentUser.data.firstName} ${AppState.currentUser.data.lastName}`;
-            recs = recs.filter(r => r.teacher === teacherFullName); 
+            recs = recs.filter(r => r.teacherId === tId || (!r.teacherId && r.teacher === teacherFullName)); 
         }
 
         recs.sort((a,b)=>new Date(b.date)-new Date(a.date));
@@ -65,12 +73,15 @@ export function renderHistory() {
         recs.forEach(r => {
             let stat={มา:0,สาย:0,ลา:0,ขาด:0}; 
             r.attendance.forEach(a => {
-                if (AppState.allStudents.some(stu => stu.id === a.studentId && stu.deleted_flg !== 'Y')) {
+                if (AppState.allStudents.some(stu => stu.id === a.studentId)) {
                     stat[a.status]++;
                 }
             });
             const rYr = r.year !== undefined ? r.year : getYearSemesterFromDate(r.date).year;
             const rSem = r.semester !== undefined ? r.semester : getYearSemesterFromDate(r.date).semester;
+            const rClassName = r.classId ? (AppState.allClasses.find(c=>c.id===r.classId)?.className || r.class) : r.class;
+            const rSubName = r.subjectId ? (AppState.allSubjects.find(s=>s.id===r.subjectId)?.name || r.subject) : r.subject;
+            const rTeacherName = r.teacherId ? (() => { const t = AppState.allTeachers.find(t=>t.id===r.teacherId); return t ? `${t.firstName} ${t.lastName}` : r.teacher; })() : r.teacher;
             
             let deleteBtnHtml = '';
             if (AppState.currentUser && (AppState.currentUser.role === 'admin' || AppState.currentUser.role === 'teacher')) {
@@ -81,7 +92,7 @@ export function renderHistory() {
                 <div class="bg-gray-50 hover:bg-blue-50/50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 transition-colors">
                     <div class="flex-1">
                         <h4 class="font-bold text-gray-800">${getBangkokDate(r.date)} (คาบ: ${r.period || '-'} | ปีการศึกษา ${rYr} ภาคเรียน ${rSem})</h4>
-                        <p class="text-sm mt-1">ชั้นเรียน: ${r.class} | วิชา: ${r.subject} | ครู: ${r.teacher||'-'}</p>
+                        <p class="text-sm mt-1">ชั้นเรียน: ${rClassName} | วิชา: ${rSubName} | ครู: ${rTeacherName||'-'}</p>
                     </div>
                     <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
                         <div class="text-sm font-semibold text-green-700 bg-green-100 px-3 py-1.5 rounded-full text-center whitespace-nowrap">มา:${stat['มา']} สาย:${stat['สาย']} ลา:${stat['ลา']} ขาด:${stat['ขาด']}</div>
@@ -101,7 +112,7 @@ export function renderHistory() {
                 return recordDate === d;
             });
         }
-        if(classOrClub) recs = recs.filter(r => r.clubId === classOrClub);
+        if(classOrClubId) recs = recs.filter(r => r.clubId === classOrClubId);
         if(yr && sem) recs = recs.filter(r => matchRecordYearSemester(r, yr, sem));
 
         recs.sort((a,b) => new Date(b.date) - new Date(a.date));
@@ -110,7 +121,7 @@ export function renderHistory() {
         recs.forEach(r => {
             let stat={มา:0,สาย:0,ลา:0,ขาด:0}; 
             r.attendance.forEach(a => {
-                if (AppState.allStudents.some(stu => stu.id === a.studentId && stu.deleted_flg !== 'Y')) {
+                if (AppState.allStudents.some(stu => stu.id === a.studentId)) {
                     stat[a.status]++;
                 }
             });
@@ -143,25 +154,31 @@ export function renderHistory() {
 export function exportHistoryCSV() {
     const type = document.getElementById('history-type').value;
     const d = document.getElementById('history-date').value;
-    const c = document.getElementById('history-class').value;
-    const s = document.getElementById('history-subject').value;
+    const classOrClubId = document.getElementById('history-class').value;
+    const subId = document.getElementById('history-subject').value;
     const yr = document.getElementById('history-year').value;
     const sem = document.getElementById('history-semester').value;
 
     if(type === 'regular') {
         let textRecs = AppState.allRecords.filter(r => 
             r.deleted_flg !== 'Y' && 
-            AppState.allClasses.some(c => c.className === r.class && c.deleted_flg !== 'Y') &&
-            AppState.allSubjects.some(s => s.name === r.subject && s.deleted_flg !== 'Y')
+            AppState.allClasses.some(c => (r.classId ? c.id === r.classId : c.className === r.class) && c.deleted_flg !== 'Y') &&
+            AppState.allSubjects.some(s => (r.subjectId ? s.id === r.subjectId : s.name === r.subject) && s.deleted_flg !== 'Y')
         );
+        const clsObj = AppState.allClasses.find(c => c.id === classOrClubId);
+        const clsName = clsObj ? clsObj.className : classOrClubId;
+        const subObj = AppState.allSubjects.find(s => s.id === subId);
+        const subName = subObj ? subObj.name : subId;
+
         if(d) textRecs=textRecs.filter(r=>getBangkokDate(r.date)===d);
-        if(c) textRecs=textRecs.filter(r=>r.class===c);
-        if(s) textRecs=textRecs.filter(r=>r.subject===s);
+        if(classOrClubId) textRecs=textRecs.filter(r => r.classId === classOrClubId || (!r.classId && r.class === clsName));
+        if(subId) textRecs=textRecs.filter(r => r.subjectId === subId || (!r.subjectId && r.subject === subName));
         if(yr && sem) textRecs=textRecs.filter(r => matchRecordYearSemester(r, yr, sem));
 
         if (AppState.currentUser && AppState.currentUser.role === 'teacher') {
+            const tId = AppState.currentUser.data.id;
             const teacherFullName = `${AppState.currentUser.data.firstName} ${AppState.currentUser.data.lastName}`;
-            textRecs = textRecs.filter(r => r.teacher === teacherFullName);
+            textRecs = textRecs.filter(r => r.teacherId === tId || (!r.teacherId && r.teacher === teacherFullName));
         }
 
         if(textRecs.length === 0) return customAlert('ไม่พบข้อมูลประวัติภายใต้เงื่อนไขตัวกรองปัจจุบัน');
@@ -171,12 +188,15 @@ export function exportHistoryCSV() {
             let stat={มา:0,สาย:0,ลา:0,ขาด:0}; 
             let activeCount = 0;
             r.attendance.forEach(a => {
-                if (AppState.allStudents.some(stu => stu.id === a.studentId && stu.deleted_flg !== 'Y')) {
+                if (AppState.allStudents.some(stu => stu.id === a.studentId)) {
                     stat[a.status]++;
                     activeCount++;
                 }
             });
-            return [getBangkokDate(r.date), r.period || '-', r.year || '', r.semester || '', r.class, r.subject, r.teacher || '-', activeCount, stat['มา'], stat['สาย'], stat['ลา'], stat['ขาด']];
+            const rClassName = r.classId ? (AppState.allClasses.find(c=>c.id===r.classId)?.className || r.class) : r.class;
+            const rSubName = r.subjectId ? (AppState.allSubjects.find(s=>s.id===r.subjectId)?.name || r.subject) : r.subject;
+            const rTeacherName = r.teacherId ? (() => { const t = AppState.allTeachers.find(t=>t.id===r.teacherId); return t ? `${t.firstName} ${t.lastName}` : r.teacher; })() : r.teacher;
+            return [getBangkokDate(r.date), r.period || '-', r.year || '', r.semester || '', rClassName, rSubName, rTeacherName || '-', activeCount, stat['มา'], stat['สาย'], stat['ลา'], stat['ขาด']];
         });
         exportToCSV(`ประวัติเช็คชื่อปกติ.csv`, headers, rows);
     } else {
@@ -185,7 +205,7 @@ export function exportHistoryCSV() {
             AppState.allClubs.some(c => c.id === r.clubId && c.deleted_flg !== 'Y')
         );
         if(d) textRecs = textRecs.filter(r => getBangkokDate(r.date) === d);
-        if(c) textRecs = textRecs.filter(r => r.clubId === c);
+        if(classOrClubId) textRecs = textRecs.filter(r => r.clubId === classOrClubId);
         if(yr && sem) textRecs = textRecs.filter(r => matchRecordYearSemester(r, yr, sem));
 
         if(textRecs.length === 0) return customAlert('ไม่พบข้อมูลประวัติกิจกรรมชุมนุม');
@@ -195,7 +215,7 @@ export function exportHistoryCSV() {
             let stat={มา:0,สาย:0,ลา:0,ขาด:0}; 
             let activeCount = 0;
             r.attendance.forEach(a => {
-                if (AppState.allStudents.some(stu => stu.id === a.studentId && stu.deleted_flg !== 'Y')) {
+                if (AppState.allStudents.some(stu => stu.id === a.studentId)) {
                     stat[a.status]++;
                     activeCount++;
                 }

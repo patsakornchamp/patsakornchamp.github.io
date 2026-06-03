@@ -11,7 +11,8 @@ export function renderStudentProfile() {
     
     const badgeEl = document.getElementById('profile-badges');
     let badgesHtml = '';
-    if (s.isProfileComplete) {
+    const isProfileComplete = s.isProfileComplete === true || String(s.isProfileComplete).toUpperCase() === 'TRUE';
+    if (isProfileComplete) {
         badgesHtml += '<span class="bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full font-medium inline-block mb-1"><i class="fas fa-check-circle mr-1"></i> ประวัติสมบูรณ์</span><br>';
     } else {
         badgesHtml += '<span class="bg-yellow-100 text-yellow-800 text-sm px-3 py-1 rounded-full font-medium inline-block mb-1"><i class="fas fa-exclamation-triangle mr-1"></i> กรุณากรอกประวัติให้ครบ</span><br>';
@@ -349,7 +350,13 @@ export async function saveStudent() {
 
     const objId = document.getElementById('stu-id').value || generateId();
     const existStu = AppState.allStudents.find(x => x.id === objId && x.deleted_flg !== 'Y');
-    const isComp = existStu ? existStu.isProfileComplete : (citizenId && phone ? true : false); 
+    
+    let isComp = false;
+    if (existStu) {
+        isComp = existStu.isProfileComplete === true || String(existStu.isProfileComplete).toUpperCase() === 'TRUE';
+    } else {
+        isComp = (citizenId && phone) ? true : false;
+    }
     
     let obj;
     const idx = AppState.allStudents.findIndex(x=>x.id===objId);
@@ -367,8 +374,31 @@ export async function saveStudent() {
         updatedBy: getCurrentUserId(),
     };
 
+    let shiftCount = 0;
+    if (status !== 'ลาออก') {
+        const targetClass = commonData.class;
+        const targetNumber = commonData.number;
+        // หาว่ามีเด็กคนอื่นในห้องนี้ใช้เลขที่นี้ หรือเลขที่มากกว่าอยู่หรือไม่ (กรณีชน)
+        const conflict = AppState.allStudents.find(s => s.class === targetClass && s.number === targetNumber && s.id !== objId && s.deleted_flg !== 'Y');
+        
+        if (conflict) {
+            const doShift = confirm(`พบนักเรียนเลขที่ ${targetNumber} ในห้อง ${targetClass} อยู่แล้ว\n\nต้องการแทรกนักเรียนคนนี้ แล้วดันเลขที่ของคนอื่นๆ (+1) อัตโนมัติหรือไม่?`);
+            if (doShift) {
+                AppState.allStudents.forEach(s => {
+                    if (s.class === targetClass && s.number >= targetNumber && s.id !== objId && s.deleted_flg !== 'Y') {
+                        s.number += 1; // ดันเลขที่ลง
+                        s.updatedAt = getISOTimestamp();
+                        s.updatedBy = getCurrentUserId();
+                        shiftCount++;
+                    }
+                });
+            }
+        }
+    }
+
     if (idx > -1) { // Update
-        obj = { ...AppState.allStudents[idx], ...commonData };
+        const oldStu = AppState.allStudents[idx];
+        obj = { ...oldStu, ...commonData };
         AppState.allStudents[idx] = obj;
     } else { // Create
         obj = {
@@ -384,7 +414,13 @@ export async function saveStudent() {
     }
 
     await saveToDB(DB_KEYS.STUDENTS, AppState.allStudents, 'saveStudents'); 
-    closeModal('student-modal'); renderManageStudents(); showToast('บันทึกข้อมูลนักเรียนเรียบร้อย');
+    closeModal('student-modal'); 
+    renderManageStudents(); 
+    if (shiftCount > 0) {
+        showToast(`บันทึกข้อมูลและดันเลขที่อัตโนมัติให้เพื่อน ${shiftCount} คน`);
+    } else {
+        showToast('บันทึกข้อมูลนักเรียนเรียบร้อย');
+    }
 }
 
 export async function searchManageStudents() {
@@ -395,23 +431,26 @@ export async function searchManageStudents() {
 export function renderManageStudents() {
     const f = document.getElementById('manage-filter-class').value;
     const txt = document.getElementById('manage-search').value.toLowerCase();
-    let stus = AppState.allStudents.filter(s => s.deleted_flg !== 'Y'); 
-    
-    if(f) stus = stus.filter(s=>s.class===f); 
-    if(txt) stus = stus.filter(s => getStudentFullName(s).toLowerCase().includes(txt) || (s.studentId && s.studentId.toString().includes(txt)));
-    
-    stus.sort((a,b)=> a.class.localeCompare(b.class, undefined, { numeric: true }) || a.number-b.number);
+    const allActiveStudents = AppState.allStudents.filter(s => s.deleted_flg !== 'Y'); 
     
     const filterClassDropdown = document.getElementById('manage-filter-class');
-    const classList = [...new Set(stus.map(s => s.class))].filter(Boolean).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    // สร้างตัวเลือก Dropdown จากนักเรียนทั้งหมด (ที่ยังไม่ได้กรอง)
+    const classList = [...new Set(allActiveStudents.map(s => s.class))].filter(Boolean).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
     const currentSelected = filterClassDropdown.value;
     filterClassDropdown.innerHTML = `<option value="">ดูทุกชั้นเรียน</option>` + classList.map(c => `<option value="${c}">${c}</option>`).join('');
     filterClassDropdown.value = currentSelected;
 
+    let stus = [...allActiveStudents];
+    if(f) stus = stus.filter(s=>s.class===f); 
+    if(txt) stus = stus.filter(s => getStudentFullName(s).toLowerCase().includes(txt) || (s.studentId && s.studentId.toString().includes(txt)));
+    
+    stus.sort((a,b)=> a.class.localeCompare(b.class, undefined, { numeric: true }) || a.number-b.number);
+
     document.getElementById('manage-students-table-body').innerHTML = stus.map(s => {
         const isResigned = s.status === 'ลาออก';
         const statusBadge = isResigned ? `<span class="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded ml-2 font-bold whitespace-nowrap">ลาออก</span>` : '';
-        const incompleteWarning = (!s.isProfileComplete && !isResigned) ? `<span class="text-yellow-500 ml-2" title="ยังไม่กรอกประวัติครบบริบูรณ์"><i class="fas fa-exclamation-triangle"></i></span>` : '';
+        const isProfileComplete = s.isProfileComplete === true || String(s.isProfileComplete).toUpperCase() === 'TRUE';
+        const incompleteWarning = (!isProfileComplete && !isResigned) ? `<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded ml-2 font-bold whitespace-nowrap border border-yellow-200 shadow-sm" title="ยังไม่กรอกประวัติครบบริบูรณ์"><i class="fas fa-exclamation-triangle mr-1"></i>ยังไม่กรอกประวัติ</span>` : '';
         const rowClass = isResigned ? 'opacity-50 bg-gray-50' : 'hover:bg-gray-50';
 
         return `<tr class="${rowClass}">

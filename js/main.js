@@ -38,22 +38,25 @@ export function updateAllDropdowns() {
         activeSubjects = activeSubjects.filter(s => teacherSubjects.includes(s.id));
     }
     activeSubjects.sort((a, b) => (a.code || a.name).localeCompare(b.code || b.name));
-    const subjectOptionsStr = activeSubjects.map(s => `<option value="${s.name}">${s.code} - ${s.name}</option>`).join('');
+    const subjectOptionsStr = activeSubjects.map(s => `<option value="${s.id}">${s.code} - ${s.name}</option>`).join('');
 
-    ['checkin-subject', 'history-subject', 'stats-subject'].forEach(id => {
+    ['checkin-subject'].forEach(id => {
         const el = document.getElementById(id);
         if(el) {
             const currentVal = el.value;
-            if (id === 'stats-subject') {
-                el.innerHTML = '<option value="all">-- รวมทุกวิชา --</option>' + subjectOptionsStr;
-            } else if (id === 'history-subject') {
-                el.innerHTML = '<option value="">-- ดูทุกวิชา --</option>' + subjectOptionsStr;
-            } else {
-                el.innerHTML = '<option value="">-- เลือกวิชา --</option>' + subjectOptionsStr;
-            }
+            el.innerHTML = '<option value="">-- เลือกวิชา --</option>' + subjectOptionsStr;
             if (currentVal) el.value = currentVal;
         }
     });
+
+    ['stats-subject', 'history-subject'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.innerHTML = '<option value="">-- กรุณาเลือกชั้นเรียนก่อน --</option>';
+        }
+    });
+    if (window.onStatsClassChange && document.getElementById('stats-class')?.value) window.onStatsClassChange();
+    if (window.onHistoryClassChange && document.getElementById('history-class')?.value) window.onHistoryClassChange();
 
     const teacherOptions = '<option value="">-- เลือกครูผู้สอน --</option>' + AppState.allTeachers.filter(t => t.deleted_flg !== 'Y').map(t => `<option value="${t.id}">${t.firstName} ${t.lastName}</option>`).join('');
     const elTeacher = document.getElementById('checkin-teacher');
@@ -64,7 +67,7 @@ export function updateAllDropdowns() {
     }
 
     // ดึงค่าจาก AppState.allClasses โดยใช้ className (ค่าจริงจากฐานข้อมูล) และจำค่าเดิมไว้
-    const classOptions = '<option value="">-- เลือกชั้นเรียน --</option>' + [...new Set(AppState.allClasses.filter(c => c.deleted_flg !== 'Y').map(c => c.className))].sort((a,b)=>a.localeCompare(b, undefined, {numeric: true})).map(c => `<option value="${c}">${c}</option>`).join('');
+    const classOptions = '<option value="">-- เลือกชั้นเรียน --</option>' + AppState.allClasses.filter(c => c.deleted_flg !== 'Y').sort((a,b)=>a.className.localeCompare(b.className, undefined, {numeric: true})).map(c => `<option value="${c.id}">${c.className}</option>`).join('');
     ['checkin-class', 'history-class', 'stats-class'].forEach(id => {
         const el = document.getElementById(id);
         if(el) {
@@ -258,7 +261,7 @@ export function updateClassDropdown(yearVal, semVal, targetId, defaultText) {
     const filtered = AppState.allClasses.filter(c => c.year == yearVal && c.semester == semVal && c.deleted_flg !== 'Y');
     filtered.sort((a,b) => a.className.localeCompare(b.className, undefined, {numeric:true}));
     el.innerHTML = `<option value="">${defaultText}</option>` + 
-        filtered.map(c => `<option value="${c.className}">${c.className}</option>`).join('');
+        filtered.map(c => `<option value="${c.id}">${c.className}</option>`).join('');
 }
 
 export function onCheckinYearSemesterChange() {
@@ -280,7 +283,7 @@ export function populateCheckinSubjectDropdown(teacherId) {
     
     const teacherSubjects = AppState.allSubjects.filter(s => teacher.subjects.includes(s.id) && s.deleted_flg !== 'Y');
     teacherSubjects.sort((a, b) => (a.code || a.name).localeCompare(b.code || b.name));
-    subjectSelect.innerHTML += teacherSubjects.map(s => `<option value="${s.name}">${s.code} - ${s.name}</option>`).join('');
+    subjectSelect.innerHTML += teacherSubjects.map(s => `<option value="${s.id}">${s.code} - ${s.name}</option>`).join('');
 }
 export function onTeacherChange() {
     const teacherId = document.getElementById('checkin-teacher').value;
@@ -294,6 +297,64 @@ export function onHistoryYearSemesterChange() {
 
 export function onStatsYearSemesterChange() {
     if (window.onStatsTypeChange) window.onStatsTypeChange();
+}
+
+export function onStatsClassChange() {
+    const classId = document.getElementById('stats-class').value;
+    const subjectSelect = document.getElementById('stats-subject');
+    if (!subjectSelect) return;
+
+    const currentSubVal = subjectSelect.value;
+
+    if (!classId) {
+        subjectSelect.innerHTML = '<option value="">-- กรุณาเลือกชั้นเรียนก่อน --</option>';
+        return;
+    }
+
+    const clsObj = AppState.allClasses.find(c => c.id === classId && c.deleted_flg !== 'Y');
+    let activeSubjects = clsObj && clsObj.subjects ? AppState.allSubjects.filter(s => clsObj.subjects.includes(s.id) && s.deleted_flg !== 'Y') : [];
+    
+    if (AppState.currentUser && AppState.currentUser.role === 'teacher') {
+        const teacherSubjects = AppState.currentUser.data.subjects || [];
+        activeSubjects = activeSubjects.filter(s => teacherSubjects.includes(s.id));
+    }
+    
+    activeSubjects.sort((a, b) => (a.code || a.name).localeCompare(b.code || b.name));
+    const subjectOptionsStr = activeSubjects.map(s => `<option value="${s.id}">${s.code} - ${s.name}</option>`).join('');
+    
+    subjectSelect.innerHTML = '<option value="all">-- รวมทุกวิชา --</option>' + subjectOptionsStr;
+    if (currentSubVal && Array.from(subjectSelect.options).some(opt => opt.value === currentSubVal)) {
+        subjectSelect.value = currentSubVal;
+    }
+}
+
+export function onHistoryClassChange() {
+    const classId = document.getElementById('history-class').value;
+    const subjectSelect = document.getElementById('history-subject');
+    if (!subjectSelect) return;
+
+    const currentSubVal = subjectSelect.value;
+
+    if (!classId) {
+        subjectSelect.innerHTML = '<option value="">-- กรุณาเลือกชั้นเรียนก่อน --</option>';
+        return;
+    }
+
+    const clsObj = AppState.allClasses.find(c => c.id === classId && c.deleted_flg !== 'Y');
+    let activeSubjects = clsObj && clsObj.subjects ? AppState.allSubjects.filter(s => clsObj.subjects.includes(s.id) && s.deleted_flg !== 'Y') : [];
+    
+    if (AppState.currentUser && AppState.currentUser.role === 'teacher') {
+        const teacherSubjects = AppState.currentUser.data.subjects || [];
+        activeSubjects = activeSubjects.filter(s => teacherSubjects.includes(s.id));
+    }
+    
+    activeSubjects.sort((a, b) => (a.code || a.name).localeCompare(b.code || b.name));
+    const subjectOptionsStr = activeSubjects.map(s => `<option value="${s.id}">${s.code} - ${s.name}</option>`).join('');
+    
+    subjectSelect.innerHTML = '<option value="">-- ทุกวิชา --</option>' + subjectOptionsStr;
+    if (currentSubVal && Array.from(subjectSelect.options).some(opt => opt.value === currentSubVal)) {
+        subjectSelect.value = currentSubVal;
+    }
 }
 
 export function saveSettings() {
@@ -329,6 +390,85 @@ export async function syncDataToGoogleSheet() {
     });
 }
 
+export async function cleanUpOldAttendanceData() {
+    customConfirm('ยืนยันการล้างข้อมูลเก่า', 'ระบบจะทำการลบข้อมูลชื่อและเลขที่ที่ซ้ำซ้อนในประวัติเช็คชื่อเก่าทั้งหมด เพื่อประหยัดพื้นที่ตามโครงสร้างใหม่ ยืนยันหรือไม่?', async () => {
+        let recordsUpdated = false;
+        let clubRecordsUpdated = false;
+
+        AppState.allRecords.forEach(r => {
+            if (r.attendance && Array.isArray(r.attendance)) {
+                r.attendance.forEach(a => {
+                    if (a.studentName !== undefined || a.studentNumber !== undefined) {
+                        delete a.studentName;
+                        delete a.studentNumber;
+                        recordsUpdated = true;
+                    }
+                });
+            }
+        });
+
+        AppState.allClubRecords.forEach(r => {
+            if (r.attendance && Array.isArray(r.attendance)) {
+                r.attendance.forEach(a => {
+                    if (a.studentName !== undefined || a.studentNumber !== undefined || a.studentClass !== undefined) {
+                        delete a.studentName;
+                        delete a.studentNumber;
+                        delete a.studentClass;
+                        clubRecordsUpdated = true;
+                    }
+                });
+            }
+        });
+
+        if (recordsUpdated) await saveToDB(DB_KEYS.RECORDS, AppState.allRecords, 'saveRecords');
+        if (clubRecordsUpdated) await saveToDB(DB_KEYS.CLUB_RECORDS, AppState.allClubRecords, 'saveClubRecords');
+
+        if (recordsUpdated || clubRecordsUpdated) {
+            showToast('ปรับปรุงรูปแบบข้อมูลเก่าเรียบร้อยแล้ว');
+        } else {
+            showToast('ข้อมูลทั้งหมดเป็นรูปแบบใหม่แล้ว ไม่จำเป็นต้องปรับปรุง');
+        }
+    });
+}
+
+export async function migrateOldAttendanceIds() {
+    customConfirm('ยืนยันการผูก ID ข้อมูลเก่า', 'ระบบจะทำการตรวจสอบและผูก ID (ชั้นเรียน, วิชา, ครูผู้สอน) ให้กับข้อมูลประวัติการเช็คชื่อเก่าที่ยังไม่มี ID ยืนยันหรือไม่?', async () => {
+        let recordsUpdated = false;
+        const now = getISOTimestamp();
+        const userId = getCurrentUserId();
+
+        AppState.allRecords.forEach(r => {
+            let updated = false;
+
+            if (!r.classId && r.class) {
+                const cls = AppState.allClasses.find(c => c.className === r.class);
+                if (cls) { r.classId = cls.id; updated = true; }
+            }
+            if (!r.subjectId && r.subject) {
+                const sub = AppState.allSubjects.find(s => s.name === r.subject);
+                if (sub) { r.subjectId = sub.id; updated = true; }
+            }
+            if (!r.teacherId && r.teacher) {
+                const teacher = AppState.allTeachers.find(t => `${t.firstName} ${t.lastName}` === r.teacher);
+                if (teacher) { r.teacherId = teacher.id; updated = true; }
+            }
+
+            if (updated) {
+                r.updatedAt = now;
+                r.updatedBy = userId;
+                recordsUpdated = true;
+            }
+        });
+
+        if (recordsUpdated) {
+            await saveToDB(DB_KEYS.RECORDS, AppState.allRecords, 'saveRecords');
+            showToast('ค้นหาและผูก ID ข้อมูลประวัติการเช็คชื่อเก่าเรียบร้อยแล้ว');
+        } else {
+            showToast('ไม่มีข้อมูลเก่าที่ต้องอัปเดต หรือผูก ID ครบหมดแล้ว');
+        }
+    });
+}
+
 window.autoSelectPeriod = autoSelectPeriod;
 window.updateClassDropdown = updateClassDropdown;
 window.populateCheckinSubjectDropdown = populateCheckinSubjectDropdown;
@@ -336,5 +476,9 @@ window.onCheckinYearSemesterChange = onCheckinYearSemesterChange;
 window.onTeacherChange = onTeacherChange;
 window.onHistoryYearSemesterChange = onHistoryYearSemesterChange;
 window.onStatsYearSemesterChange = onStatsYearSemesterChange;
+window.onStatsClassChange = onStatsClassChange;
+window.onHistoryClassChange = onHistoryClassChange;
 window.saveSettings = saveSettings;
 window.syncDataToGoogleSheet = syncDataToGoogleSheet;
+window.cleanUpOldAttendanceData = cleanUpOldAttendanceData;
+window.migrateOldAttendanceIds = migrateOldAttendanceIds;

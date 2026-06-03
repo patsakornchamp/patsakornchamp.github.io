@@ -134,8 +134,8 @@ export function updateMenuVisibility() {
         if(msubTeacher) msubTeacher.classList.add('hidden');
         
         if (periodSelect) {
-            periodSelect.setAttribute('disabled', 'true');
-            periodSelect.classList.add('bg-gray-100', 'text-gray-500', 'cursor-not-allowed');
+            periodSelect.removeAttribute('disabled');
+            periodSelect.classList.remove('bg-gray-100', 'text-gray-500', 'cursor-not-allowed');
         }
         if(window.switchTab) window.switchTab('checkin');
     }

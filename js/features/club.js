@@ -9,7 +9,7 @@ export function renderClubList() {
         const primaryTeacher = AppState.allTeachers.find(t => t.id === c.primaryTeacherId && t.deleted_flg !== 'Y');
         const pTeacherName = primaryTeacher ? `${primaryTeacher.title || ''}${primaryTeacher.firstName} ${primaryTeacher.lastName}` : '-';
         
-        const enrolledCount = AppState.allClubEnrollments.filter(e => e.clubId === c.id && e.year == c.year && e.semester == sem && e.deleted_flg !== 'Y').length;
+        const enrolledCount = AppState.allClubEnrollments.filter(e => e.clubId === c.id && e.year == c.year && e.semester == c.semester && e.deleted_flg !== 'Y').length;
         
         return `<tr>
             <td class="hidden md:table-cell px-4 py-2 text-sm whitespace-nowrap">${c.year}/${c.semester}</td>
@@ -459,9 +459,6 @@ export async function saveClubAttendance() {
 
     const att = AppState.currentCheckinStudents.map(stu => ({
         studentId: stu.id,
-        studentName: getStudentFullName(stu),
-        studentClass: stu.class,
-        studentNumber: stu.number,
         status: AppState.activeCheckinStates[stu.id] || 'ขาด'
     }));
 

@@ -17,13 +17,13 @@ export function resetCheckinTable() {
 export async function loadCheckinList() {
     const date = document.getElementById('checkin-date').value; 
     const period = document.getElementById('checkin-period').value;
-    const cls = document.getElementById('checkin-class').value; 
-    const sub = document.getElementById('checkin-subject').value; 
+    const clsId = document.getElementById('checkin-class').value; 
+    const subId = document.getElementById('checkin-subject').value; 
     const teacherId = document.getElementById('checkin-teacher').value;
     const yr = document.getElementById('checkin-year').value;
     const sem = document.getElementById('checkin-semester').value;
 
-    if(!date || !period || !cls || !sub || !teacherId || !yr || !sem) { 
+    if(!date || !period || !clsId || !subId || !teacherId || !yr || !sem) { 
         document.getElementById('checkin-alert').classList.remove('hidden'); 
         return; 
     }
@@ -31,7 +31,12 @@ export async function loadCheckinList() {
 
     await syncDataFromServer();
 
-    AppState.currentCheckinStudents = AppState.allStudents.filter(s => s.class === cls && s.status !== 'ลาออก' && s.deleted_flg !== 'Y').sort((a,b) => {
+    const clsObj = AppState.allClasses.find(c => c.id === clsId);
+    const clsName = clsObj ? clsObj.className : clsId;
+    const subObj = AppState.allSubjects.find(s => s.id === subId);
+    const subName = subObj ? subObj.name : subId;
+
+    AppState.currentCheckinStudents = AppState.allStudents.filter(s => s.class === clsName && s.status !== 'ลาออก' && s.deleted_flg !== 'Y').sort((a,b) => {
         const numA = parseInt(a.number) || 9999;
         const numB = parseInt(b.number) || 9999;
         if (numA !== numB) return numA - numB;
@@ -45,7 +50,7 @@ export async function loadCheckinList() {
     }
     document.getElementById('no-students-alert').classList.add('hidden');
 
-    const existRec = AppState.allRecords.find(r => getBangkokDate(r.date)===date && String(r.period||'')===String(period||'') && r.class===cls && r.subject===sub && matchRecordYearSemester(r, yr, sem) && r.deleted_flg !== 'Y');
+    const existRec = AppState.allRecords.find(r => getBangkokDate(r.date)===date && String(r.period||'')===String(period||'') && (r.classId === clsId || (!r.classId && r.class===clsName)) && (r.subjectId === subId || (!r.subjectId && r.subject===subName)) && matchRecordYearSemester(r, yr, sem) && r.deleted_flg !== 'Y');
     
     AppState.activeCheckinStates = {};
     AppState.lastCheckedStuId = null;
@@ -147,10 +152,14 @@ export function setAllAttendance(st) {
 export async function saveAttendance() {
     const date = document.getElementById('checkin-date').value; 
     const period = document.getElementById('checkin-period').value;
-    const cls = document.getElementById('checkin-class').value; 
-    const sub = document.getElementById('checkin-subject').value; 
+    const clsId = document.getElementById('checkin-class').value; 
+    const subId = document.getElementById('checkin-subject').value; 
     const teacherSelect = document.getElementById('checkin-teacher');
     const tId = teacherSelect.value;
+    const clsObj = AppState.allClasses.find(c => c.id === clsId);
+    const clsName = clsObj ? clsObj.className : clsId;
+    const subObj = AppState.allSubjects.find(s => s.id === subId);
+    const subName = subObj ? subObj.name : subId;
     const tObj = AppState.allTeachers.find(t => t.id === tId && t.deleted_flg !== 'Y');
     const teacher = tObj ? `${tObj.firstName} ${tObj.lastName}` : teacherSelect.options[teacherSelect.selectedIndex].text;
     const yr = parseInt(document.getElementById('checkin-year').value);
@@ -163,17 +172,18 @@ export async function saveAttendance() {
 
     const att = AppState.currentCheckinStudents.map(stu => ({ 
         studentId: stu.id, 
-        studentName: getStudentFullName(stu), 
-        studentNumber: stu.number, 
         status: AppState.activeCheckinStates[stu.id] || 'ขาด'
     }));
 
-    const existRecIdx = AppState.allRecords.findIndex(r => getBangkokDate(r.date)===date && String(r.period||'')===String(period||'') && r.class===cls && r.subject===sub && matchRecordYearSemester(r, yr, sem) && r.deleted_flg !== 'Y');
+    const existRecIdx = AppState.allRecords.findIndex(r => getBangkokDate(r.date)===date && String(r.period||'')===String(period||'') && (r.classId === clsId || (!r.classId && r.class===clsName)) && (r.subjectId === subId || (!r.subjectId && r.subject===subName)) && matchRecordYearSemester(r, yr, sem) && r.deleted_flg !== 'Y');
     
     let record;
     if (existRecIdx > -1) { // Update
         record = {
             ...AppState.allRecords[existRecIdx],
+            classId: clsId, class: clsName,
+            subjectId: subId, subject: subName,
+            teacherId: tId, teacher,
             attendance: att,
             updatedAt: now,
             updatedBy: userId,
@@ -183,7 +193,7 @@ export async function saveAttendance() {
         const localTimestampStr = date + 'T' + getBangkokCurrentTime();
         const utcDate = new Date(localTimestampStr + "+07:00").toISOString();
         record = { 
-            id: generateId(), date: utcDate, period: period, class: cls, subject: sub, teacher, year: yr, semester: sem, attendance: att,
+            id: generateId(), date: utcDate, period: period, classId: clsId, class: clsName, subjectId: subId, subject: subName, teacherId: tId, teacher, year: yr, semester: sem, attendance: att,
             createdAt: now, createdBy: userId,
             updatedAt: now, updatedBy: userId,
             deleted_flg: 'N', deletedAt: null, deletedBy: null,
@@ -198,10 +208,14 @@ export async function saveAttendance() {
 export function exportCheckinCSV() {
     const date = document.getElementById('checkin-date').value;
     const period = document.getElementById('checkin-period').value;
-    const cls = document.getElementById('checkin-class').value;
-    const sub = document.getElementById('checkin-subject').value;
+    const clsId = document.getElementById('checkin-class').value;
+    const subId = document.getElementById('checkin-subject').value;
     const teacherSelect = document.getElementById('checkin-teacher');
     const tId = teacherSelect.value;
+    const clsObj = AppState.allClasses.find(c => c.id === clsId);
+    const clsName = clsObj ? clsObj.className : clsId;
+    const subObj = AppState.allSubjects.find(s => s.id === subId);
+    const subName = subObj ? subObj.name : subId;
     const tObj = AppState.allTeachers.find(t => t.id === tId && t.deleted_flg !== 'Y');
     const teacher = tObj ? `${tObj.firstName} ${tObj.lastName}` : teacherSelect.options[teacherSelect.selectedIndex].text;
     const yr = document.getElementById('checkin-year').value;
@@ -212,10 +226,10 @@ export function exportCheckinCSV() {
     const headers = ['เลขที่', 'รหัสประจำตัว', 'ชื่อ-นามสกุล', 'สถานะการเช็ค', 'วันที่', 'คาบเรียน', 'ชั้นเรียน', 'วิชา', 'ครูผู้สอน', 'ปีการศึกษา', 'ภาคเรียน'];
     const rows = AppState.currentCheckinStudents.map(stu => {
         const status = AppState.activeCheckinStates[stu.id] || 'ยังไม่ได้เช็ค';
-        return [stu.number, stu.studentId, getStudentFullName(stu), status, date, period, cls, sub, teacher, yr, sem];
+        return [stu.number, stu.studentId, getStudentFullName(stu), status, date, period, clsName, subName, teacher, yr, sem];
     });
 
-    exportToCSV(`รายงานเช็คชื่อ_${cls}_${sub}_${date}_คาบ${period}.csv`, headers, rows);
+    exportToCSV(`รายงานเช็คชื่อ_${clsName}_${subName}_${date}_คาบ${period}.csv`, headers, rows);
     showToast('ส่งออกไฟล์ CSV เรียบร้อย');
 }
 
