@@ -1,6 +1,6 @@
 import { AppState } from '../core/state.js';
 import { DB_KEYS } from '../core/config.js';
-import { getStudentFullName, showLoading, hideLoading } from '../utils/helpers.js';
+import { getStudentFullName, showLoading, hideLoading, customAlert, closeModal } from '../utils/helpers.js';
 import { syncDataFromServer } from '../services/api.js';
 
 export function switchLoginTab(type) {
@@ -111,14 +111,14 @@ export function logout() {
 }
 
 export function updateMenuVisibility() {
-    ['menu-my-profile', 'menu-my-club', 'menu-academic', 'menu-checkin', 'menu-club-checkin', 'menu-club-manage', 'menu-history', 'menu-stats', 'menu-students', 'menu-master', 'menu-settings'].forEach(id => {
+    ['menu-my-profile', 'menu-my-club', 'menu-academic', 'menu-checkin', 'menu-club-checkin', 'menu-club-manage', 'menu-history', 'menu-stats', 'menu-students', 'menu-master', 'menu-settings', 'menu-home-visit'].forEach(id => {
         document.getElementById(id).classList.add('hidden');
     });
 
     const periodSelect = document.getElementById('checkin-period');
 
     if(AppState.currentUser.role === 'admin') {
-        ['menu-checkin', 'menu-club-checkin', 'menu-club-manage', 'menu-history', 'menu-stats', 'menu-students', 'menu-master', 'menu-settings'].forEach(id => document.getElementById(id).classList.remove('hidden'));
+        ['menu-checkin', 'menu-club-checkin', 'menu-club-manage', 'menu-history', 'menu-stats', 'menu-students', 'menu-master', 'menu-settings', 'menu-home-visit'].forEach(id => document.getElementById(id).classList.remove('hidden'));
         const msubTeacher = document.getElementById('msub-teachers');
         if(msubTeacher) msubTeacher.classList.remove('hidden');
         
@@ -129,7 +129,7 @@ export function updateMenuVisibility() {
         if(window.switchTab) window.switchTab('checkin');
     } 
     else if (AppState.currentUser.role === 'teacher') {
-        ['menu-checkin', 'menu-club-checkin', 'menu-club-manage', 'menu-history', 'menu-stats', 'menu-students', 'menu-master'].forEach(id => document.getElementById(id).classList.remove('hidden'));
+        ['menu-checkin', 'menu-club-checkin', 'menu-club-manage', 'menu-history', 'menu-stats', 'menu-students', 'menu-master', 'menu-home-visit'].forEach(id => document.getElementById(id).classList.remove('hidden'));
         const msubTeacher = document.getElementById('msub-teachers');
         if(msubTeacher) msubTeacher.classList.add('hidden');
         
@@ -145,7 +145,61 @@ export function updateMenuVisibility() {
     }
 }
 
+export function openTeacherRegisterSearch(e) {
+    if(e) e.preventDefault();
+    document.getElementById('reg-search-fname').value = '';
+    document.getElementById('reg-search-lname').value = '';
+    document.getElementById('teacher-register-search-modal').classList.add('show');
+}
+
+export function searchTeacherForRegister() {
+    const fname = document.getElementById('reg-search-fname').value.trim();
+    const lname = document.getElementById('reg-search-lname').value.trim();
+
+    if (!fname || !lname) {
+        return customAlert('กรุณากรอกชื่อและนามสกุลให้ครบถ้วน');
+    }
+
+    const teacher = AppState.allTeachers.find(t => t.firstName === fname && t.lastName === lname && t.deleted_flg !== 'Y');
+
+    closeModal('teacher-register-search-modal');
+
+    if (teacher) {
+        if (teacher.email) {
+            customAlert(`มีข้อมูลสมาชิกแล้ว Email ของคุณคือ: ${teacher.email}`);
+        } else {
+            document.getElementById('t-id').value = teacher.id;
+            document.getElementById('t-title').value = teacher.title || 'นาย';
+            document.getElementById('t-title').disabled = true;
+            
+            document.getElementById('t-fname').value = teacher.firstName;
+            document.getElementById('t-fname').readOnly = true;
+            document.getElementById('t-fname').classList.add('bg-gray-100');
+            
+            document.getElementById('t-lname').value = teacher.lastName;
+            document.getElementById('t-lname').readOnly = true;
+            document.getElementById('t-lname').classList.add('bg-gray-100');
+
+            document.getElementById('t-phone').value = teacher.phone || '';
+            document.getElementById('t-email').value = '';
+            document.getElementById('t-password').value = '';
+            document.getElementById('t-conf-password').value = '';
+            
+            if (document.getElementById('t-subject-search')) document.getElementById('t-subject-search').value = '';
+            window._tempTeacherSubIds = teacher.subjects ? [...teacher.subjects] : [];
+            if(window.renderTeacherSubjectsList) window.renderTeacherSubjectsList();
+            
+            document.getElementById('teacher-modal').classList.add('show');
+        }
+    } else {
+        // หากไม่พบชื่อ-นามสกุล เปิด Modal เพิ่มใหม่แบบเป็นค่าว่าง
+        if(window.openTeacherModal) window.openTeacherModal();
+    }
+}
+
 // ผูกฟังก์ชันเข้า Window
 window.switchLoginTab = switchLoginTab;
 window.handleLogin = handleLogin;
 window.logout = logout;
+window.openTeacherRegisterSearch = openTeacherRegisterSearch;
+window.searchTeacherForRegister = searchTeacherForRegister;

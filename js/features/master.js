@@ -13,6 +13,8 @@ export function renderMasterData() {
         filteredSubjects = filteredSubjects.filter(s => (s.code || '').toLowerCase().includes(searchSub) || (s.name || '').toLowerCase().includes(searchSub));
     }
 
+    filteredSubjects.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
     document.getElementById('tbody-subjects').innerHTML = filteredSubjects.map(s => {
         let subjectButtonsHtml = '';
         if (AppState.currentUser && AppState.currentUser.role === 'admin') {
@@ -42,6 +44,8 @@ export function renderMasterData() {
             (t.lastName || '').toLowerCase().includes(searchTeacher)
         );
     }
+
+    filteredTeachers.sort((a, b) => (a.firstName || '').localeCompare(b.firstName || ''));
 
     document.getElementById('tbody-teachers').innerHTML = filteredTeachers.map(t => {
         const subs = t.subjects ? t.subjects.map(sid => { const s = AppState.allSubjects.find(x=>x.id===sid && x.deleted_flg !== 'Y'); return s?s.name:''; }).filter(Boolean).join(', ') : '-';
@@ -183,20 +187,71 @@ export async function saveSubject() {
     showToast('บันทึกวิชาแล้ว');
 }
 
+export function renderTeacherSubjectsList() {
+    const query = (document.getElementById('t-subject-search') ? document.getElementById('t-subject-search').value.toLowerCase().trim() : '');
+    const container = document.getElementById('t-subjects-container');
+    
+    let filteredSubjects = AppState.allSubjects.filter(s => s.deleted_flg !== 'Y');
+    
+    if (query) {
+        filteredSubjects = filteredSubjects.filter(s => (s.code || '').toLowerCase().includes(query) || (s.name || '').toLowerCase().includes(query));
+    }
+
+    filteredSubjects.sort((a, b) => {
+        const aSelected = window._tempTeacherSubIds.includes(a.id);
+        const bSelected = window._tempTeacherSubIds.includes(b.id);
+        if (aSelected && !bSelected) return -1;
+        if (!aSelected && bSelected) return 1;
+        return (a.code || a.name).localeCompare(b.code || b.name);
+    });
+
+    container.innerHTML = filteredSubjects.map(s => `<label class="checkbox-container">${s.code} - ${s.name}<input type="checkbox" value="${s.id}" class="t-sub-cb" ${window._tempTeacherSubIds.includes(s.id)?'checked':''} onchange="toggleTeacherSubject(this)"><span class="checkmark"></span></label>`).join('');
+}
+
+export function toggleTeacherSubject(cb) {
+    if (cb.checked) {
+        if (!window._tempTeacherSubIds.includes(cb.value)) window._tempTeacherSubIds.push(cb.value);
+    } else {
+        const index = window._tempTeacherSubIds.indexOf(cb.value);
+        if (index > -1) window._tempTeacherSubIds.splice(index, 1);
+    }
+}
+
 // Teacher CRUD
 export function openTeacherModal() {
     if (AppState.currentUser && AppState.currentUser.role !== 'admin') return customAlert('เฉพาะผู้ดูแลระบบเท่านั้นที่จัดการข้อมูลนี้ได้');
-    document.getElementById('t-id').value=''; document.getElementById('t-title').value='นาย'; document.getElementById('t-fname').value=''; document.getElementById('t-lname').value=''; document.getElementById('t-phone').value=''; 
+    document.getElementById('t-id').value=''; 
+    document.getElementById('t-title').value='นาย'; 
+    document.getElementById('t-title').disabled=false; 
+    document.getElementById('t-fname').value=''; 
+    document.getElementById('t-fname').readOnly=false; 
+    document.getElementById('t-fname').classList.remove('bg-gray-100'); 
+    document.getElementById('t-lname').value=''; 
+    document.getElementById('t-lname').readOnly=false; 
+    document.getElementById('t-lname').classList.remove('bg-gray-100'); 
+    document.getElementById('t-phone').value=''; 
     document.getElementById('t-email').value=''; document.getElementById('t-password').value=''; document.getElementById('t-conf-password').value='';
-    document.getElementById('t-subjects-container').innerHTML = AppState.allSubjects.filter(s => s.deleted_flg !== 'Y').map(s => `<label class="checkbox-container">${s.code} - ${s.name}<input type="checkbox" value="${s.id}" class="t-sub-cb"><span class="checkmark"></span></label>`).join('');
+    if (document.getElementById('t-subject-search')) document.getElementById('t-subject-search').value = '';
+    window._tempTeacherSubIds = [];
+    renderTeacherSubjectsList();
     document.getElementById('teacher-modal').classList.add('show');
 }
 export function editTeacher(id) {
     if (AppState.currentUser && AppState.currentUser.role !== 'admin') return customAlert('เฉพาะผู้ดูแลระบบเท่านั้นที่จัดการข้อมูลนี้ได้');
     const t = AppState.allTeachers.find(x=>x.id===id && x.deleted_flg !== 'Y'); if(!t) return;
-    document.getElementById('t-id').value=t.id; document.getElementById('t-title').value=t.title||'นาย'; document.getElementById('t-fname').value=t.firstName; document.getElementById('t-lname').value=t.lastName; document.getElementById('t-phone').value=t.phone||''; 
+    document.getElementById('t-id').value=t.id; 
+    document.getElementById('t-title').value=t.title||'นาย'; 
+    document.getElementById('t-title').disabled=false; 
+    document.getElementById('t-fname').value=t.firstName; 
+    document.getElementById('t-fname').readOnly=false; 
+    document.getElementById('t-fname').classList.remove('bg-gray-100'); 
+    document.getElementById('t-lname').value=t.lastName; 
+    document.getElementById('t-lname').readOnly=false; 
+    document.getElementById('t-lname').classList.remove('bg-gray-100'); 
+    document.getElementById('t-phone').value=t.phone||''; 
     document.getElementById('t-email').value=t.email||''; document.getElementById('t-password').value=t.password||''; document.getElementById('t-conf-password').value=t.password||'';
-    document.getElementById('t-subjects-container').innerHTML = AppState.allSubjects.filter(s => s.deleted_flg !== 'Y').map(s => `<label class="checkbox-container">${s.code} - ${s.name}<input type="checkbox" value="${s.id}" class="t-sub-cb" ${t.subjects && t.subjects.includes(s.id)?'checked':''}><span class="checkmark"></span></label>`).join('');
+    window._tempTeacherSubIds = t.subjects ? [...t.subjects] : [];
+    renderTeacherSubjectsList();
     document.getElementById('teacher-modal').classList.add('show');
 }
 export async function saveTeacher() {
@@ -207,9 +262,10 @@ export async function saveTeacher() {
     if (pass !== confPass) return customAlert('รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน');
     if (!pass) return customAlert('กรุณากำหนดรหัสผ่านสำหรับการเข้าสู่ระบบของครู');
 
-    const subs = Array.from(document.querySelectorAll('.t-sub-cb:checked')).map(cb=>cb.value);
+    const subs = [...(window._tempTeacherSubIds || [])];
     const id = document.getElementById('t-id').value || generateId();
-    const email = document.getElementById('t-email').value;
+    const email = document.getElementById('t-email').value.trim();
+
     const firstName = document.getElementById('t-fname').value;
     const lastName = document.getElementById('t-lname').value;
     const phone = document.getElementById('t-phone').value;
@@ -343,3 +399,5 @@ window.editClass = editClass;
 window.saveClassRoom = saveClassRoom;
 window.switchMasterSubTab = switchMasterSubTab;
 window.searchMasterData = searchMasterData;
+window.renderTeacherSubjectsList = renderTeacherSubjectsList;
+window.toggleTeacherSubject = toggleTeacherSubject;

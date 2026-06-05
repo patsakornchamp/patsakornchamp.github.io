@@ -1,6 +1,6 @@
 import { AppState } from '../core/state.js';
 import { DB_KEYS } from '../core/config.js';
-import { generateId, getStudentFullName, showToast, matchRecordYearSemester, getBangkokDate, getBangkokCurrentTime, exportToCSV, getISOTimestamp, getCurrentUserId } from '../utils/helpers.js';
+import { generateId, getStudentFullName, showToast, matchRecordYearSemester, getBangkokDate, getBangkokCurrentTime, exportToCSV, getISOTimestamp, getCurrentUserId, customConfirm } from '../utils/helpers.js';
 import { syncDataFromServer, saveToDB } from '../services/api.js';
 
 export function resetCheckinTable() {
@@ -165,44 +165,68 @@ export async function saveAttendance() {
     const yr = parseInt(document.getElementById('checkin-year').value);
     const sem = parseInt(document.getElementById('checkin-semester').value);
 
-    const now = getISOTimestamp();
-    const userId = getCurrentUserId();
-
     if (!AppState.currentCheckinStudents || AppState.currentCheckinStudents.length === 0) return;
 
-    const att = AppState.currentCheckinStudents.map(stu => ({ 
-        studentId: stu.id, 
-        status: AppState.activeCheckinStates[stu.id] || 'ขาด'
-    }));
+    let actualStats = { 'มา': 0, 'สาย': 0, 'ลา': 0, 'ขาด': 0, 'ยังไม่เช็ค': 0 };
+    AppState.currentCheckinStudents.forEach(stu => {
+        const st = AppState.activeCheckinStates[stu.id];
+        if (!st) actualStats['ยังไม่เช็ค']++;
+        else actualStats[st]++;
+    });
 
-    const existRecIdx = AppState.allRecords.findIndex(r => getBangkokDate(r.date)===date && String(r.period||'')===String(period||'') && (r.classId === clsId || (!r.classId && r.class===clsName)) && (r.subjectId === subId || (!r.subjectId && r.subject===subName)) && matchRecordYearSemester(r, yr, sem) && r.deleted_flg !== 'Y');
-    
-    let record;
-    if (existRecIdx > -1) { // Update
-        record = {
-            ...AppState.allRecords[existRecIdx],
-            classId: clsId, class: clsName,
-            subjectId: subId, subject: subName,
-            teacherId: tId, teacher,
-            attendance: att,
-            updatedAt: now,
-            updatedBy: userId,
-        };
-        AppState.allRecords[existRecIdx] = record;
-    } else { // Create
-        const localTimestampStr = date + 'T' + getBangkokCurrentTime();
-        const utcDate = new Date(localTimestampStr + "+07:00").toISOString();
-        record = { 
-            id: generateId(), date: utcDate, period: period, classId: clsId, class: clsName, subjectId: subId, subject: subName, teacherId: tId, teacher, year: yr, semester: sem, attendance: att,
-            createdAt: now, createdBy: userId,
-            updatedAt: now, updatedBy: userId,
-            deleted_flg: 'N', deletedAt: null, deletedBy: null,
-        };
-        AppState.allRecords.push(record);
-    }
+    const summaryHtml = `
+        <div class="text-left bg-gray-50 p-3 rounded border border-gray-200 mt-2 mb-3 shadow-sm">
+            <p class="mb-1"><b>วันที่:</b> ${getBangkokDate(date)}</p>
+            <p class="mb-1"><b>คาบเรียน:</b> ${period}</p>
+            <p class="mb-1"><b>วิชา:</b> ${subName} (${clsName})</p>
+            <p><b>ครูผู้สอน:</b> ${teacher}</p>
+        </div>
+        <div class="text-left">
+            <p class="font-bold text-gray-800 mb-2">สรุปจำนวนนักเรียน (รวม ${AppState.currentCheckinStudents.length} คน)</p>
+            <div class="grid grid-cols-2 gap-2 text-sm text-center">
+                <div class="bg-green-100 text-green-800 px-2 py-1.5 rounded font-medium border border-green-200">มา: <span class="font-bold text-lg">${actualStats['มา']}</span></div>
+                <div class="bg-yellow-100 text-yellow-800 px-2 py-1.5 rounded font-medium border border-yellow-200">สาย: <span class="font-bold text-lg">${actualStats['สาย']}</span></div>
+                <div class="bg-blue-100 text-blue-800 px-2 py-1.5 rounded font-medium border border-blue-200">ลา: <span class="font-bold text-lg">${actualStats['ลา']}</span></div>
+                <div class="bg-red-100 text-red-800 px-2 py-1.5 rounded font-medium border border-red-200">ขาด: <span class="font-bold text-lg">${actualStats['ขาด']}</span></div>
+            </div>
+            <div class="bg-gray-100 text-gray-500 px-2 py-1.5 rounded mt-2 text-xs text-center border border-gray-200">
+                ยังไม่ได้เช็คชื่อ (ระบบจะบันทึกเป็นขาดอัตโนมัติ): <span class="font-bold text-sm text-gray-700">${actualStats['ยังไม่เช็ค']}</span>
+            </div>
+        </div>
+        <p class="mt-5 text-gray-700 font-bold">ยืนยันการบันทึกข้อมูลใช่หรือไม่?</p>
+    `;
 
-    await saveToDB(DB_KEYS.RECORDS, AppState.allRecords, 'saveRecords');
-    showToast('บันทึกการเช็คชื่อเรียบร้อย');
+    customConfirm('ตรวจสอบและยืนยันข้อมูล', summaryHtml, async () => {
+        const now = getISOTimestamp();
+        const userId = getCurrentUserId();
+
+        const att = AppState.currentCheckinStudents.map(stu => ({ 
+            studentId: stu.id, 
+            status: AppState.activeCheckinStates[stu.id] || 'ขาด'
+        }));
+
+        const existRecIdx = AppState.allRecords.findIndex(r => getBangkokDate(r.date)===date && String(r.period||'')===String(period||'') && (r.classId === clsId || (!r.classId && r.class===clsName)) && (r.subjectId === subId || (!r.subjectId && r.subject===subName)) && matchRecordYearSemester(r, yr, sem) && r.deleted_flg !== 'Y');
+        
+        let record;
+        if (existRecIdx > -1) { // Update
+            record = {
+                ...AppState.allRecords[existRecIdx],
+                classId: clsId, class: clsName, subjectId: subId, subject: subName, teacherId: tId, teacher, attendance: att, updatedAt: now, updatedBy: userId,
+            };
+            AppState.allRecords[existRecIdx] = record;
+        } else { // Create
+            const localTimestampStr = date + 'T' + getBangkokCurrentTime();
+            const utcDate = new Date(localTimestampStr + "+07:00").toISOString();
+            record = { 
+                id: generateId(), date: utcDate, period: period, classId: clsId, class: clsName, subjectId: subId, subject: subName, teacherId: tId, teacher, year: yr, semester: sem, attendance: att,
+                createdAt: now, createdBy: userId, updatedAt: now, updatedBy: userId, deleted_flg: 'N', deletedAt: null, deletedBy: null,
+            };
+            AppState.allRecords.push(record);
+        }
+
+        await saveToDB(DB_KEYS.RECORDS, AppState.allRecords, 'saveRecords');
+        showToast('บันทึกการเช็คชื่อเรียบร้อย');
+    });
 }
 
 export function exportCheckinCSV() {

@@ -457,43 +457,67 @@ export async function saveClubAttendance() {
 
     if(!AppState.currentCheckinStudents || AppState.currentCheckinStudents.length === 0) return;
 
-    const att = AppState.currentCheckinStudents.map(stu => ({
-        studentId: stu.id,
-        status: AppState.activeCheckinStates[stu.id] || 'ขาด'
-    }));
+    let actualStats = { 'มา': 0, 'สาย': 0, 'ลา': 0, 'ขาด': 0, 'ยังไม่เช็ค': 0 };
+    AppState.currentCheckinStudents.forEach(stu => {
+        const st = AppState.activeCheckinStates[stu.id];
+        if (!st) actualStats['ยังไม่เช็ค']++;
+        else actualStats[st]++;
+    });
 
-    const now = getISOTimestamp();
-    const userId = getCurrentUserId();
+    const club = AppState.allClubs.find(c => c.id === clubId && c.deleted_flg !== 'Y');
+    const clubName = club ? club.name : 'ไม่พบข้อมูลชุมนุม';
 
-    const existRecIdx = AppState.allClubRecords.findIndex(r => getBangkokDate(r.date) === date && r.clubId === clubId && matchRecordYearSemester(r, yr, sem) && r.deleted_flg !== 'Y');
+    const summaryHtml = `
+        <div class="text-left bg-green-50 p-3 rounded border border-green-200 mt-2 mb-3 shadow-sm">
+            <p class="mb-1"><b>วันที่:</b> ${getBangkokDate(date)}</p>
+            <p class="mb-1"><b>วิชาชุมนุม:</b> ${clubName}</p>
+            <p><b>ปีการศึกษา/ภาคเรียน:</b> ${yr}/${sem}</p>
+        </div>
+        <div class="text-left">
+            <p class="font-bold text-gray-800 mb-2">สรุปจำนวนผู้เข้าร่วม (รวม ${AppState.currentCheckinStudents.length} คน)</p>
+            <div class="grid grid-cols-2 gap-2 text-sm text-center">
+                <div class="bg-green-100 text-green-800 px-2 py-1.5 rounded font-medium border border-green-200">มา: <span class="font-bold text-lg">${actualStats['มา']}</span></div>
+                <div class="bg-yellow-100 text-yellow-800 px-2 py-1.5 rounded font-medium border border-yellow-200">สาย: <span class="font-bold text-lg">${actualStats['สาย']}</span></div>
+                <div class="bg-blue-100 text-blue-800 px-2 py-1.5 rounded font-medium border border-blue-200">ลา: <span class="font-bold text-lg">${actualStats['ลา']}</span></div>
+                <div class="bg-red-100 text-red-800 px-2 py-1.5 rounded font-medium border border-red-200">ขาด: <span class="font-bold text-lg">${actualStats['ขาด']}</span></div>
+            </div>
+            <div class="bg-gray-100 text-gray-500 px-2 py-1.5 rounded mt-2 text-xs text-center border border-gray-200">
+                ยังไม่ได้เช็คชื่อ (ระบบจะบันทึกเป็นขาดอัตโนมัติ): <span class="font-bold text-sm text-gray-700">${actualStats['ยังไม่เช็ค']}</span>
+            </div>
+        </div>
+        <p class="mt-5 text-gray-700 font-bold">ยืนยันการบันทึกข้อมูลใช่หรือไม่?</p>
+    `;
 
-    let record;
-    if (existRecIdx > -1) { // Update existing record
-        record = {
-            ...AppState.allClubRecords[existRecIdx],
-            attendance: att,
-            updatedAt: now,
-            updatedBy: userId,
-        };
-        AppState.allClubRecords[existRecIdx] = record;
-    } else { // Create new record
-        const localTimestampStr = date + 'T' + getBangkokCurrentTime();
-        const utcDate = new Date(localTimestampStr + "+07:00").toISOString();
-        record = {
-            id: generateId(), date: utcDate, clubId, year: yr, semester: sem, attendance: att,
-            createdAt: now,
-            createdBy: userId,
-            updatedAt: now,
-            updatedBy: userId,
-            deleted_flg: 'N',
-            deletedAt: null,
-            deletedBy: null,
-        };
-        AppState.allClubRecords.push(record);
-    }
+    customConfirm('ตรวจสอบและยืนยันข้อมูล', summaryHtml, async () => {
+        const now = getISOTimestamp();
+        const userId = getCurrentUserId();
 
-    await saveToDB(DB_KEYS.CLUB_RECORDS, AppState.allClubRecords, 'saveClubRecords');
-    showToast('บันทึกการเข้ากิจกรรมชุมนุมเสร็จสิ้น');
+        const att = AppState.currentCheckinStudents.map(stu => ({
+            studentId: stu.id,
+            status: AppState.activeCheckinStates[stu.id] || 'ขาด'
+        }));
+
+        const existRecIdx = AppState.allClubRecords.findIndex(r => getBangkokDate(r.date) === date && r.clubId === clubId && matchRecordYearSemester(r, yr, sem) && r.deleted_flg !== 'Y');
+
+        let record;
+        if (existRecIdx > -1) { // Update existing record
+            record = {
+                ...AppState.allClubRecords[existRecIdx], attendance: att, updatedAt: now, updatedBy: userId,
+            };
+            AppState.allClubRecords[existRecIdx] = record;
+        } else { // Create new record
+            const localTimestampStr = date + 'T' + getBangkokCurrentTime();
+            const utcDate = new Date(localTimestampStr + "+07:00").toISOString();
+            record = {
+                id: generateId(), date: utcDate, clubId, year: yr, semester: sem, attendance: att,
+                createdAt: now, createdBy: userId, updatedAt: now, updatedBy: userId, deleted_flg: 'N', deletedAt: null, deletedBy: null,
+            };
+            AppState.allClubRecords.push(record);
+        }
+
+        await saveToDB(DB_KEYS.CLUB_RECORDS, AppState.allClubRecords, 'saveClubRecords');
+        showToast('บันทึกการเข้ากิจกรรมชุมนุมเสร็จสิ้น');
+    });
 }
 
 export function exportClubCheckinCSV() {

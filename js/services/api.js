@@ -74,7 +74,11 @@ export async function syncDataFromServer(silent = false) {
 }
 
 export async function saveToDB(key, data, action) {
-    localStorage.setItem(key, JSON.stringify(data));
+    try {
+        localStorage.setItem(key, JSON.stringify(data));
+    } catch (e) {
+        console.warn('LocalStorage limit exceeded, skipping local cache for this save:', e);
+    }
     if (AppState.googleSheetUrl && action) {
         showLoading('กำลังบันทึกข้อมูล...'); 
         try {

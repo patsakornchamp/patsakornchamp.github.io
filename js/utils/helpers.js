@@ -62,7 +62,7 @@ export function customConfirm(title, msg, callback) {
     const titleEl = document.getElementById('confirm-title');
     const msgEl = document.getElementById('confirm-message');
     if(titleEl) titleEl.innerText = title;
-    if(msgEl) msgEl.innerText = msg;
+    if(msgEl) msgEl.innerHTML = msg;
 
     const modal = document.getElementById('custom-confirm-modal');
     const okBtn = document.getElementById('confirm-ok-btn');

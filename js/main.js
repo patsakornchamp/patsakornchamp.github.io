@@ -11,6 +11,31 @@ import './features/master.js';
 import './features/club.js';
 import './features/stats.js';
 import './features/history.js';
+import './features/homevisit.js';
+
+// 🌟 ฟังก์ชันจัดการ Select HTML ให้รองรับ Tom Select (ค้นหาได้)
+export function safeSetSelectHtml(id, html) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const currentVal = el.tomselect ? el.tomselect.getValue() : el.value;
+    
+    el.innerHTML = html;
+    
+    if (el.tomselect) {
+        el.tomselect.sync();
+        if (currentVal !== undefined && Array.from(el.options).some(opt => opt.value === currentVal)) {
+            el.tomselect.setValue(currentVal, true); 
+        } else {
+            el.tomselect.setValue(el.options.length > 0 ? el.options[0].value : '', true);
+        }
+    } else {
+        if (currentVal !== undefined && Array.from(el.options).some(opt => opt.value === currentVal)) {
+            el.value = currentVal;
+        } else {
+            el.value = el.options.length > 0 ? el.options[0].value : '';
+        }
+    }
+}
 
 // 🌟 2. ฟังก์ชันช่วยป้อนข้อมูลใส่ Dropdown ทั่วทั้งระบบ
 export function updateAllDropdowns() {
@@ -20,64 +45,53 @@ export function updateAllDropdowns() {
     }
 
     const populateYear = (selectId) => {
-        const el = document.getElementById(selectId);
-        if(!el) return;
-        const currentVal = el.value;
-        el.innerHTML = '';
+        let html = '';
         for(let i = latestYear + 1; i >= latestYear - 3; i--) {
-            el.innerHTML += `<option value="${i}" ${i === latestYear ? 'selected' : ''}>${i}</option>`;
+            html += `<option value="${i}" ${i === latestYear ? 'selected' : ''}>${i}</option>`;
         }
-        if (currentVal) el.value = currentVal;
+        safeSetSelectHtml(selectId, html);
     };
 
-    ['checkin-year', 'club-checkin-year', 'enroll-year', 'history-year', 'stats-year', 'aca-year'].forEach(populateYear);
+    ['checkin-year', 'club-checkin-year', 'enroll-year', 'history-year', 'stats-year', 'aca-year', 'hv-year'].forEach(populateYear);
     
-    let activeSubjects = AppState.allSubjects.filter(s => s.deleted_flg !== 'Y');
+    safeSetSelectHtml('checkin-subject', '<option value="">-- กรุณาเลือกครูผู้สอนก่อน --</option>');
+    safeSetSelectHtml('stats-subject', '<option value="">-- กรุณาเลือกชั้นเรียนก่อน --</option>');
+    safeSetSelectHtml('history-subject', '<option value="">-- กรุณาเลือกชั้นเรียนก่อน --</option>');
+
+    let activeTeachers = AppState.allTeachers.filter(t => t.deleted_flg !== 'Y');
     if (AppState.currentUser && AppState.currentUser.role === 'teacher') {
-        const teacherSubjects = AppState.currentUser.data.subjects || [];
-        activeSubjects = activeSubjects.filter(s => teacherSubjects.includes(s.id));
+        activeTeachers = activeTeachers.filter(t => t.id === AppState.currentUser.data.id);
     }
-    activeSubjects.sort((a, b) => (a.code || a.name).localeCompare(b.code || b.name));
-    const subjectOptionsStr = activeSubjects.map(s => `<option value="${s.id}">${s.code} - ${s.name}</option>`).join('');
+    const teacherOptions = '<option value="">-- เลือกครูผู้สอน --</option>' + activeTeachers.map(t => `<option value="${t.id}">${t.firstName} ${t.lastName}</option>`).join('');
+    safeSetSelectHtml('checkin-teacher', teacherOptions);
 
-    ['checkin-subject'].forEach(id => {
-        const el = document.getElementById(id);
-        if(el) {
-            const currentVal = el.value;
-            el.innerHTML = '<option value="">-- เลือกวิชา --</option>' + subjectOptionsStr;
-            if (currentVal) el.value = currentVal;
+    // ถ้าระบบรู้ว่าเป็นครู ให้เลือกชื่อตัวเองทันที
+    if (AppState.currentUser && AppState.currentUser.role === 'teacher') {
+        const checkinTeacherEl = document.getElementById('checkin-teacher');
+        if (checkinTeacherEl) {
+            if (checkinTeacherEl.tomselect) checkinTeacherEl.tomselect.setValue(AppState.currentUser.data.id, true);
+            else checkinTeacherEl.value = AppState.currentUser.data.id;
         }
-    });
-
-    ['stats-subject', 'history-subject'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.innerHTML = '<option value="">-- กรุณาเลือกชั้นเรียนก่อน --</option>';
-        }
-    });
-    if (window.onStatsClassChange && document.getElementById('stats-class')?.value) window.onStatsClassChange();
-    if (window.onHistoryClassChange && document.getElementById('history-class')?.value) window.onHistoryClassChange();
-
-    const teacherOptions = '<option value="">-- เลือกครูผู้สอน --</option>' + AppState.allTeachers.filter(t => t.deleted_flg !== 'Y').map(t => `<option value="${t.id}">${t.firstName} ${t.lastName}</option>`).join('');
-    const elTeacher = document.getElementById('checkin-teacher');
-    if(elTeacher) {
-        const currentVal = elTeacher.value;
-        elTeacher.innerHTML = teacherOptions;
-        if (currentVal) elTeacher.value = currentVal;
     }
 
     // ดึงค่าจาก AppState.allClasses โดยใช้ className (ค่าจริงจากฐานข้อมูล) และจำค่าเดิมไว้
     const classOptions = '<option value="">-- เลือกชั้นเรียน --</option>' + AppState.allClasses.filter(c => c.deleted_flg !== 'Y').sort((a,b)=>a.className.localeCompare(b.className, undefined, {numeric: true})).map(c => `<option value="${c.id}">${c.className}</option>`).join('');
     ['checkin-class', 'history-class', 'stats-class'].forEach(id => {
-        const el = document.getElementById(id);
-        if(el) {
-            const currentVal = el.value;
-            el.innerHTML = classOptions;
-            if (currentVal) el.value = currentVal;
-        }
+        safeSetSelectHtml(id, classOptions);
     });
+
+    if (window.onTeacherChange && document.getElementById('checkin-teacher')?.value) window.onTeacherChange();
+    if (window.onStatsClassChange && document.getElementById('stats-class')?.value) window.onStatsClassChange();
+    if (window.onHistoryClassChange && document.getElementById('history-class')?.value) window.onHistoryClassChange();
 }
 window.updateAllDropdowns = updateAllDropdowns;
+
+function clearInputValue(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (el.tomselect) el.tomselect.setValue('', true);
+    else el.value = '';
+}
 
 // 🌟 3. ฟังก์ชันควบคุมเมนูหลัก (แก้ไขให้เรียก Render ข้อมูลของแต่ละหน้าตาราง)
 function switchTab(tabId) {
@@ -100,16 +114,19 @@ function switchTab(tabId) {
     const today = getBangkokDate(new Date());
 
     if (tabId === 'checkin') {
-        ['checkin-search', 'checkin-class', 'checkin-subject', 'checkin-teacher'].forEach(id => {
-            const el = document.getElementById(id); if (el) el.value = '';
-        });
+        ['checkin-search', 'checkin-class', 'checkin-subject'].forEach(id => clearInputValue(id));
+        if (AppState.currentUser && AppState.currentUser.role === 'admin') {
+            clearInputValue('checkin-teacher');
+        }
+        if (window.onTeacherChange) window.onTeacherChange();
+        
         const dateEl = document.getElementById('checkin-date'); if (dateEl) dateEl.value = today;
         const cb = document.getElementById('checkin-hide-checked'); if (cb) cb.checked = false;
         if (window.autoSelectPeriod) window.autoSelectPeriod();
         if (window.resetCheckinTable) window.resetCheckinTable();
     } else if (tabId === 'club-checkin') {
         ['club-checkin-search', 'club-checkin-id'].forEach(id => {
-            const el = document.getElementById(id); if (el) el.value = '';
+            clearInputValue(id);
         });
         const dateEl = document.getElementById('club-checkin-date'); if (dateEl) dateEl.value = today;
         const cb = document.getElementById('club-checkin-hide-checked'); if (cb) cb.checked = false;
@@ -117,13 +134,13 @@ function switchTab(tabId) {
         if (window.resetClubCheckinTable) window.resetClubCheckinTable();
     } else if (tabId === 'history') {
         ['history-date', 'history-class', 'history-subject'].forEach(id => {
-            const el = document.getElementById(id); if (el) el.value = '';
+            clearInputValue(id);
         });
         const cont = document.getElementById('history-records-container'); if (cont) cont.innerHTML = '';
         if (window.onHistoryTypeChange) window.onHistoryTypeChange(); 
     } else if (tabId === 'stats') {
         ['stats-class', 'stats-subject'].forEach(id => {
-            const el = document.getElementById(id); if (el) el.value = '';
+            clearInputValue(id);
         });
         const msg = document.getElementById('stats-empty-msg'); if (msg) msg.classList.remove('hidden');
         const cont = document.getElementById('stats-content'); if (cont) cont.classList.add('hidden');
@@ -131,18 +148,18 @@ function switchTab(tabId) {
         if (window.onStatsTypeChange) window.onStatsTypeChange(true); 
     } else if (tabId === 'students') {
         ['manage-search', 'manage-filter-class'].forEach(id => {
-            const el = document.getElementById(id); if (el) el.value = '';
+            clearInputValue(id);
         });
         if (window.renderManageStudents) window.renderManageStudents(); 
     } else if (tabId === 'club-manage') {
         ['enroll-search', 'enroll-filter-class'].forEach(id => {
-            const el = document.getElementById(id); if (el) el.value = '';
+            clearInputValue(id);
         });
         const st = document.getElementById('enroll-filter-status'); if (st) st.value = 'all';
         if (window.switchClubSubTab) window.switchClubSubTab('list'); 
     } else if (tabId === 'master') {
         ['search-subject', 'search-teacher', 'search-class'].forEach(id => {
-            const el = document.getElementById(id); if (el) el.value = '';
+            clearInputValue(id);
         });
         if (window.switchMasterSubTab) window.switchMasterSubTab('subjects'); 
     } else if (tabId === 'my-profile' && window.renderStudentProfile) {
@@ -154,7 +171,22 @@ function switchTab(tabId) {
     } else if (tabId === 'settings') {
         const el = document.getElementById('google-sheet-url');
         if (el) el.value = AppState.googleSheetUrl || '';
+    } else if (tabId === 'home-visit') {
+        clearInputValue('hv-class');
+        const st = document.getElementById('hv-status'); if (st) st.value = 'all';
+        if (window.initHomeVisitTab) window.initHomeVisitTab();
     }
+
+    // 🌟 เปิดใช้งานระบบ Searchable Dropdown (Tom Select)
+    ['checkin-class', 'checkin-teacher', 'checkin-subject', 'history-subject'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && window.TomSelect && !el.tomselect) {
+            new TomSelect(el, {
+                create: false,
+                sortField: null
+            });
+        }
+    });
 }
 window.switchTab = switchTab;
 
@@ -202,11 +234,11 @@ async function initApp() {
 
         // 🌟 1. ตั้งค่าเริ่มต้นให้ปี/ภาคเรียน เป็นเทอมปัจจุบัน
         const schoolDefaults = getDefaultAcademicYearAndSemester();
-        ['checkin-year', 'club-checkin-year', 'enroll-year', 'history-year', 'stats-year', 'aca-year'].forEach(id => {
+        ['checkin-year', 'club-checkin-year', 'enroll-year', 'history-year', 'stats-year', 'aca-year', 'hv-year'].forEach(id => {
             const el = document.getElementById(id);
             if(el) el.value = schoolDefaults.year;
         });
-        ['checkin-semester', 'club-checkin-semester', 'enroll-semester', 'history-semester', 'stats-semester', 'aca-semester'].forEach(id => {
+        ['checkin-semester', 'club-checkin-semester', 'enroll-semester', 'history-semester', 'stats-semester', 'aca-semester', 'hv-semester'].forEach(id => {
             const el = document.getElementById(id);
             if(el) el.value = schoolDefaults.semester;
         });
@@ -256,12 +288,11 @@ document.addEventListener('DOMContentLoaded', initApp);
 // ฟังก์ชันควบคุมการทำงานของ Dropdown ความสัมพันธ์
 // ==========================================
 export function updateClassDropdown(yearVal, semVal, targetId, defaultText) {
-    const el = document.getElementById(targetId);
-    if (!el) return;
     const filtered = AppState.allClasses.filter(c => c.year == yearVal && c.semester == semVal && c.deleted_flg !== 'Y');
     filtered.sort((a,b) => a.className.localeCompare(b.className, undefined, {numeric:true}));
-    el.innerHTML = `<option value="">${defaultText}</option>` + 
+    const html = `<option value="">${defaultText}</option>` + 
         filtered.map(c => `<option value="${c.id}">${c.className}</option>`).join('');
+    safeSetSelectHtml(targetId, html);
 }
 
 export function onCheckinYearSemesterChange() {
@@ -273,17 +304,18 @@ export function onCheckinYearSemesterChange() {
 
 // 3. ฟังก์ชันกรองวิชาตามครู (สมบูรณ์)
 export function populateCheckinSubjectDropdown(teacherId) {
-    const subjectSelect = document.getElementById('checkin-subject');
-    if (!subjectSelect) return;
-    subjectSelect.innerHTML = '<option value="">-- เลือกวิชา --</option>';
-    if (!teacherId) return;
-    
-    const teacher = AppState.allTeachers.find(t => t.id === teacherId && t.deleted_flg !== 'Y');
-    if (!teacher || !teacher.subjects) return;
-    
-    const teacherSubjects = AppState.allSubjects.filter(s => teacher.subjects.includes(s.id) && s.deleted_flg !== 'Y');
-    teacherSubjects.sort((a, b) => (a.code || a.name).localeCompare(b.code || b.name));
-    subjectSelect.innerHTML += teacherSubjects.map(s => `<option value="${s.id}">${s.code} - ${s.name}</option>`).join('');
+    let html = '<option value="">-- กรุณาเลือกครูผู้สอนก่อน --</option>';
+    if (teacherId) {
+        const teacher = AppState.allTeachers.find(t => t.id === teacherId && t.deleted_flg !== 'Y');
+        if (teacher && teacher.subjects && teacher.subjects.length > 0) {
+            const teacherSubjects = AppState.allSubjects.filter(s => teacher.subjects.includes(s.id) && s.deleted_flg !== 'Y');
+            teacherSubjects.sort((a, b) => (a.code || a.name).localeCompare(b.code || b.name));
+            html = '<option value="">-- เลือกวิชา --</option>' + teacherSubjects.map(s => `<option value="${s.id}">${s.code} - ${s.name}</option>`).join('');
+        } else {
+            html = '<option value="">-- ไม่พบวิชาที่สอน --</option>';
+        }
+    }
+    safeSetSelectHtml('checkin-subject', html);
 }
 export function onTeacherChange() {
     const teacherId = document.getElementById('checkin-teacher').value;
@@ -301,13 +333,9 @@ export function onStatsYearSemesterChange() {
 
 export function onStatsClassChange() {
     const classId = document.getElementById('stats-class').value;
-    const subjectSelect = document.getElementById('stats-subject');
-    if (!subjectSelect) return;
-
-    const currentSubVal = subjectSelect.value;
 
     if (!classId) {
-        subjectSelect.innerHTML = '<option value="">-- กรุณาเลือกชั้นเรียนก่อน --</option>';
+        safeSetSelectHtml('stats-subject', '<option value="">-- กรุณาเลือกชั้นเรียนก่อน --</option>');
         return;
     }
 
@@ -322,21 +350,14 @@ export function onStatsClassChange() {
     activeSubjects.sort((a, b) => (a.code || a.name).localeCompare(b.code || b.name));
     const subjectOptionsStr = activeSubjects.map(s => `<option value="${s.id}">${s.code} - ${s.name}</option>`).join('');
     
-    subjectSelect.innerHTML = '<option value="all">-- รวมทุกวิชา --</option>' + subjectOptionsStr;
-    if (currentSubVal && Array.from(subjectSelect.options).some(opt => opt.value === currentSubVal)) {
-        subjectSelect.value = currentSubVal;
-    }
+    safeSetSelectHtml('stats-subject', '<option value="all">-- รวมทุกวิชา --</option>' + subjectOptionsStr);
 }
 
 export function onHistoryClassChange() {
     const classId = document.getElementById('history-class').value;
-    const subjectSelect = document.getElementById('history-subject');
-    if (!subjectSelect) return;
-
-    const currentSubVal = subjectSelect.value;
 
     if (!classId) {
-        subjectSelect.innerHTML = '<option value="">-- กรุณาเลือกชั้นเรียนก่อน --</option>';
+        safeSetSelectHtml('history-subject', '<option value="">-- กรุณาเลือกชั้นเรียนก่อน --</option>');
         return;
     }
 
@@ -351,10 +372,7 @@ export function onHistoryClassChange() {
     activeSubjects.sort((a, b) => (a.code || a.name).localeCompare(b.code || b.name));
     const subjectOptionsStr = activeSubjects.map(s => `<option value="${s.id}">${s.code} - ${s.name}</option>`).join('');
     
-    subjectSelect.innerHTML = '<option value="">-- ทุกวิชา --</option>' + subjectOptionsStr;
-    if (currentSubVal && Array.from(subjectSelect.options).some(opt => opt.value === currentSubVal)) {
-        subjectSelect.value = currentSubVal;
-    }
+    safeSetSelectHtml('history-subject', '<option value="">-- ทุกวิชา --</option>' + subjectOptionsStr);
 }
 
 export function saveSettings() {

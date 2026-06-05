@@ -6,6 +6,9 @@
     <title>MAKHRAB - โรงเรียนไชยฉิมพลีวิทยาคม</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
         
@@ -18,6 +21,29 @@
         .tab-content { display: none; animation: fadeIn 0.3s ease-in-out; }
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Custom Tom Select Tailwind Integration --- */
+        .ts-wrapper {
+            padding: 0 !important;
+            border: none !important;
+        }
+        .ts-control {
+            border-radius: 0.375rem !important;
+            border-color: #d1d5db !important;
+            padding: 0.45rem 0.75rem !important;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+            min-height: 42px !important;
+            display: flex;
+            align-items: center;
+        }
+        .ts-control > input {
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .ts-control.focus {
+            border-color: #22c55e !important;
+            box-shadow: 0 0 0 1px #22c55e !important;
+        }
 
         .attendance-radio {
             display: inline-flex; width: 100%; flex-wrap: nowrap; justify-content: center; gap: 0.25rem;
@@ -37,18 +63,18 @@
             position: fixed; bottom: 20px; right: 20px; background-color: #10b981; color: white;
             padding: 1rem 2rem; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             display: flex; align-items: center; gap: 0.5rem; transform: translateY(150%);
-            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); z-index: 50;
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); z-index: 9990;
         }
         .toast.show { transform: translateY(0); }
         
         .modal {
-            display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%;
+            display: none; position: fixed; z-index: 9050; left: 0; top: 0; width: 100%; height: 100%;
             overflow: auto; background-color: rgba(0,0,0,0.4); align-items: center; justify-content: center;
         }
         .modal.show { display: flex; }
 
         #custom-alert-modal, #custom-confirm-modal, #student-drilldown-modal, #session-drilldown-modal {
-            z-index: 1050; 
+            z-index: 9060; 
         }
 
         .loading-overlay {
@@ -195,6 +221,9 @@
                     </div>
                 </div>
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200">เข้าสู่ระบบ (ครู / แอดมิน)</button>
+                <div class="mt-4 text-center">
+                    <a href="#" onclick="openTeacherRegisterSearch(event)" class="text-sm text-green-600 hover:underline">ลงทะเบียนสำหรับครูผู้สอน</a>
+                </div>
             </form>
             
             <p id="login-error-msg" class="text-red-500 text-center text-sm mt-4 hidden font-medium"></p>
@@ -237,6 +266,7 @@
                     <li id="menu-stats" class="hidden"><button onclick="switchTab('stats')" class="nav-btn border-transparent text-green-200 px-4 py-4 font-medium hover:bg-green-600 border-b-4 hover:text-white focus:outline-none transition-colors duration-200" id="nav-stats"><i class="fas fa-chart-pie mr-2"></i> สถิติ</button></li>
                     <li id="menu-students" class="hidden"><button onclick="switchTab('students')" class="nav-btn border-transparent text-green-200 px-4 py-4 font-medium hover:bg-green-600 border-b-4 hover:text-white focus:outline-none transition-colors duration-200" id="nav-students"><i class="fas fa-users-cog mr-2"></i> จัดการนักเรียน</button></li>
                     <li id="menu-club-manage" class="hidden"><button onclick="switchTab('club-manage')" class="nav-btn border-transparent text-green-200 px-4 py-4 font-medium hover:bg-green-600 border-b-4 hover:text-white focus:outline-none transition-colors duration-200" id="nav-club-manage"><i class="fas fa-tasks mr-2"></i> จัดการชุมนุม</button></li>
+                    <li id="menu-home-visit" class="hidden"><button onclick="switchTab('home-visit')" class="nav-btn border-transparent text-green-200 px-4 py-4 font-medium hover:bg-green-600 border-b-4 hover:text-white focus:outline-none transition-colors duration-200" id="nav-home-visit"><i class="fas fa-house-user mr-2"></i> เยี่ยมบ้าน</button></li>
 
                     
                     <!-- Admin Only Menu -->
@@ -253,16 +283,27 @@
         <section id="tab-my-profile" class="tab-content">
             <div class="bg-white rounded-xl shadow-lg p-6 md:p-8 border border-green-100">
                 <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 border-b pb-4 gap-4">
-                    <div class="flex items-center w-full">
-                        <div class="bg-green-100 p-4 rounded-full text-green-600 mr-4"><i class="fas fa-user-graduate text-3xl"></i></div>
+                    <div class="flex items-center w-full md:flex-1 min-w-0">
+                        <div class="bg-green-100 p-4 rounded-full text-green-600 mr-4 shrink-0"><i class="fas fa-user-graduate text-3xl"></i></div>
                         <div class="min-w-0 flex-1">
                             <h3 class="text-xl sm:text-2xl font-bold text-gray-800 break-words" id="profile-fullname">ชื่อ - นามสกุล</h3>
                             <p class="text-gray-500" id="profile-studentid">รหัสประจำตัว: </p>
                         </div>
                     </div>
-                    <div id="profile-badges" class="text-left md:text-right w-full md:w-auto"></div>
+                    <div id="profile-badges" class="flex flex-col items-start md:items-end gap-2 shrink-0 w-full md:w-auto"></div>
                 </div>
                 
+                <!-- Student Profile Picture -->
+                <div class="flex justify-center mb-6">
+                    <div class="relative">
+                        <img id="profile-pic-preview" src="https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg" class="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg bg-gray-200">
+                        <label for="profile-pic-upload" id="profile-pic-edit-button" class="hidden absolute -bottom-2 -right-2 bg-blue-600 hover:bg-blue-700 text-white w-10 h-10 rounded-full items-center justify-center cursor-pointer shadow-md border-2 border-white transition-transform hover:scale-110">
+                            <i class="fas fa-camera"></i>
+                        </label>
+                        <input type="file" id="profile-pic-upload" class="hidden" accept="image/*">
+                    </div>
+                </div>
+
                 <form id="student-self-form" onsubmit="saveMyProfile(event)">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
@@ -316,6 +357,36 @@
                             <div><label class="text-sm font-medium text-gray-700">อายุ (ปี)</label><input type="number" id="sp-m-age" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
                             <div><label class="text-sm font-medium text-gray-700">อาชีพ</label><input type="text" id="sp-m-job" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
                             <div><label class="text-sm font-medium text-gray-700">เบอร์โทรศัพท์</label><input type="text" id="sp-m-phone" placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                        </div>
+                    </div>
+
+                    <!-- Home Information Section -->
+                    <div class="mt-8 border-t pt-6">
+                        <h4 class="font-bold text-lg text-green-700 mb-4 border-b pb-2"><i class="fas fa-map-marker-alt mr-2"></i>ข้อมูลที่พักอาศัย</h4>
+                        
+                        <div class="border p-4 rounded mb-6 bg-gray-50">
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-bold">พิกัด GPS บ้านนักเรียน</label>
+                                <div class="flex gap-2">
+                                    <a id="sp-map-link" href="#" target="_blank" class="hidden bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-bold items-center shadow-sm"><i class="fas fa-map-marked-alt mr-1"></i> ดูบนแผนที่</a>
+                                    <button type="button" id="sp-gps-btn" onclick="getGPSLocationForProfile()" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs shadow-sm whitespace-nowrap"><i class="fas fa-map-marker-alt"></i> ดึงพิกัดปัจจุบัน</button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label class="text-xs text-gray-500">ละติจูด (Latitude)</label><input type="text" id="sp-home-lat" readonly class="w-full px-3 py-1 border rounded bg-gray-100 text-sm"></div>
+                                <div><label class="text-xs text-gray-500">ลองจิจูด (Longitude)</label><input type="text" id="sp-home-lng" readonly class="w-full px-3 py-1 border rounded bg-gray-100 text-sm"></div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div class="border rounded p-3 text-center bg-gray-50 flex flex-col"><label class="text-xs font-bold block mb-2">รูปถ่ายบ้าน (ภาพที่ 1)</label><label for="sp-home-photo1" class="sp-photo-label cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 px-4 rounded border border-blue-200 text-sm w-full transition-colors mb-2 flex items-center justify-center"><i class="fas fa-camera mr-2"></i> เลือกรูปภาพ</label><input type="file" id="sp-home-photo1" accept="image/*" class="hidden sp-photo-input"><div class="relative w-full flex-grow mt-2"><img id="sp-home-preview1" class="hidden w-full h-32 object-cover rounded border cursor-pointer" onclick="viewLargeImage(this.src)"><button type="button" id="sp-home-remove1" onclick="removeImageForProfile(1)" class="hidden sp-remove-btn absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-full shadow-md items-center justify-center"><i class="fas fa-times"></i></button></div></div>
+                            <div class="border rounded p-3 text-center bg-gray-50 flex flex-col"><label class="text-xs font-bold block mb-2">รูปถ่ายบ้าน (ภาพที่ 2)</label><label for="sp-home-photo2" class="sp-photo-label cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 px-4 rounded border border-blue-200 text-sm w-full transition-colors mb-2 flex items-center justify-center"><i class="fas fa-camera mr-2"></i> เลือกรูปภาพ</label><input type="file" id="sp-home-photo2" accept="image/*" class="hidden sp-photo-input"><div class="relative w-full flex-grow mt-2"><img id="sp-home-preview2" class="hidden w-full h-32 object-cover rounded border cursor-pointer" onclick="viewLargeImage(this.src)"><button type="button" id="sp-home-remove2" onclick="removeImageForProfile(2)" class="hidden sp-remove-btn absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-full shadow-md items-center justify-center"><i class="fas fa-times"></i></button></div></div>
+                            <div class="border rounded p-3 text-center bg-gray-50 flex flex-col"><label class="text-xs font-bold block mb-2">รูปถ่ายบ้าน (ภาพที่ 3)</label><label for="sp-home-photo3" class="sp-photo-label cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 px-4 rounded border border-blue-200 text-sm w-full transition-colors mb-2 flex items-center justify-center"><i class="fas fa-camera mr-2"></i> เลือกรูปภาพ</label><input type="file" id="sp-home-photo3" accept="image/*" class="hidden sp-photo-input"><div class="relative w-full flex-grow mt-2"><img id="sp-home-preview3" class="hidden w-full h-32 object-cover rounded border cursor-pointer" onclick="viewLargeImage(this.src)"><button type="button" id="sp-home-remove3" onclick="removeImageForProfile(3)" class="hidden sp-remove-btn absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-full shadow-md items-center justify-center"><i class="fas fa-times"></i></button></div></div>
+                        </div>
+
+                        <div>
+                            <label class="text-sm font-medium text-gray-700">รายละเอียด/จุดสังเกตการเดินทาง</label>
+                            <textarea id="sp-home-directions" rows="2" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></textarea>
                         </div>
                     </div>
 
@@ -425,6 +496,16 @@
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4 mb-6 bg-green-50 p-4 rounded-lg">
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">ปีการศึกษา</label>
+                        <select id="checkin-year" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" onchange="onCheckinYearSemesterChange(); resetCheckinTable();"></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">ภาคเรียน</label>
+                        <select id="checkin-semester" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" onchange="onCheckinYearSemesterChange(); resetCheckinTable();">
+                            <option value="1">1</option><option value="2">2</option>
+                        </select>
+                    </div>
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">วันที่</label>
                         <input type="date" id="checkin-date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" required onchange="resetCheckinTable()">
                     </div>
@@ -445,26 +526,16 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">ปีการศึกษา</label>
-                        <select id="checkin-year" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" onchange="onCheckinYearSemesterChange(); resetCheckinTable();"></select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">ภาคเรียน</label>
-                        <select id="checkin-semester" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" onchange="onCheckinYearSemesterChange(); resetCheckinTable();">
-                            <option value="1">1</option><option value="2">2</option>
-                        </select>
-                    </div>
-                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">ชั้นเรียน</label>
-                        <select id="checkin-class" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" onchange="resetCheckinTable()"><option value="">-- เลือกชั้นเรียน --</option></select>
+                        <select id="checkin-class" class="w-full border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" onchange="resetCheckinTable()"><option value="">-- เลือกชั้นเรียน --</option></select>
                     </div>
                         <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">ครูผู้สอน</label>
-                        <select id="checkin-teacher" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" onchange="onTeacherChange()"><option value="">-- เลือกครูผู้สอน --</option></select>
+                        <select id="checkin-teacher" class="w-full border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" onchange="onTeacherChange()"><option value="">-- เลือกครูผู้สอน --</option></select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">วิชา</label>
-                        <select id="checkin-subject" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" onchange="resetCheckinTable()"><option value="">-- เลือกวิชา --</option></select>
+                        <select id="checkin-subject" class="w-full border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" onchange="resetCheckinTable()"><option value="">-- เลือกวิชา --</option></select>
                     </div>
                 </div>
 
@@ -711,7 +782,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1" id="lbl-history-class-or-club">ชั้นเรียน</label>
-                        <select id="history-class" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500"><option value="">ทุกชั้นเรียน</option></select>
+                        <select id="history-class" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500" onchange="if(window.onHistoryClassChange) window.onHistoryClassChange()"><option value="">ทุกชั้นเรียน</option></select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1" id="lbl-history-sub">วิชา</label>
@@ -750,15 +821,18 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1" id="lbl-stats-class-or-club">ชั้นเรียน</label>
-                        <select id="stats-class" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500"><option value="">-- เลือกชั้นเรียน --</option></select>
+                        <select id="stats-class" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500" onchange="if(window.onStatsClassChange) window.onStatsClassChange()"><option value="">-- เลือกชั้นเรียน --</option></select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1" id="lbl-stats-sub">วิชา</label>
                         <select id="stats-subject" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500"><option value="">-- เลือกวิชา --</option></select>
                     </div>
-                    <div class="flex items-end gap-2 sm:col-span-2 lg:col-span-1">
+                    <div class="flex flex-col sm:flex-row items-end gap-2 sm:col-span-2 lg:col-span-1">
                         <button onclick="renderStats()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md font-medium transition-colors text-sm whitespace-nowrap"><i class="fas fa-search mr-1"></i> ค้นหา</button>
-                        <button onclick="exportStatsCSV()" id="btn-export-stats" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md font-medium transition-colors hidden text-sm whitespace-nowrap" title="ส่งออกเป็นไฟล์ CSV"><i class="fas fa-file-csv mr-1"></i> ส่งออก</button>
+                        <div id="export-btn-container" class="flex-1 hidden flex-row gap-1 w-full">
+                            <button onclick="exportStatsCSV()" class="w-full bg-gray-600 hover:bg-gray-700 text-white px-2 py-2 rounded-md font-medium transition-colors text-xs whitespace-nowrap" title="ส่งออกเป็นไฟล์ CSV"><i class="fas fa-file-csv"></i> CSV</button>
+                            <button onclick="exportStatsExcel()" class="w-full bg-green-600 hover:bg-green-700 text-white px-2 py-2 rounded-md font-medium transition-colors text-xs whitespace-nowrap" title="ส่งออกเป็นไฟล์ Excel พร้อมสูตร"><i class="fas fa-file-excel"></i> Excel</button>
+                        </div>
                     </div>
                 </div>
                 <div id="stats-empty-msg" class="text-center py-8 text-gray-500 w-full">
@@ -838,6 +912,62 @@
         <tbody class="bg-white divide-y divide-gray-200" id="manage-students-table-body"></tbody>
     </table>
 </div>
+            </div>
+        </section>
+
+        <!-- HOME VISIT TAB -->
+        <section id="tab-home-visit" class="tab-content">
+            <div class="bg-white rounded-xl shadow-lg p-6 md:p-8 border border-green-100">
+                <h3 class="text-2xl font-bold text-green-800 mb-6 border-b pb-3"><i class="fas fa-house-user mr-2"></i>ระบบเยี่ยมบ้านนักเรียน</h3>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6 bg-green-50 p-4 rounded-lg w-full">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ปีการศึกษา</label>
+                        <select id="hv-year" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="renderHomeVisitList()"></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ภาคเรียน</label>
+                        <select id="hv-semester" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="renderHomeVisitList()">
+                            <option value="1">1</option><option value="2">2</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ชั้นเรียน (ที่ปรึกษา)</label>
+                        <select id="hv-class" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="renderHomeVisitList()">
+                            <option value="">-- เลือกชั้นเรียน --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">สถานะการเยี่ยมบ้าน</label>
+                        <select id="hv-status" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="renderHomeVisitList()">
+                            <option value="all">ทั้งหมด</option>
+                            <option value="ยังไม่เยี่ยม">ยังไม่เยี่ยม</option>
+                            <option value="สำเร็จ">เยี่ยมแล้ว (สำเร็จ)</option>
+                            <option value="เลื่อนวันเข้าเยี่ยม">เลื่อนวันเข้าเยี่ยม</option>
+                            <option value="ไม่พบนักเรียน">ไม่พบนักเรียน</option>
+                            <option value="ไม่พบผู้ปกครอง">ไม่พบผู้ปกครอง</option>
+                            <option value="บ้านอยู่ห่างไกล">บ้านอยู่ห่างไกล</option>
+                            <option value="ผู้ปกครองไม่สะดวก">ผู้ปกครองไม่สะดวก</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-lg border w-full">
+                    <table class="min-w-full divide-y divide-gray-200 mobile-card-table">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 whitespace-nowrap">เลขที่</th>
+                                <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 whitespace-nowrap">รหัสนักเรียน</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชื่อ - นามสกุล</th>
+                                <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 whitespace-nowrap">เบอร์โทรศัพท์ติดต่อ</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 whitespace-nowrap">ข้อมูลที่พักนักเรียน</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 whitespace-nowrap">สถานะการเยี่ยมบ้าน</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 whitespace-nowrap">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-home-visit" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
@@ -954,9 +1084,11 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">Google Apps Script Web App URL</label>
                     <input type="text" id="google-sheet-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-green-500 shadow-sm font-mono text-sm text-gray-600">
                 </div>
-                <div class="flex gap-4 flex-col sm:flex-row w-full">
+                <div class="flex gap-4 flex-col sm:flex-row flex-wrap w-full">
                     <button onclick="saveSettings()" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md font-medium"><i class="fas fa-save mr-2"></i> บันทึก URL</button>
                     <button onclick="syncDataToGoogleSheet()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium"><i class="fas fa-cloud-upload-alt mr-2"></i> ซิงค์ข้อมูลขึ้น Google Sheets ทั้งหมด</button>
+                    <button onclick="cleanUpOldAttendanceData()" class="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded-md font-medium"><i class="fas fa-broom mr-2"></i> ล้างข้อมูลเก่าให้ตรงฟอร์แมตใหม่</button>
+                    <button onclick="migrateOldAttendanceIds()" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md font-medium"><i class="fas fa-link mr-2"></i> ผูก ID ข้อมูลเก่า (Migration)</button>
                 </div>
             </div>
         </section>
@@ -1023,6 +1155,199 @@
         </div>
     </div>
 
+    <!-- IMAGE VIEWER MODAL -->
+    <div id="image-viewer-modal" class="modal" style="z-index: 9999;">
+        <div class="relative w-full max-w-4xl mx-4 flex flex-col items-center justify-center">
+            <button onclick="closeModal('image-viewer-modal')" class="absolute -top-10 right-0 md:-right-10 text-white text-3xl hover:text-gray-300 transition-colors"><i class="fas fa-times"></i></button>
+            <img id="large-image-preview" src="" class="max-w-full max-h-[85vh] object-contain rounded shadow-2xl bg-black">
+        </div>
+    </div>
+
+    <!-- STUDENT HOME INFO MODAL -->
+    <div id="student-home-info-modal" class="modal" style="z-index: 9055;">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 flex flex-col max-h-[90vh]">
+            <div class="px-6 py-4 border-b flex justify-between bg-green-50 rounded-t-xl">
+                <h3 class="font-bold text-green-800"><i class="fas fa-map-marked-alt mr-2"></i>ข้อมูลที่พักอาศัยที่นักเรียนระบุ</h3>
+                <button onclick="closeModal('student-home-info-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4">
+                <div class="bg-gray-50 p-4 rounded-lg border">
+                    <p class="text-sm font-bold text-gray-700 mb-1">รายละเอียด/จุดสังเกตการเดินทาง:</p>
+                    <p class="text-sm text-gray-600" id="shi-directions">-</p>
+                </div>
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-blue-50 p-4 rounded-lg border border-blue-100 gap-3">
+                    <div>
+                        <p class="text-sm font-bold text-blue-800">พิกัด GPS</p>
+                        <p class="text-xs text-blue-600" id="shi-coords">ไม่พบข้อมูลพิกัด</p>
+                    </div>
+                    <a id="shi-map-link" href="#" target="_blank" class="hidden w-full sm:w-auto text-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-bold shadow-sm transition-colors"><i class="fas fa-map-marker-alt mr-2"></i>เปิดใน Google Maps</a>
+                </div>
+                <div>
+                    <p class="text-sm font-bold text-gray-700 mb-2">รูปถ่ายบ้านพักอาศัย:</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <img id="shi-photo-1" src="" class="hidden w-full h-40 object-cover rounded border cursor-pointer hover:opacity-90 transition-opacity" onclick="viewLargeImage(this.src)" title="คลิกเพื่อดูรูปใหญ่">
+                        <img id="shi-photo-2" src="" class="hidden w-full h-40 object-cover rounded border cursor-pointer hover:opacity-90 transition-opacity" onclick="viewLargeImage(this.src)" title="คลิกเพื่อดูรูปใหญ่">
+                        <img id="shi-photo-3" src="" class="hidden w-full h-40 object-cover rounded border cursor-pointer hover:opacity-90 transition-opacity" onclick="viewLargeImage(this.src)" title="คลิกเพื่อดูรูปใหญ่">
+                    </div>
+                    <p id="shi-no-photos" class="text-sm text-gray-500 italic hidden mt-2 text-center bg-gray-50 py-4 rounded border">นักเรียนยังไม่ได้อัปโหลดรูปถ่าย</p>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 flex justify-end rounded-b-xl border-t">
+                <button onclick="closeModal('student-home-info-modal')" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded font-medium text-sm">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HOME VISIT MODAL (4-Step Wizard) -->
+    <div id="home-visit-modal" class="modal">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col">
+            <div class="px-6 py-4 border-b flex justify-between bg-blue-50 rounded-t-xl">
+                <h3 class="font-bold text-blue-800"><i class="fas fa-home mr-2"></i>บันทึกการเยี่ยมบ้านนักเรียน</h3>
+                <button onclick="closeModal('home-visit-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <!-- Wizard Progress Header -->
+            <div class="px-6 py-3 bg-gray-50 border-b flex justify-between items-center text-sm">
+                <div class="flex-1 text-center font-bold text-blue-600" id="hv-step-1-tab">1. ข้อมูลผู้ปกครอง</div>
+                <div class="text-gray-300 px-2"><i class="fas fa-chevron-right"></i></div>
+                <div class="flex-1 text-center text-gray-400 font-medium" id="hv-step-2-tab">2. สภาพแวดล้อม</div>
+                <div class="text-gray-300 px-2"><i class="fas fa-chevron-right"></i></div>
+                <div class="flex-1 text-center text-gray-400 font-medium" id="hv-step-3-tab">3. พฤติกรรม</div>
+                <div class="text-gray-300 px-2"><i class="fas fa-chevron-right"></i></div>
+                <div class="flex-1 text-center text-gray-400 font-medium" id="hv-step-4-tab">4. ภาพ/พิกัด</div>
+            </div>
+
+            <div class="p-6 overflow-y-auto flex-grow" id="hv-form-container">
+                <input type="hidden" id="hv-student-id">
+                
+                <!-- STEP 1 -->
+                <div id="hv-step-1" class="hv-step block">
+                    <h4 class="font-bold text-gray-800 mb-4 border-b pb-2">ข้อมูลนักเรียนและผู้ปกครอง</h4>
+                    <div class="bg-blue-50 p-3 rounded mb-4">
+                        <p class="text-sm"><strong>ชื่อ-นามสกุล:</strong> <span id="hv-display-name"></span></p>
+                        <p class="text-sm"><strong>รหัสประจำตัว:</strong> <span id="hv-display-studentid"></span> | <strong>ชั้นเรียน:</strong> <span id="hv-display-class"></span></p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div><label class="text-sm font-medium">ชื่อ-นามสกุลผู้ปกครอง *</label><input type="text" id="hv-guardian-name" class="w-full px-3 py-2 border rounded"></div>
+                        <div><label class="text-sm font-medium">ความสัมพันธ์ *</label>
+                            <select id="hv-guardian-rel" class="w-full px-3 py-2 border rounded" onchange="toggleHvOther(this, 'hv-guardian-rel-other')">
+                                <option value="บิดา">บิดา</option><option value="มารดา">มารดา</option><option value="ปู่/ย่า/ตา/ยาย">ปู่/ย่า/ตา/ยาย</option><option value="ผู้ปกครองอื่นๆ">ผู้ปกครองอื่นๆ</option>
+                            </select>
+                            <input type="text" id="hv-guardian-rel-other" class="w-full px-3 py-2 border rounded mt-2 hidden" placeholder="โปรดระบุความสัมพันธ์...">
+                        </div>
+                        <div><label class="text-sm font-medium">เบอร์โทรศัพท์ติดต่อ *</label><input type="tel" id="hv-guardian-phone" class="w-full px-3 py-2 border rounded"></div>
+                        <div><label class="text-sm font-medium">วันที่มาเยี่ยมบ้าน *</label><input type="date" id="hv-visit-date" class="w-full px-3 py-2 border rounded"></div>
+                        <div class="md:col-span-2">
+                            <label class="text-sm font-medium">ผลการเยี่ยมบ้าน *</label>
+                            <select id="hv-visit-status" class="w-full px-3 py-2 border rounded font-bold text-blue-700 bg-blue-50">
+                                <option value="สำเร็จ">สำเร็จ (เยี่ยมบ้านเรียบร้อย)</option>
+                                <option value="เลื่อนวันเข้าเยี่ยม">เลื่อนวันเข้าเยี่ยม</option>
+                                <option value="ไม่พบนักเรียน">ไม่พบนักเรียน</option>
+                                <option value="ไม่พบผู้ปกครอง">ไม่พบผู้ปกครอง</option>
+                                <option value="บ้านอยู่ห่างไกล">บ้านอยู่ห่างไกล</option>
+                                <option value="ผู้ปกครองไม่สะดวก">ผู้ปกครองไม่สะดวก</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 2 -->
+                <div id="hv-step-2" class="hv-step hidden">
+                    <h4 class="font-bold text-gray-800 mb-4 border-b pb-2">สภาพครอบครัวและที่พักอาศัย</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div><label class="text-sm font-medium">ลักษณะที่พักอาศัย</label>
+                            <select id="hv-housing" class="w-full px-3 py-2 border rounded" onchange="toggleHvOther(this, 'hv-housing-other')">
+                                <option value="บ้านส่วนตัว">บ้านส่วนตัว</option><option value="บ้านเช่า">บ้านเช่า</option><option value="แฟลต/อพาร์ตเมนต์">แฟลต/อพาร์ตเมนต์</option><option value="เพิงพัก/ที่อยู่ชั่วคราว">เพิงพัก/ที่อยู่ชั่วคราว</option><option value="อื่นๆ">อื่นๆ</option>
+                            </select>
+                            <input type="text" id="hv-housing-other" class="w-full px-3 py-2 border rounded mt-2 hidden" placeholder="โปรดระบุลักษณะที่พักอาศัย...">
+                        </div>
+                        <div><label class="text-sm font-medium">สถานะทางเศรษฐกิจ</label>
+                            <select id="hv-economic" class="w-full px-3 py-2 border rounded">
+                                <option value="ปานกลาง">ปานกลาง</option><option value="ยากจน">ยากจน</option><option value="ดี">ดี/ร่ำรวย</option>
+                            </select>
+                        </div>
+                        <div><label class="text-sm font-medium">การเดินทางมาโรงเรียน</label>
+                            <select id="hv-commute" class="w-full px-3 py-2 border rounded" onchange="toggleHvOther(this, 'hv-commute-other')">
+                                <option value="รถรับส่งนักเรียน">รถรับส่งนักเรียน</option><option value="รถประจำทาง">รถประจำทาง</option><option value="รถยนต์/มอเตอร์ไซค์ส่วนตัว">รถยนต์/มอเตอร์ไซค์ส่วนตัว</option><option value="เดิน">เดิน</option><option value="อื่นๆ">อื่นๆ</option>
+                            </select>
+                            <input type="text" id="hv-commute-other" class="w-full px-3 py-2 border rounded mt-2 hidden" placeholder="โปรดระบุวิธีการเดินทาง...">
+                        </div>
+                    </div>
+                    <div><label class="text-sm font-medium">สภาพแวดล้อมและความปลอดภัย (เอื้อต่อการเรียนหรือไม่?)</label><textarea id="hv-environment" rows="3" class="w-full px-3 py-2 border rounded"></textarea></div>
+                </div>
+
+                <!-- STEP 3 -->
+                <div id="hv-step-3" class="hv-step hidden">
+                    <h4 class="font-bold text-gray-800 mb-4 border-b pb-2">พฤติกรรมและข้อเสนอแนะ</h4>
+                    <div class="mb-4"><label class="text-sm font-medium">พฤติกรรมเมื่ออยู่บ้าน (เช่น การช่วยงาน, การแบ่งเวลา)</label><textarea id="hv-behavior" rows="2" class="w-full px-3 py-2 border rounded"></textarea></div>
+                    <div class="mb-5 bg-red-50 border-2 border-red-500 rounded-lg p-4 shadow-md relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-red-500 text-white text-xs px-2 py-1 rounded-bl-lg font-bold">โซนเฝ้าระวังพิเศษ</div>
+                        <label class="text-base font-bold text-red-700 block mb-3 border-b border-red-200 pb-2"><i class="fas fa-exclamation-triangle mr-2"></i>ประเด็นที่ต้องเฝ้าระวัง (Watchlist / Risk Issues)</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                            <label class="flex items-center space-x-2 text-red-900 font-medium bg-white p-2 rounded border border-red-100 hover:bg-red-100 cursor-pointer transition-colors shadow-sm"><input type="checkbox" class="hv-watchlist w-4 h-4 text-red-600 focus:ring-red-500 rounded border-red-300" value="ด้านการเรียน"> <span>ด้านการเรียน</span></label>
+                            <label class="flex items-center space-x-2 text-red-900 font-medium bg-white p-2 rounded border border-red-100 hover:bg-red-100 cursor-pointer transition-colors shadow-sm"><input type="checkbox" class="hv-watchlist w-4 h-4 text-red-600 focus:ring-red-500 rounded border-red-300" value="ด้านการเงิน"> <span>ด้านการเงิน/ยากจน</span></label>
+                            <label class="flex items-center space-x-2 text-red-900 font-medium bg-white p-2 rounded border border-red-100 hover:bg-red-100 cursor-pointer transition-colors shadow-sm"><input type="checkbox" class="hv-watchlist w-4 h-4 text-red-600 focus:ring-red-500 rounded border-red-300" value="เสี่ยงยาเสพติด"> <span>เสี่ยงยาเสพติด</span></label>
+                            <label class="flex items-center space-x-2 text-red-900 font-medium bg-white p-2 rounded border border-red-100 hover:bg-red-100 cursor-pointer transition-colors shadow-sm"><input type="checkbox" class="hv-watchlist w-4 h-4 text-red-600 focus:ring-red-500 rounded border-red-300" value="ติดเกม"> <span>ติดเกม/มือถือ</span></label>
+                            <label class="flex items-center space-x-2 text-red-900 font-medium bg-white p-2 rounded border border-red-100 hover:bg-red-100 cursor-pointer transition-colors shadow-sm"><input type="checkbox" class="hv-watchlist w-4 h-4 text-red-600 focus:ring-red-500 rounded border-red-300" value="ปัญหาครอบครัว"> <span>ปัญหาครอบครัว/ความรุนแรง</span></label>
+                            <label class="flex items-center space-x-2 text-red-900 font-medium bg-white p-2 rounded border border-red-100 hover:bg-red-100 cursor-pointer transition-colors shadow-sm"><input type="checkbox" class="hv-watchlist w-4 h-4 text-red-600 focus:ring-red-500 rounded border-red-300" value="พฤติกรรมเสี่ยงอื่นๆ"> <span>พฤติกรรมเสี่ยงอื่นๆ</span></label>
+                            <label class="flex items-center space-x-2 text-green-800 font-medium bg-green-50 p-2 rounded border border-green-200 hover:bg-green-100 cursor-pointer transition-colors shadow-sm sm:col-span-2"><input type="checkbox" class="hv-watchlist w-4 h-4 text-green-600 focus:ring-green-500 rounded border-green-300" value="ไม่มีประเด็นน่าเป็นห่วง"> <span>ไม่มีประเด็นน่าเป็นห่วง</span></label>
+                        </div>
+                    </div>
+                    <div><label class="text-sm font-medium">ความต้องการหรือข้อเสนอแนะจากผู้ปกครอง</label><textarea id="hv-suggestions" rows="2" class="w-full px-3 py-2 border rounded"></textarea></div>
+                </div>
+
+                <!-- STEP 4 -->
+                <div id="hv-step-4" class="hv-step hidden">
+                    <h4 class="font-bold text-gray-800 mb-4 border-b pb-2">หลักฐานและพิกัดที่อยู่อาศัย</h4>
+                    <div class="border p-4 rounded">
+                        <div class="flex justify-between items-center mb-2"><label class="text-sm font-bold">พิกัด GPS บ้านนักเรียน</label>
+                            <div class="flex gap-2"><a id="hv-map-link" href="#" target="_blank" class="hidden bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-bold items-center shadow-sm"><i class="fas fa-map-marked-alt mr-1"></i> ดูบนแผนที่</a><button type="button" onclick="getGPSLocation()" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs shadow-sm whitespace-nowrap"><i class="fas fa-map-marker-alt"></i> ดึงพิกัดปัจจุบัน</button></div></div><div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-xs text-gray-500">ละติจูด (Latitude)</label><input type="text" id="hv-lat" readonly class="w-full px-3 py-1 border rounded bg-gray-100 text-sm"></div><div><label class="text-xs text-gray-500">ลองจิจูด (Longitude)</label><input type="text" id="hv-lng" readonly class="w-full px-3 py-1 border rounded bg-gray-100 text-sm">
+                                </div>
+                            </div>
+                        </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div class="border rounded p-3 text-center bg-gray-50 flex flex-col">
+                            <label class="text-xs font-bold block mb-2">ภาพที่ 1: สภาพหน้าบ้าน</label>
+                            <label for="hv-photo1" class="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 px-4 rounded border border-blue-200 text-sm w-full transition-colors mb-2 flex items-center justify-center"><i class="fas fa-camera mr-2"></i> เลือกรูปภาพ 1</label>
+                            <input type="file" id="hv-photo1" accept="image/*" class="hidden" onchange="previewImage(event, 'hv-preview1', 'hv-remove1')">
+                            <div class="relative w-full flex-grow mt-2">
+                                <img id="hv-preview1" class="hidden w-full h-32 object-cover rounded border cursor-pointer hover:opacity-90 transition-opacity" onclick="viewLargeImage(this.src)" title="คลิกเพื่อดูรูปใหญ่">
+                                <button type="button" id="hv-remove1" onclick="removeImage(1)" class="hidden absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-full shadow-md items-center justify-center transition-colors" title="ลบรูปภาพ"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+                        <div class="border rounded p-3 text-center bg-gray-50 flex flex-col">
+                            <label class="text-xs font-bold block mb-2">ภาพที่ 2: ครู/นักเรียน/ผู้ปกครอง</label>
+                            <label for="hv-photo2" class="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 px-4 rounded border border-blue-200 text-sm w-full transition-colors mb-2 flex items-center justify-center"><i class="fas fa-camera mr-2"></i> เลือกรูปภาพ 2</label>
+                            <input type="file" id="hv-photo2" accept="image/*" class="hidden" onchange="previewImage(event, 'hv-preview2', 'hv-remove2')">
+                            <div class="relative w-full flex-grow mt-2">
+                                <img id="hv-preview2" class="hidden w-full h-32 object-cover rounded border cursor-pointer hover:opacity-90 transition-opacity" onclick="viewLargeImage(this.src)" title="คลิกเพื่อดูรูปใหญ่">
+                                <button type="button" id="hv-remove2" onclick="removeImage(2)" class="hidden absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-full shadow-md items-center justify-center transition-colors" title="ลบรูปภาพ"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+                        <div class="border rounded p-3 text-center bg-gray-50 flex flex-col">
+                            <label class="text-xs font-bold block mb-2">ภาพที่ 3: มุมทำการบ้าน/อื่นๆ</label>
+                            <label for="hv-photo3" class="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 px-4 rounded border border-blue-200 text-sm w-full transition-colors mb-2 flex items-center justify-center"><i class="fas fa-camera mr-2"></i> เลือกรูปภาพ 3</label>
+                            <input type="file" id="hv-photo3" accept="image/*" class="hidden" onchange="previewImage(event, 'hv-preview3', 'hv-remove3')">
+                            <div class="relative w-full flex-grow mt-2">
+                                <img id="hv-preview3" class="hidden w-full h-32 object-cover rounded border cursor-pointer hover:opacity-90 transition-opacity" onclick="viewLargeImage(this.src)" title="คลิกเพื่อดูรูปใหญ่">
+                                <button type="button" id="hv-remove3" onclick="removeImage(3)" class="hidden absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-full shadow-md items-center justify-center transition-colors" title="ลบรูปภาพ"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="px-6 py-4 bg-gray-50 flex justify-between rounded-b-xl border-t">
+                <button id="hv-btn-prev" onclick="changeHvStep(-1)" class="px-4 py-2 border rounded text-sm hover:bg-gray-100 hidden">ย้อนกลับ</button>
+                <div class="flex-1"></div>
+                <button id="hv-btn-next" onclick="changeHvStep(1)" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">ถัดไป</button>
+                <button id="hv-btn-save" onclick="submitHomeVisit()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm hidden"><i class="fas fa-save mr-1"></i> บันทึกการเยี่ยมบ้าน</button>
+            </div>
+        </div>
+    </div>
+
     <!-- CLUB REGISTRATION FORM MODAL -->
     <div id="club-form-modal" class="modal">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 flex flex-col max-h-[85vh]">
@@ -1068,6 +1393,28 @@
         </div>
     </div>
 
+    <!-- TEACHER REGISTER SEARCH MODAL -->
+    <div id="teacher-register-search-modal" class="modal">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4">
+            <div class="px-6 py-4 border-b flex justify-between bg-green-50 rounded-t-xl">
+                <h3 class="font-bold text-green-800"><i class="fas fa-search mr-2"></i>ค้นหาข้อมูลครูผู้สอน</h3>
+                <button onclick="closeModal('teacher-register-search-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6">
+                <p class="text-sm text-gray-600 mb-4">ตรวจสอบข้อมูลของคุณในระบบก่อนลงทะเบียน</p>
+                <div class="mb-3">
+                    <label class="text-sm font-medium">ชื่อ *</label>
+                    <input type="text" id="reg-search-fname" class="w-full px-3 py-2 border rounded focus:ring-green-500">
+                </div>
+                <div class="mb-4">
+                    <label class="text-sm font-medium">นามสกุล *</label>
+                    <input type="text" id="reg-search-lname" class="w-full px-3 py-2 border rounded focus:ring-green-500">
+                </div>
+                <button onclick="searchTeacherForRegister()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-200">ตรวจสอบ / ลงทะเบียน</button>
+            </div>
+        </div>
+    </div>
+
     <!-- UI TOAST, SPINNERS, ALERTS, CONFIRMS -->
     <div id="loading-overlay" class="loading-overlay show">
         <div class="spinner mb-4"></div>
@@ -1078,7 +1425,7 @@
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 text-center p-6"><div class="text-blue-500 mb-4"><i class="fas fa-info-circle text-5xl"></i></div><h3 class="text-lg font-bold text-gray-800 mb-2">แจ้งเตือน</h3><p class="text-sm text-gray-600 mb-6" id="alert-message">ข้อความ</p><button onclick="closeModal('custom-alert-modal')" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium w-full">ตกลง</button></div>
     </div>
     <div id="custom-confirm-modal" class="modal">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 text-center p-6"><div class="text-yellow-500 mb-4"><i class="fas fa-exclamation-circle text-5xl"></i></div><h3 class="text-lg font-bold text-gray-800 mb-2" id="confirm-title">ยืนยันการดำเนินการ</h3><p class="text-sm text-gray-600 mb-6" id="confirm-message">คุณแน่ใจหรือไม่?</p><div class="flex justify-center gap-3"><button onclick="closeModal('custom-confirm-modal')" class="flex-1 px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 font-medium">ยกเลิก</button><button id="confirm-ok-btn" class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium">ยืนยัน</button></div></div>
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 text-center p-6"><div class="text-yellow-500 mb-4"><i class="fas fa-exclamation-circle text-5xl"></i></div><h3 class="text-lg font-bold text-gray-800 mb-2" id="confirm-title">ยืนยันการดำเนินการ</h3><div class="text-sm text-gray-600 mb-6" id="confirm-message">คุณแน่ใจหรือไม่?</div><div class="flex justify-center gap-3"><button onclick="closeModal('custom-confirm-modal')" class="flex-1 px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 font-medium">ยกเลิก</button><button id="confirm-ok-btn" class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium">ยืนยัน</button></div></div>
     </div>
 
     <!-- CLASS MODAL & EXTRAS -->
@@ -1101,7 +1448,11 @@
                                 <select id="stu-homevisit" class="w-full px-3 py-1.5 border border-blue-300 bg-blue-50 rounded text-sm font-bold">
                                     <option value="">- เลือก -</option>
                                     <option value="สำเร็จ">สำเร็จ</option>
-                                    <option value="ไม่สำเร็จ">ไม่สำเร็จ</option>
+                                    <option value="เลื่อนวันเข้าเยี่ยม">เลื่อนวันเข้าเยี่ยม</option>
+                                    <option value="ไม่พบนักเรียน">ไม่พบนักเรียน</option>
+                                    <option value="ไม่พบผู้ปกครอง">ไม่พบผู้ปกครอง</option>
+                                    <option value="บ้านอยู่ห่างไกล">บ้านอยู่ห่างไกล</option>
+                                    <option value="ผู้ปกครองไม่สะดวก">ผู้ปกครองไม่สะดวก</option>
                                 </select>
                             </div>
                             <div class="w-1/2">
@@ -1233,10 +1584,9 @@
             </div>
         </div>
     </div>
-    
-    <div id="subject-modal" class="modal"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4"><div class="px-6 py-4 border-b flex justify-between bg-blue-50 rounded-t-xl"><h3 class="font-bold text-blue-800" id="sub-modal-title">วิชา</h3><button onclick="closeModal('subject-modal')"><i class="fas fa-times"></i></button></div><div class="p-6"><input type="hidden" id="sub-id"><div class="mb-3"><label class="text-sm font-medium">รหัสวิชา *</label><input type="text" id="sub-code" class="w-full px-3 py-2 border rounded"></div><div class="mb-3"><label class="text-sm font-medium">ชื่อวิชา *</label><input type="text" id="sub-name" class="w-full px-3 py-2 border rounded"></div><div class="mb-3"><label class="text-sm font-medium">หน่วยกิต</label><input type="number" step="0.5" id="sub-credit" class="w-full px-3 py-2 border rounded"></div><div class="flex justify-end gap-2 mt-4"><button onclick="closeModal('subject-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-100">ยกเลิก</button><button onclick="saveSubject()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">บันทึก</button></div></div></div></div>
-    <div id="subject-modal" class="modal"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4"><div class="px-6 py-4 border-b flex justify-between bg-blue-50 rounded-t-xl"><h3 class="font-bold text-blue-800" id="sub-modal-title">วิชา</h3><button onclick="closeModal('subject-modal')"><i class="fas fa-times"></i></button></div><div class="p-6"><input type="hidden" id="sub-id"><div class="mb-3"><label class="text-sm font-medium">รหัสวิชา *</label><input type="text" id="sub-code" class="w-full px-3 py-2 border rounded"></div><div class="mb-3"><label class="text-sm font-medium">ชื่อวิชา *</label><input type="text" id="sub-name" class="w-full px-3 py-2 border rounded"></div><div id="sub-name-edit-warning" class="text-red-500 text-xs mt-1 hidden"><i class="fas fa-exclamation-circle mr-1"></i> หากต้องการแก้ไขชื่อวิชา กรุณาติดต่อ Admin</div></div><div class="mb-3"><label class="text-sm font-medium">หน่วยกิต</label><input type="number" step="0.5" id="sub-credit" class="w-full px-3 py-2 border rounded"></div><div class="flex justify-end gap-2 mt-4"><button onclick="closeModal('subject-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-100">ยกเลิก</button><button onclick="saveSubject()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">บันทึก</button></div></div></div></div>
-    <div id="teacher-modal" class="modal"><div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4"><div class="px-6 py-4 border-b flex justify-between bg-blue-50 rounded-t-xl"><h3 class="font-bold text-blue-800" id="t-modal-title">ครูผู้สอน</h3><button onclick="closeModal('teacher-modal')"><i class="fas fa-times"></i></button></div><div class="p-6 max-h-[70vh] overflow-y-auto"><input type="hidden" id="t-id"><div class="grid grid-cols-3 gap-3 mb-3"><div class="col-span-1"><label class="text-sm font-medium">คำนำหน้า</label><select id="t-title" class="w-full px-3 py-2 border rounded"><option value="นาย">นาย</option><option value="นาง">นาง</option><option value="นางสาว">นางสาว</option></select></div><div class="col-span-2"><label class="text-sm font-medium">ชื่อ *</label><input type="text" id="t-fname" class="w-full px-3 py-2 border rounded"></div></div><div class="mb-3"><label class="text-sm font-medium">นามสกุล *</label><input type="text" id="t-lname" class="w-full px-3 py-2 border rounded"></div><h4 class="font-bold text-sm text-gray-700 border-b pb-1 mt-4 mb-2">ข้อมูลการเข้าสู่ระบบ & ติดต่อ</h4><div class="grid grid-cols-2 gap-3 mb-3"><div><label class="text-sm font-medium">อีเมล (ใช้เข้าระบบ) *</label><input type="email" id="t-email" required class="w-full px-3 py-2 border rounded border-blue-300 bg-blue-50"></div><div><label class="text-sm font-medium">โทรศัพท์</label><input type="text" id="t-phone" placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded"></div></div><div class="grid grid-cols-2 gap-3 mb-4"><div><label class="text-sm font-medium">รหัสผ่าน *</label><input type="password" id="t-password" class="w-full px-3 py-2 border rounded"></div><div><label class="text-sm font-medium">ยืนยันรหัสผ่าน *</label><input type="password" id="t-conf-password" class="w-full px-3 py-2 border rounded"></div></div><div><label class="text-sm font-medium block mb-2">วิชาที่สอน (เลือกได้มากกว่า 1)</label><div id="t-subjects-container" class="bg-gray-50 border p-3 rounded h-40 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1"></div></div><div class="flex justify-end gap-2 mt-4"><button onclick="closeModal('teacher-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-100">ยกเลิก</button><button onclick="saveTeacher()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">บันทึก</button></div></div></div></div>
+
+    <div id="subject-modal" class="modal"><div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4"><div class="px-6 py-4 border-b flex justify-between bg-blue-50 rounded-t-xl"><h3 class="font-bold text-blue-800" id="sub-modal-title">วิชา</h3><button onclick="closeModal('subject-modal')"><i class="fas fa-times"></i></button></div><div class="p-6"><input type="hidden" id="sub-id"><div class="mb-3"><label class="text-sm font-medium">รหัสวิชา *</label><input type="text" id="sub-code" class="w-full px-3 py-2 border rounded"></div><div class="mb-3"><label class="text-sm font-medium">ชื่อวิชา *</label><input type="text" id="sub-name" class="w-full px-3 py-2 border rounded"></div><div id="sub-name-edit-warning" class="text-red-500 text-xs mt-1 hidden"><i class="fas fa-exclamation-circle mr-1"></i> หากต้องการแก้ไขชื่อวิชา กรุณาติดต่อ Admin</div><div class="mb-3 mt-3"><label class="text-sm font-medium">หน่วยกิต</label><input type="number" step="0.5" id="sub-credit" class="w-full px-3 py-2 border rounded"></div><div class="flex justify-end gap-2 mt-4"><button onclick="closeModal('subject-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-100">ยกเลิก</button><button onclick="saveSubject()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">บันทึก</button></div></div></div></div>
+    <div id="teacher-modal" class="modal"><div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4"><div class="px-6 py-4 border-b flex justify-between bg-blue-50 rounded-t-xl"><h3 class="font-bold text-blue-800" id="t-modal-title">ครูผู้สอน</h3><button onclick="closeModal('teacher-modal')"><i class="fas fa-times"></i></button></div><div class="p-6 max-h-[70vh] overflow-y-auto"><input type="hidden" id="t-id"><div class="grid grid-cols-3 gap-3 mb-3"><div class="col-span-1"><label class="text-sm font-medium">คำนำหน้า</label><select id="t-title" class="w-full px-3 py-2 border rounded"><option value="นาย">นาย</option><option value="นาง">นาง</option><option value="นางสาว">นางสาว</option></select></div><div class="col-span-2"><label class="text-sm font-medium">ชื่อ *</label><input type="text" id="t-fname" class="w-full px-3 py-2 border rounded"></div></div><div class="mb-3"><label class="text-sm font-medium">นามสกุล *</label><input type="text" id="t-lname" class="w-full px-3 py-2 border rounded"></div><h4 class="font-bold text-sm text-gray-700 border-b pb-1 mt-4 mb-2">ข้อมูลการเข้าสู่ระบบ & ติดต่อ</h4><div class="grid grid-cols-2 gap-3 mb-3"><div><label class="text-sm font-medium">อีเมล (ใช้เข้าระบบ) *</label><input type="email" id="t-email" required class="w-full px-3 py-2 border rounded border-blue-300 bg-blue-50"></div><div><label class="text-sm font-medium">โทรศัพท์</label><input type="text" id="t-phone" placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded"></div></div><div class="grid grid-cols-2 gap-3 mb-4"><div><label class="text-sm font-medium">รหัสผ่าน *</label><input type="password" id="t-password" class="w-full px-3 py-2 border rounded"></div><div><label class="text-sm font-medium">ยืนยันรหัสผ่าน *</label><input type="password" id="t-conf-password" class="w-full px-3 py-2 border rounded"></div></div><div><label class="text-sm font-medium block mb-2">วิชาที่สอน (เลือกได้มากกว่า 1)</label><input type="text" id="t-subject-search" placeholder="ค้นหารหัส หรือ ชื่อวิชา..." class="w-full px-3 py-2 border border-gray-300 rounded-md mb-2 text-sm focus:ring-green-500" onkeyup="renderTeacherSubjectsList()"><div id="t-subjects-container" class="bg-gray-50 border p-3 rounded h-40 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1"></div></div><div class="flex justify-end gap-2 mt-4"><button onclick="closeModal('teacher-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-100">ยกเลิก</button><button onclick="saveTeacher()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">บันทึก</button></div></div></div></div>
     <div id="class-modal" class="modal"><div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] flex flex-col"><div class="px-6 py-4 border-b flex justify-between bg-blue-50 rounded-t-xl"><h3 class="text-blue-800 font-bold" id="c-modal-title">ชั้นเรียน</h3><button onclick="closeModal('class-modal')"><i class="fas fa-times"></i></button></div><div class="p-6 overflow-y-auto"><input type="hidden" id="c-id"><div class="grid grid-cols-2 gap-3 mb-3"><div><label class="text-sm font-medium">ปีการศึกษา *</label><input type="number" id="c-year" class="w-full px-3 py-2 border rounded" placeholder="เช่น 2569"></div><div><label class="text-sm font-medium">ภาคเรียน *</label><select id="c-sem" class="w-full px-3 py-2 border rounded"><option value="1">1</option><option value="2">2</option></select></div></div><div class="mb-4"><label class="text-sm font-medium">ชื่อชั้นเรียน *</label><input type="text" id="c-name" class="w-full px-3 py-2 border rounded" placeholder="เช่น ม.1/1"></div><div class="mb-4"><label class="text-sm font-medium block mb-2">ครูที่ปรึกษา (เลือกได้มากกว่า 1)</label><div id="c-advisors-container" class="bg-gray-50 border p-3 rounded h-32 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1"></div></div><div><label class="text-sm font-medium block mb-2">วิชาที่เรียน (เลือกได้มากกว่า 1)</label><div id="c-subjects-container" class="bg-gray-50 border p-3 rounded h-40 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1"></div></div></div><div class="px-6 py-4 bg-gray-50 flex justify-end gap-2 rounded-b-xl border-t"><button onclick="closeModal('class-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-100">ยกเลิก</button><button onclick="saveClassRoom()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">บันทึก</button></div></div></div>
 
 <script type="module" src="./js/main.js"></script>

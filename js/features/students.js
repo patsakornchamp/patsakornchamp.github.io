@@ -1,31 +1,96 @@
 import { AppState } from '../core/state.js';
 import { DB_KEYS } from '../core/config.js';
-import { generateId, getStudentFullName, showToast, customAlert, customConfirm, closeModal, validateThaiCitizenId, validatePhoneNumber, matchRecordYearSemester, getISOTimestamp, getCurrentUserId } from '../utils/helpers.js';
+import { generateId, getStudentFullName, showToast, customAlert, customConfirm, closeModal, validateThaiCitizenId, validatePhoneNumber, matchRecordYearSemester, getISOTimestamp, getCurrentUserId, showLoading, hideLoading } from '../utils/helpers.js';
 import { saveToDB, syncDataFromServer } from '../services/api.js';
+
+// --- Helper functions for Student Profile ---
+function getDirectImageUrl(url) {
+    if (!url) return '';
+    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) {
+        return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1200`;
+    }
+    return url;
+}
+
+async function compressImage(file, maxSize = 1280, quality = 0.8) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let { width, height } = img;
+                if (width > height) {
+                    if (width > maxSize) { height *= maxSize / width; width = maxSize; }
+                } else {
+                    if (height > maxSize) { width *= maxSize / height; height = maxSize; }
+                }
+                canvas.width = width;
+                canvas.height = height;
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL('image/jpeg', quality).split(',')[1]);
+            };
+            img.onerror = error => reject(error);
+        };
+        reader.onerror = error => reject(error);
+    });
+}
+
+function updateMapLinkForProfile(lat, lng) {
+    const mapLink = document.getElementById('sp-map-link');
+    if (!mapLink) return;
+    if (lat && lng) {
+        mapLink.href = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+        mapLink.classList.remove('hidden');
+        mapLink.classList.add('inline-flex');
+    } else {
+        mapLink.classList.add('hidden');
+    }
+}
+
+function previewImageForProfile(event, previewId, removeBtnId) {
+    const file = event.target.files[0];
+    const preview = document.getElementById(previewId);
+    const removeBtn = removeBtnId ? document.getElementById(removeBtnId) : null;
+    if (file && preview) {
+        preview.src = URL.createObjectURL(file);
+        preview.classList.remove('hidden');
+        if (removeBtn) {
+            removeBtn.classList.remove('hidden');
+            removeBtn.classList.add('flex');
+        }
+    }
+}
 
 // --- Student Self Service ---
 export function renderStudentProfile() {
     const s = AppState.currentUser.data;
+    const defaultPic = 'https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg';
     document.getElementById('profile-fullname').innerText = getStudentFullName(s);
     document.getElementById('profile-studentid').innerText = `รหัสประจำตัว: ${s.studentId || '-'}`;
     
     const badgeEl = document.getElementById('profile-badges');
     let badgesHtml = '';
-    const isProfileComplete = s.isProfileComplete === true || String(s.isProfileComplete).toUpperCase() === 'TRUE';
+    const isProfileComplete = s.isProfileComplete === true || String(s.isProfileComplete).toLowerCase() === 'true';
     if (isProfileComplete) {
-        badgesHtml += '<span class="bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full font-medium inline-block mb-1"><i class="fas fa-check-circle mr-1"></i> ประวัติสมบูรณ์</span><br>';
+        badgesHtml += '<span class="bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full font-medium inline-block whitespace-nowrap"><i class="fas fa-check-circle mr-1"></i> ประวัติสมบูรณ์</span>';
     } else {
-        badgesHtml += '<span class="bg-yellow-100 text-yellow-800 text-sm px-3 py-1 rounded-full font-medium inline-block mb-1"><i class="fas fa-exclamation-triangle mr-1"></i> กรุณากรอกประวัติให้ครบ</span><br>';
+        badgesHtml += '<span class="bg-yellow-100 text-yellow-800 text-sm px-3 py-1 rounded-full font-medium inline-block whitespace-nowrap"><i class="fas fa-exclamation-triangle mr-1"></i> กรุณากรอกประวัติให้ครบ</span>';
     }
     
     if (s.homeVisit === 'สำเร็จ') {
-        badgesHtml += '<span class="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full font-medium inline-block"><i class="fas fa-home mr-1"></i> เยี่ยมบ้านสำเร็จ</span>';
-    } else if (s.homeVisit === 'ไม่สำเร็จ') {
-        badgesHtml += '<span class="bg-red-100 text-red-800 text-sm px-3 py-1 rounded-full font-medium inline-block"><i class="fas fa-home mr-1"></i> เยี่ยมบ้านไม่สำเร็จ</span>';
+        badgesHtml += '<span class="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full font-medium inline-block whitespace-nowrap"><i class="fas fa-home mr-1"></i> เยี่ยมบ้านสำเร็จ</span>';
+    } else if (!s.homeVisit || s.homeVisit === 'ยังไม่เยี่ยม') {
+        badgesHtml += '<span class="bg-gray-100 text-gray-600 text-sm px-3 py-1 rounded-full font-medium inline-block whitespace-nowrap"><i class="fas fa-home mr-1"></i> ยังไม่เยี่ยมบ้าน</span>';
     } else {
-        badgesHtml += '<span class="bg-gray-100 text-gray-600 text-sm px-3 py-1 rounded-full font-medium inline-block"><i class="fas fa-home mr-1"></i> ยังไม่เยี่ยมบ้าน</span>';
+        badgesHtml += `<span class="bg-yellow-100 text-yellow-800 text-sm px-3 py-1 rounded-full font-medium inline-block whitespace-nowrap"><i class="fas fa-home mr-1"></i> ${s.homeVisit}</span>`;
     }
     badgeEl.innerHTML = badgesHtml;
+
+    document.getElementById('profile-pic-preview').src = s.profileImageUrl ? getDirectImageUrl(s.profileImageUrl) : defaultPic;
 
     document.getElementById('sp-citizenid').value = s.citizenId || '';
     document.getElementById('sp-nickname').value = s.nickname || '';
@@ -55,12 +120,36 @@ export function renderStudentProfile() {
     document.getElementById('sp-m-job').value = s.motherJob || '';
     document.getElementById('sp-m-phone').value = s.motherPhone || '';
 
+    // New Home Info fields
+    document.getElementById('sp-home-lat').value = s.home_latitude || '';
+    document.getElementById('sp-home-lng').value = s.home_longitude || '';
+    document.getElementById('sp-home-directions').value = s.home_directions || '';
+    updateMapLinkForProfile(s.home_latitude, s.home_longitude);
+
+    for (let i = 1; i <= 3; i++) {
+        const preview = document.getElementById(`sp-home-preview${i}`);
+        const removeBtn = document.getElementById(`sp-home-remove${i}`);
+        const fileInput = document.getElementById(`sp-home-photo${i}`);
+        const imageUrl = s[`home_photo_${i}_url`];
+        
+        fileInput.value = '';
+        if (imageUrl) {
+            preview.src = getDirectImageUrl(imageUrl);
+            preview.classList.remove('hidden');
+            removeBtn.classList.remove('hidden');
+            removeBtn.classList.add('flex');
+        } else {
+            preview.classList.add('hidden');
+            removeBtn.classList.add('hidden');
+        }
+    }
+
     toggleProfileEditMode(false);
 }
 
 export function toggleProfileEditMode(isEditing) {
     const form = document.getElementById('student-self-form');
-    const inputs = form.querySelectorAll('input, select, textarea');
+    const inputs = form.querySelectorAll('input:not([type=file]), select, textarea');
     
     inputs.forEach(input => {
         if (input.id === 'sp-class' || input.id === 'sp-number') return;
@@ -73,14 +162,19 @@ export function toggleProfileEditMode(isEditing) {
         }
     });
 
+    document.getElementById('profile-pic-edit-button').classList.toggle('hidden', !isEditing);
+    document.getElementById('profile-pic-edit-button').classList.toggle('flex', isEditing);
+    document.querySelectorAll('.sp-photo-label').forEach(el => el.classList.toggle('hidden', !isEditing));
+    document.querySelectorAll('.sp-remove-btn').forEach(el => el.style.display = isEditing ? 'flex' : 'none');
+    document.getElementById('sp-gps-btn').style.display = isEditing ? 'block' : 'none';
+
     document.getElementById('btn-edit-profile').classList.toggle('hidden', isEditing);
     document.getElementById('btn-cancel-profile').classList.toggle('hidden', !isEditing);
     document.getElementById('btn-save-profile').classList.toggle('hidden', !isEditing);
 }
 
-export function saveMyProfile(e) {
-    e.preventDefault();
-    
+export async function saveMyProfile(e) {
+    if (e) e.preventDefault();
     customConfirm('ยืนยันการบันทึกข้อมูล', 'คุณตรวจสอบข้อมูลครบถ้วนและต้องการบันทึกการแก้ไขใช่หรือไม่?', async () => {
         const s = AppState.currentUser.data;
         const citizenId = document.getElementById('sp-citizenid').value.toString().replace(/\s+/g, '');
@@ -116,19 +210,66 @@ export function saveMyProfile(e) {
         s.motherAge = document.getElementById('sp-m-age').value;
         s.motherJob = document.getElementById('sp-m-job').value.trim();
         s.motherPhone = mPhone.trim();
+
+        // New Home Info
+        s.home_latitude = document.getElementById('sp-home-lat').value;
+        s.home_longitude = document.getElementById('sp-home-lng').value;
+        s.home_directions = document.getElementById('sp-home-directions').value;
+
         s.updatedAt = getISOTimestamp();
         s.updatedBy = getCurrentUserId();
-        s.isProfileComplete = true; 
+        s.isProfileComplete = 'true'; 
 
         const idx = AppState.allStudents.findIndex(x => x.id === s.id);
         if(idx > -1) AppState.allStudents[idx] = s;
         
         AppState.currentUser.data = s;
-        localStorage.setItem(DB_KEYS.SESSION, JSON.stringify(AppState.currentUser));
+        try {
+            localStorage.setItem(DB_KEYS.SESSION, JSON.stringify(AppState.currentUser));
+        } catch(e) { console.warn(e); }
         
-        await saveToDB(DB_KEYS.STUDENTS, AppState.allStudents, 'saveStudents'); 
-        showToast('บันทึกข้อมูลส่วนตัวเรียบร้อยแล้ว');
-        renderStudentProfile();
+        showLoading('กำลังบันทึกและอัปโหลดรูปภาพ...');
+        
+        // สร้าง Payload เฉพาะนักเรียนคนนี้ แบบเดียวกับระบบเยี่ยมบ้าน
+        const payload = { ...s };
+
+        const profilePicFile = document.getElementById('profile-pic-upload').files[0];
+        if (profilePicFile) {
+            payload.profileImage_base64 = await compressImage(profilePicFile);
+            payload.profileImage_name = profilePicFile.name;
+            payload.profileImage_mime = 'image/jpeg';
+        }
+
+        for (let i = 1; i <= 3; i++) {
+            const file = document.getElementById(`sp-home-photo${i}`).files[0];
+            if (file) {
+                payload[`home_photo_${i}_base64`] = await compressImage(file);
+                payload[`home_photo_${i}_name`] = file.name;
+                payload[`home_photo_${i}_mime`] = 'image/jpeg';
+            }
+        }
+        
+        try {
+            const response = await fetch(AppState.googleSheetUrl, {
+                method: 'POST',
+                redirect: 'follow', 
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+                body: JSON.stringify({ action: 'saveStudentProfile', payload: payload })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                showToast('บันทึกข้อมูลส่วนตัวและรูปภาพเรียบร้อยแล้ว');
+                await syncDataFromServer(true);
+                renderStudentProfile();
+            } else {
+                customAlert('เกิดข้อผิดพลาดในการบันทึก: ' + (result.message || ''));
+            }
+        } catch (err) {
+            console.error(err);
+            customAlert('การเชื่อมต่อล้มเหลว กรุณาลองอีกครั้ง');
+        }
+        hideLoading();
     });
 }
 
@@ -199,7 +340,7 @@ export function previewCSV(event) {
                 AppState.pendingUploadStudents.push({
                     id: generateId(), class: cls, number: number, studentId: studentId,
                     title: title, firstName: fname, lastName: lname, nickname: nickname,
-                    status: 'ปกติ', isProfileComplete: false,
+                    status: 'ปกติ', isProfileComplete: 'false',
                     createdAt: getISOTimestamp(), createdBy: getCurrentUserId(),
                     updatedAt: getISOTimestamp(), updatedBy: getCurrentUserId(),
                     deleted_flg: 'N', deletedAt: null, deletedBy: null,
@@ -351,11 +492,11 @@ export async function saveStudent() {
     const objId = document.getElementById('stu-id').value || generateId();
     const existStu = AppState.allStudents.find(x => x.id === objId && x.deleted_flg !== 'Y');
     
-    let isComp = false;
+    let isComp = 'false';
     if (existStu) {
-        isComp = existStu.isProfileComplete === true || String(existStu.isProfileComplete).toUpperCase() === 'TRUE';
+        isComp = (existStu.isProfileComplete === true || String(existStu.isProfileComplete).toLowerCase() === 'true') ? 'true' : 'false';
     } else {
-        isComp = (citizenId && phone) ? true : false;
+        isComp = (citizenId && phone) ? 'true' : 'false';
     }
     
     let obj;
@@ -449,7 +590,7 @@ export function renderManageStudents() {
     document.getElementById('manage-students-table-body').innerHTML = stus.map(s => {
         const isResigned = s.status === 'ลาออก';
         const statusBadge = isResigned ? `<span class="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded ml-2 font-bold whitespace-nowrap">ลาออก</span>` : '';
-        const isProfileComplete = s.isProfileComplete === true || String(s.isProfileComplete).toUpperCase() === 'TRUE';
+        const isProfileComplete = s.isProfileComplete === true || String(s.isProfileComplete).toLowerCase() === 'true';
         const incompleteWarning = (!isProfileComplete && !isResigned) ? `<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded ml-2 font-bold whitespace-nowrap border border-yellow-200 shadow-sm" title="ยังไม่กรอกประวัติครบบริบูรณ์"><i class="fas fa-exclamation-triangle mr-1"></i>ยังไม่กรอกประวัติ</span>` : '';
         const rowClass = isResigned ? 'opacity-50 bg-gray-50' : 'hover:bg-gray-50';
 
@@ -595,6 +736,37 @@ export function renderStudentAcademicPortal() {
     }
 }
 
+export function getGPSLocationForProfile() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((position) => {
+            document.getElementById('sp-home-lat').value = position.coords.latitude;
+            document.getElementById('sp-home-lng').value = position.coords.longitude;
+            updateMapLinkForProfile(position.coords.latitude, position.coords.longitude);
+            showToast('ดึงพิกัด GPS สำเร็จ');
+        }, (error) => {
+            let message = 'ไม่สามารถดึงพิกัดได้: ' + error.message;
+            if (error.code === error.PERMISSION_DENIED) {
+                message = 'คุณปฏิเสธการเข้าถึงตำแหน่ง กรุณาเปิดการอนุญาตในตั้งค่าเบราว์เซอร์/อุปกรณ์ แล้วลองอีกครั้ง';
+            }
+            customAlert(message);
+        });
+    } else {
+        customAlert('เบราว์เซอร์ของคุณไม่รองรับ Geolocation');
+    }
+}
+
+export function removeImageForProfile(index) {
+    const fileInput = document.getElementById(`sp-home-photo${index}`);
+    const preview = document.getElementById(`sp-home-preview${index}`);
+    const removeBtn = document.getElementById(`sp-home-remove${index}`);
+    
+    if (fileInput) fileInput.value = '';
+    if (preview) { preview.src = ''; preview.classList.add('hidden'); }
+    if (removeBtn) { removeBtn.classList.add('hidden'); removeBtn.classList.remove('flex'); }
+    // Note: This only removes from the frontend. The backend will handle permanent deletion on save if needed.
+    // For now, we just clear the preview. The URL will be overwritten on save.
+}
+
 // ผูกฟังก์ชันเข้า Window
 window.renderStudentProfile = renderStudentProfile;
 window.toggleProfileEditMode = toggleProfileEditMode;
@@ -609,3 +781,11 @@ window.renderManageStudents = renderManageStudents;
 window.deleteStu = deleteStu;
 window.searchManageStudents = searchManageStudents;
 window.renderStudentAcademicPortal = renderStudentAcademicPortal;
+window.getGPSLocationForProfile = getGPSLocationForProfile;
+window.removeImageForProfile = removeImageForProfile;
+
+// Event listeners for profile image uploads
+document.getElementById('profile-pic-upload').addEventListener('change', (e) => previewImageForProfile(e, 'profile-pic-preview', null));
+for(let i=1; i<=3; i++) {
+    document.getElementById(`sp-home-photo${i}`).addEventListener('change', (e) => previewImageForProfile(e, `sp-home-preview${i}`, `sp-home-remove${i}`));
+}

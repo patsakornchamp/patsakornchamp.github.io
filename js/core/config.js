@@ -12,4 +12,4 @@ export const DB_KEYS = {
 };
 
 // export const DEFAULT_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw1El5QcAG90ubffnanxH5bMJ3C3X3Db9lXPZ9Amjc8DUeGLtTYkXkZrYLfxj2A1zm5/exec";  //uat
-export const DEFAULT_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzAfy8xydiIQqpmxVb-QCQTyMkLRxhCe9FbVVejEmSq51PdCukY84DCxFjnp0xThOo3/exec";
+export const DEFAULT_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz2FOJJkWTgGDy7hnNCnuMtBXQdSFXBPX6Kw-BieV91U-8lDh-JnKSWja26LXwyVwwcQA/exec";
