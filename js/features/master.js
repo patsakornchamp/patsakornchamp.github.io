@@ -303,6 +303,68 @@ export async function saveTeacher() {
     showToast('บันทึกครูแล้ว');
 }
 
+// ฟังก์ชันสำหรับสร้างและกรองรายชื่อครูที่ปรึกษาในชั้นเรียน
+export function renderClassAdvisorsList() {
+    const query = (document.getElementById('c-advisor-search') ? document.getElementById('c-advisor-search').value.toLowerCase().trim() : '');
+    const container = document.getElementById('c-advisors-container');
+    
+    let filteredTeachers = AppState.allTeachers.filter(t => t.deleted_flg !== 'Y');
+    
+    if (query) {
+        filteredTeachers = filteredTeachers.filter(t => (t.firstName || '').toLowerCase().includes(query) || (t.lastName || '').toLowerCase().includes(query));
+    }
+
+    filteredTeachers.sort((a, b) => {
+        const aSelected = window._tempClassAdvisorIds.includes(a.id);
+        const bSelected = window._tempClassAdvisorIds.includes(b.id);
+        if (aSelected && !bSelected) return -1;
+        if (!aSelected && bSelected) return 1;
+        return (a.firstName || '').localeCompare(b.firstName || '');
+    });
+
+    container.innerHTML = filteredTeachers.map(t => `<label class="checkbox-container">${t.firstName} ${t.lastName}<input type="checkbox" value="${t.id}" class="c-adv-cb" ${window._tempClassAdvisorIds.includes(t.id)?'checked':''} onchange="toggleClassAdvisor(this)"><span class="checkmark"></span></label>`).join('');
+}
+
+export function toggleClassAdvisor(cb) {
+    if (cb.checked) {
+        if (!window._tempClassAdvisorIds.includes(cb.value)) window._tempClassAdvisorIds.push(cb.value);
+    } else {
+        const index = window._tempClassAdvisorIds.indexOf(cb.value);
+        if (index > -1) window._tempClassAdvisorIds.splice(index, 1);
+    }
+}
+
+// ฟังก์ชันสำหรับสร้างและกรองรายวิชาในชั้นเรียน
+export function renderClassSubjectsList() {
+    const query = (document.getElementById('c-subject-search') ? document.getElementById('c-subject-search').value.toLowerCase().trim() : '');
+    const container = document.getElementById('c-subjects-container');
+    
+    let filteredSubjects = AppState.allSubjects.filter(s => s.deleted_flg !== 'Y');
+    
+    if (query) {
+        filteredSubjects = filteredSubjects.filter(s => (s.code || '').toLowerCase().includes(query) || (s.name || '').toLowerCase().includes(query));
+    }
+
+    filteredSubjects.sort((a, b) => {
+        const aSelected = window._tempClassSubjectIds.includes(a.id);
+        const bSelected = window._tempClassSubjectIds.includes(b.id);
+        if (aSelected && !bSelected) return -1;
+        if (!aSelected && bSelected) return 1;
+        return (a.code || a.name).localeCompare(b.code || b.name);
+    });
+
+    container.innerHTML = filteredSubjects.map(s => `<label class="checkbox-container">${s.code} - ${s.name}<input type="checkbox" value="${s.id}" class="c-sub-cb" ${window._tempClassSubjectIds.includes(s.id)?'checked':''} onchange="toggleClassSubject(this)"><span class="checkmark"></span></label>`).join('');
+}
+
+export function toggleClassSubject(cb) {
+    if (cb.checked) {
+        if (!window._tempClassSubjectIds.includes(cb.value)) window._tempClassSubjectIds.push(cb.value);
+    } else {
+        const index = window._tempClassSubjectIds.indexOf(cb.value);
+        if (index > -1) window._tempClassSubjectIds.splice(index, 1);
+    }
+}
+
 // Class CRUD
 export function openClassModal() {
     const schoolDefaults = getDefaultAcademicYearAndSemester();
@@ -310,20 +372,36 @@ export function openClassModal() {
     document.getElementById('c-year').value = schoolDefaults.year; 
     document.getElementById('c-sem').value = schoolDefaults.semester;
     document.getElementById('c-name').value='';
-    document.getElementById('c-advisors-container').innerHTML = AppState.allTeachers.filter(t => t.deleted_flg !== 'Y').map(t => `<label class="checkbox-container">${t.firstName} ${t.lastName}<input type="checkbox" value="${t.id}" class="c-adv-cb"><span class="checkmark"></span></label>`).join('');
-    document.getElementById('c-subjects-container').innerHTML = AppState.allSubjects.filter(s => s.deleted_flg !== 'Y').map(s => `<label class="checkbox-container">${s.code} - ${s.name}<input type="checkbox" value="${s.id}" class="c-sub-cb"><span class="checkmark"></span></label>`).join('');
+    
+    if (document.getElementById('c-advisor-search')) document.getElementById('c-advisor-search').value = '';
+    if (document.getElementById('c-subject-search')) document.getElementById('c-subject-search').value = '';
+    
+    window._tempClassAdvisorIds = [];
+    window._tempClassSubjectIds = [];
+    
+    renderClassAdvisorsList();
+    renderClassSubjectsList();
+    
     document.getElementById('class-modal').classList.add('show');
 }
 export function editClass(id) {
     const c = AppState.allClasses.find(x=>x.id===id && x.deleted_flg !== 'Y'); if(!c) return;
     document.getElementById('c-id').value=c.id; document.getElementById('c-year').value=c.year; document.getElementById('c-sem').value=c.semester; document.getElementById('c-name').value=c.className;
-    document.getElementById('c-advisors-container').innerHTML = AppState.allTeachers.filter(t => t.deleted_flg !== 'Y').map(t => `<label class="checkbox-container">${t.firstName} ${t.lastName}<input type="checkbox" value="${t.id}" class="c-adv-cb" ${c.advisors && c.advisors.includes(t.id)?'checked':''}><span class="checkmark"></span></label>`).join('');
-    document.getElementById('c-subjects-container').innerHTML = AppState.allSubjects.filter(s => s.deleted_flg !== 'Y').map(s => `<label class="checkbox-container">${s.code} - ${s.name}<input type="checkbox" value="${s.id}" class="c-sub-cb" ${c.subjects && c.subjects.includes(s.id)?'checked':''}><span class="checkmark"></span></label>`).join('');
+    
+    if (document.getElementById('c-advisor-search')) document.getElementById('c-advisor-search').value = '';
+    if (document.getElementById('c-subject-search')) document.getElementById('c-subject-search').value = '';
+    
+    window._tempClassAdvisorIds = c.advisors ? [...c.advisors] : [];
+    window._tempClassSubjectIds = c.subjects ? [...c.subjects] : [];
+    
+    renderClassAdvisorsList();
+    renderClassSubjectsList();
+    
     document.getElementById('class-modal').classList.add('show');
 }
 export async function saveClassRoom() {
-    const advs = Array.from(document.querySelectorAll('.c-adv-cb:checked')).map(cb=>cb.value);
-    const subs = Array.from(document.querySelectorAll('.c-sub-cb:checked')).map(cb=>cb.value);
+    const advs = [...(window._tempClassAdvisorIds || [])];
+    const subs = [...(window._tempClassSubjectIds || [])];
     const id = document.getElementById('c-id').value || generateId();
     const className = document.getElementById('c-name').value;
     if(!className) return customAlert('กรุณากรอกชื่อชั้นเรียน');
@@ -401,3 +479,7 @@ window.switchMasterSubTab = switchMasterSubTab;
 window.searchMasterData = searchMasterData;
 window.renderTeacherSubjectsList = renderTeacherSubjectsList;
 window.toggleTeacherSubject = toggleTeacherSubject;
+window.renderClassAdvisorsList = renderClassAdvisorsList;
+window.toggleClassAdvisor = toggleClassAdvisor;
+window.renderClassSubjectsList = renderClassSubjectsList;
+window.toggleClassSubject = toggleClassSubject;

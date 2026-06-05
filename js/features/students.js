@@ -374,6 +374,34 @@ export async function saveCsvUpload() {
     AppState.pendingUploadStudents = [];
 }
 
+// ฟังก์ชันสำหรับควบคุมการเปิด-ปิด โหมดแก้ไขในหน้า Modal ของครู/แอดมิน
+export function toggleStudentModalEditMode(isEditing) {
+    const form = document.getElementById('student-form');
+    if (!form) return;
+    
+    const inputs = form.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        if (input.type === 'hidden') return;
+        
+        if (isEditing) {
+            input.removeAttribute('disabled');
+            input.classList.remove('bg-gray-100');
+        } else {
+            input.setAttribute('disabled', 'true');
+            input.classList.add('bg-gray-100');
+        }
+    });
+
+    const btnEdit = document.getElementById('btn-edit-student');
+    const btnSave = document.getElementById('btn-save-student');
+    
+    if (btnEdit) btnEdit.classList.toggle('hidden', isEditing);
+    if (btnSave) btnSave.classList.toggle('hidden', !isEditing);
+    
+    // รีเฟรช TomSelect ถ้ามี (กรณีในอนาคตถ้ามีการใช้ searchable dropdown)
+    if (document.getElementById('stu-class').tomselect) document.getElementById('stu-class').tomselect.sync();
+}
+
 // --- Manual Student Management ---
 export function openStudentModal() { 
     document.getElementById('student-form').reset(); 
@@ -384,6 +412,31 @@ export function openStudentModal() {
     document.getElementById('stu-p-title').value='นาย'; 
     document.getElementById('stu-p-rel').value='บิดา'; 
     document.getElementById('stu-nickname').value=''; 
+
+    const uniqueClasses = [...new Set(AppState.allClasses.filter(c => c.deleted_flg !== 'Y').map(c => c.className))].filter(Boolean).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    const classSelect = document.getElementById('stu-class');
+    if (classSelect) {
+        classSelect.innerHTML = '<option value="">-- เลือกชั้นเรียน --</option>' + 
+            uniqueClasses.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    const defaultPic = 'https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg';
+    if (document.getElementById('stu-profile-pic-preview')) document.getElementById('stu-profile-pic-preview').src = defaultPic;
+    if (document.getElementById('stu-home-coords')) document.getElementById('stu-home-coords').innerText = 'ไม่พบข้อมูลพิกัด';
+    if (document.getElementById('stu-map-link')) { document.getElementById('stu-map-link').classList.add('hidden'); document.getElementById('stu-map-link').classList.remove('inline-flex'); }
+    if (document.getElementById('stu-home-directions')) document.getElementById('stu-home-directions').innerText = '-';
+    
+    for (let i = 1; i <= 3; i++) {
+        const photoEl = document.getElementById(`stu-home-photo${i}`);
+        if (photoEl) { photoEl.classList.add('hidden'); photoEl.src = ''; }
+    }
+
+    // สร้างใหม่ ให้เปิดให้แก้ไขได้เลย (Edit Mode = true)
+    toggleStudentModalEditMode(true);
+    // ซ่อนปุ่มแก้ไข เพราะอยู่ในโหมดแก้ไขแล้ว
+    const btnEdit = document.getElementById('btn-edit-student');
+    if (btnEdit) btnEdit.classList.add('hidden');
+
     document.getElementById('student-modal').classList.add('show'); 
 }
 
@@ -432,6 +485,43 @@ const s = AppState.allStudents.find(x => x.id === id && x.deleted_flg !== 'Y');
     document.getElementById('stu-p-rel').value = s.parentRelation || 'บิดา';
     document.getElementById('stu-p-phone').value = s.parentPhone || '';
     
+    // เติมข้อมูลรูปภาพและที่พัก
+    const defaultPic = 'https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg';
+    if (document.getElementById('stu-profile-pic-preview')) document.getElementById('stu-profile-pic-preview').src = s.profileImageUrl ? getDirectImageUrl(s.profileImageUrl) : defaultPic;
+
+    if (document.getElementById('stu-home-directions')) document.getElementById('stu-home-directions').innerText = s.home_directions || '-';
+    
+    const coordsText = document.getElementById('stu-home-coords');
+    const mapLink = document.getElementById('stu-map-link');
+    if (s.home_latitude && s.home_longitude) {
+        if (coordsText) coordsText.innerText = `Lat: ${s.home_latitude}, Lng: ${s.home_longitude}`;
+        if (mapLink) {
+            mapLink.href = `https://www.google.com/maps/search/?api=1&query=${s.home_latitude},${s.home_longitude}`;
+            mapLink.classList.remove('hidden');
+            mapLink.classList.add('inline-flex');
+        }
+    } else {
+        if (coordsText) coordsText.innerText = 'ไม่พบข้อมูลพิกัด';
+        if (mapLink) { mapLink.href = '#'; mapLink.classList.add('hidden'); mapLink.classList.remove('inline-flex'); }
+    }
+
+    for (let i = 1; i <= 3; i++) {
+        const photoEl = document.getElementById(`stu-home-photo${i}`);
+        const url = s[`home_photo_${i}_url`];
+        if (photoEl) {
+            if (url) {
+                photoEl.src = getDirectImageUrl(url);
+                photoEl.classList.remove('hidden');
+            } else {
+                photoEl.src = '';
+                photoEl.classList.add('hidden');
+            }
+        }
+    }
+
+    // ตั้งค่าเริ่มต้นเป็น "อ่านอย่างเดียว" (Edit Mode = false)
+    toggleStudentModalEditMode(false);
+
     document.getElementById('student-modal').classList.add('show');
 }
 
@@ -779,6 +869,7 @@ window.editStudent = editStudent;
 window.saveStudent = saveStudent;
 window.renderManageStudents = renderManageStudents;
 window.deleteStu = deleteStu;
+window.toggleStudentModalEditMode = toggleStudentModalEditMode;
 window.searchManageStudents = searchManageStudents;
 window.renderStudentAcademicPortal = renderStudentAcademicPortal;
 window.getGPSLocationForProfile = getGPSLocationForProfile;
