@@ -110,6 +110,15 @@ function switchTab(tabId) {
         nav.classList.add('active', 'border-white', 'text-white');
     }
     AppState.currentTab = tabId;
+
+    // ซ่อนเมนูมือถืออัตโนมัติเมื่อกดเลือกเมนูย่อยเสร็จ
+    const navEl = document.getElementById('app-nav');
+    const icon = document.getElementById('mobile-menu-icon');
+    if (window.innerWidth < 768 && navEl && !navEl.classList.contains('hidden')) {
+        navEl.classList.add('hidden');
+        if(icon) { icon.classList.remove('fa-times'); icon.classList.add('fa-bars'); }
+    }
+
     // 🔥 บังคับล้างค่าที่กรอกไว้และสั่งวาดตารางใหม่ทันทีเมื่อกดเปลี่ยนสลับแท็บ
     const today = getBangkokDate(new Date());
 
@@ -487,6 +496,19 @@ export async function migrateOldAttendanceIds() {
     });
 }
 
+// 🌟 ฟังก์ชันสลับการเปิด-ปิด เมนูแฮมเบอร์เกอร์บนมือถือ
+export function toggleMobileMenu() {
+    const nav = document.getElementById('app-nav');
+    const icon = document.getElementById('mobile-menu-icon');
+    if (nav.classList.contains('hidden')) {
+        nav.classList.remove('hidden');
+        if(icon) { icon.classList.remove('fa-bars'); icon.classList.add('fa-times'); }
+    } else {
+        nav.classList.add('hidden');
+        if(icon) { icon.classList.remove('fa-times'); icon.classList.add('fa-bars'); }
+    }
+}
+
 window.autoSelectPeriod = autoSelectPeriod;
 window.updateClassDropdown = updateClassDropdown;
 window.populateCheckinSubjectDropdown = populateCheckinSubjectDropdown;
@@ -500,3 +522,4 @@ window.saveSettings = saveSettings;
 window.syncDataToGoogleSheet = syncDataToGoogleSheet;
 window.cleanUpOldAttendanceData = cleanUpOldAttendanceData;
 window.migrateOldAttendanceIds = migrateOldAttendanceIds;
+window.toggleMobileMenu = toggleMobileMenu;

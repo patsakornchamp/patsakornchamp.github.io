@@ -184,7 +184,16 @@ export function exportStatsCSV() {
     if (textRecs.length === 0) return customAlert('ไม่พบข้อมูลการเช็คชื่อสำหรับสร้างตาราง');
     
     textRecs.sort((a,b) => new Date(a.date) - new Date(b.date));
-    const dateHeaders = textRecs.map(r => `${getBangkokDate(r.date)}${r.period ? ' (คาบ ' + r.period + ')' : ''}`);
+    const dateHeaders = textRecs.map(r => {
+        let suffix = '';
+        if (type === 'regular' && statsSubId === 'all') {
+            const rSubName = r.subjectId ? (AppState.allSubjects.find(s=>s.id===r.subjectId)?.name || r.subject) : r.subject;
+            suffix = rSubName ? ` (${rSubName})` : '';
+        } else {
+            suffix = r.period ? ` (คาบ ${r.period})` : '';
+        }
+        return `${getBangkokDate(r.date)}${suffix}`;
+    });
     
     const headers = ['เลขที่', 'รหัสประจำตัว', 'ชื่อ-นามสกุล', ...dateHeaders, 'รวมมา', 'รวมขาด', 'รวมลา', 'รวมสาย', 'รวมทั้งหมด'];
     const rows = stus.map(stu => {
@@ -245,7 +254,16 @@ export async function exportStatsExcel() {
     if (!window.ExcelJS) return customAlert('ไม่สามารถโหลดไลบรารี Excel ได้ โปรดรีเฟรชหน้าเว็บแล้วลองใหม่');
     
     textRecs.sort((a,b) => new Date(a.date) - new Date(b.date));
-    const dateHeaders = textRecs.map(r => `${getBangkokDate(r.date)}${r.period ? '\n(คาบ ' + r.period + ')' : ''}`);
+    const dateHeaders = textRecs.map(r => {
+        let suffix = '';
+        if (type === 'regular' && statsSubId === 'all') {
+            const rSubName = r.subjectId ? (AppState.allSubjects.find(s=>s.id===r.subjectId)?.name || r.subject) : r.subject;
+            suffix = rSubName ? `\n(${rSubName})` : '';
+        } else {
+            suffix = r.period ? `\n(คาบ ${r.period})` : '';
+        }
+        return `${getBangkokDate(r.date)}${suffix}`;
+    });
     
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Attendance Record');
@@ -255,13 +273,18 @@ export async function exportStatsExcel() {
     ws.addRow(headers);
 
     // ตกแต่ง Header Row (พื้นหลังสีฟ้า ตัวหนังสือหนาสีขาว)
-    ws.getRow(1).eachCell((cell) => {
+    ws.getRow(1).eachCell((cell, colNumber) => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E40AF' } };
         cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
         cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        
+        // ตั้งให้ข้อความวันที่เป็นแนวตั้ง (คอลัมน์ที่ 4 ถึง 3+จำนวนวันที่)
+        if (colNumber > 3 && colNumber <= 3 + dateHeaders.length) {
+            cell.alignment.textRotation = 90; 
+        }
         cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
     });
-    ws.getRow(1).height = 30; // ปรับความสูงหัวตารางรับ Wrap text
+    ws.getRow(1).height = 120; // ปรับความสูงหัวตารางรับแนวตั้ง
 
     // 2. ลูปยัดข้อมูลและสูตรลงในแถว
     stus.forEach((stu, index) => {
@@ -312,7 +335,7 @@ export async function exportStatsExcel() {
     ws.getColumn(1).width = 8;
     ws.getColumn(2).width = 15;
     ws.getColumn(3).width = 30;
-    for(let i=1; i<=textRecs.length; i++) ws.getColumn(3+i).width = 15; // คอลัมน์วันที่
+    for(let i=1; i<=textRecs.length; i++) ws.getColumn(3+i).width = 6; // คอลัมน์วันที่ (แคบลงเพราะแนวตั้ง)
     for(let i=1; i<=5; i++) ws.getColumn(3+textRecs.length+i).width = 12; // คอลัมน์รวม
 
     // สร้างไฟล์และให้ผู้ใช้ดาวน์โหลด

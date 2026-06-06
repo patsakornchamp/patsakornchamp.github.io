@@ -86,13 +86,24 @@ export function loginSuccess(userObj) {
     
     const nameEl = document.getElementById('current-user-name');
     const roleEl = document.getElementById('current-user-role');
+    const mobNameEl = document.getElementById('mobile-user-name');
+    const mobRoleEl = document.getElementById('mobile-user-role');
     
     if(AppState.currentUser.role === 'admin') {
         nameEl.innerText = AppState.currentUser.data.name; roleEl.innerText = 'ผู้ดูแลระบบสูงสุด';
+        if(mobNameEl) mobNameEl.innerText = AppState.currentUser.data.name; 
+        if(mobRoleEl) mobRoleEl.innerText = 'ผู้ดูแลระบบสูงสุด';
     } else if(AppState.currentUser.role === 'teacher') {
-        nameEl.innerText = `ครู${AppState.currentUser.data.firstName} ${AppState.currentUser.data.lastName}`; roleEl.innerText = 'ครูผู้สอน';
+        const tName = `ครู${AppState.currentUser.data.firstName} ${AppState.currentUser.data.lastName}`;
+        nameEl.innerText = tName; roleEl.innerText = 'ครูผู้สอน';
+        if(mobNameEl) mobNameEl.innerText = tName; 
+        if(mobRoleEl) mobRoleEl.innerText = 'ครูผู้สอน';
     } else if(AppState.currentUser.role === 'student') {
-        nameEl.innerText = getStudentFullName(AppState.currentUser.data); roleEl.innerText = `นักเรียนชั้น ${AppState.currentUser.data.class}`;
+        const sName = getStudentFullName(AppState.currentUser.data);
+        const sRole = `นักเรียนชั้น ${AppState.currentUser.data.class}`;
+        nameEl.innerText = sName; roleEl.innerText = sRole;
+        if(mobNameEl) mobNameEl.innerText = sName; 
+        if(mobRoleEl) mobRoleEl.innerText = sRole;
     }
 
     updateMenuVisibility();

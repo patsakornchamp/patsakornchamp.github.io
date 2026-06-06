@@ -537,8 +537,9 @@ export async function saveStudent() {
     const pPhone = document.getElementById('stu-p-phone').value.toString().trim();
     const status = document.getElementById('stu-status').value;
     const homeVisit = document.getElementById('stu-homevisit').value;
+    const stuClass = document.getElementById('stu-class').value;
 
-    if(!studentId || !fname || !lname) return customAlert('กรุณากรอกรหัสประจำตัว ชื่อ และนามสกุลให้ครบถ้วน');
+    if(!studentId || !fname || !lname || !stuClass) return customAlert('กรุณากรอกรหัสประจำตัว ชื่อ นามสกุล และชั้นเรียนให้ครบถ้วน');
 
     const isAdmin = AppState.currentUser && AppState.currentUser.role === 'admin';
     const isTeacher = AppState.currentUser && AppState.currentUser.role === 'teacher';
@@ -595,7 +596,7 @@ export async function saveStudent() {
     const commonData = {
         status: status, homeVisit: homeVisit, isProfileComplete: isComp, studentId: studentId,
         title: document.getElementById('stu-title').value, firstName: fname, lastName: lname, nickname: nickname,
-        citizenId: citizenId, class: document.getElementById('stu-class').value, number: parseInt(document.getElementById('stu-number').value),
+        citizenId: citizenId, class: stuClass, number: parseInt(document.getElementById('stu-number').value),
         dob: document.getElementById('stu-dob').value, phone: phone, email: document.getElementById('stu-email').value.trim(),
         address: document.getElementById('stu-address').value.trim(),
         fatherFirstName: document.getElementById('stu-f-fname').value.trim(), fatherLastName: document.getElementById('stu-f-lname').value.trim(), fatherAge: document.getElementById('stu-f-age').value, fatherJob: document.getElementById('stu-f-job').value.trim(), fatherPhone: fPhone,
