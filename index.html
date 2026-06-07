@@ -49,14 +49,24 @@
         }
         .attendance-radio input[type="radio"] { display: none; }
         .attendance-radio label {
-            display: block; flex: 1; padding: 0.5rem 0.25rem; cursor: pointer; border-radius: 9999px;
-            font-size: 0.875rem; font-weight: 500; transition: all 0.2s; border: 1px solid #d1d5db;
-            background-color: white; color: #4b5563; text-align: center; white-space: nowrap;
+            display: inline-flex; align-items: center; justify-content: center; flex: 1; padding: 0.5rem 0.25rem; cursor: pointer; border-radius: 0.75rem;
+            min-height: 44px; /* ความสูงเท่ากับปุ่มแบบอื่นๆ */
+            font-size: 0.95rem; font-weight: 600; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(255, 255, 255, 0.5); border-bottom-width: 2px; border-bottom-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.4);
+            color: #4b5563; text-align: center; white-space: nowrap;
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), inset 0 2px 4px rgba(255, 255, 255, 0.5);
+            transform: translateY(0);
         }
-        .attendance-radio input[value="มา"]:checked + label { background-color: #22c55e; color: white; border-color: #22c55e; }
-        .attendance-radio input[value="สาย"]:checked + label { background-color: #eab308; color: white; border-color: #eab308; }
-        .attendance-radio input[value="ลา"]:checked + label { background-color: #3b82f6; color: white; border-color: #3b82f6; }
-        .attendance-radio input[value="ขาด"]:checked + label { background-color: #ef4444; color: white; border-color: #ef4444; }
+        .attendance-radio label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.08), inset 0 2px 4px rgba(255, 255, 255, 0.8);
+        }
+        .attendance-radio input[value="มา"]:checked + label { background: rgba(34, 197, 94, 0.7); color: white; border-color: rgba(255, 255, 255, 0.5); border-bottom-color: rgba(21, 128, 61, 0.8); text-shadow: 0 1px 2px rgba(0,0,0,0.3); box-shadow: 0 4px 10px rgba(34, 197, 94, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.4); }
+        .attendance-radio input[value="สาย"]:checked + label { background: rgba(234, 179, 8, 0.7); color: white; border-color: rgba(255, 255, 255, 0.5); border-bottom-color: rgba(202, 138, 4, 0.8); text-shadow: 0 1px 2px rgba(0,0,0,0.4); box-shadow: 0 4px 10px rgba(234, 179, 8, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.4); }
+        .attendance-radio input[value="ลา"]:checked + label { background: rgba(59, 130, 246, 0.7); color: white; border-color: rgba(255, 255, 255, 0.5); border-bottom-color: rgba(29, 78, 216, 0.8); text-shadow: 0 1px 2px rgba(0,0,0,0.3); box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.4); }
+        .attendance-radio input[value="ขาด"]:checked + label { background: rgba(239, 68, 68, 0.7); color: white; border-color: rgba(255, 255, 255, 0.5); border-bottom-color: rgba(185, 28, 28, 0.8); text-shadow: 0 1px 2px rgba(0,0,0,0.3); box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2), inset 0 2px 4px rgba(255, 255, 255, 0.4); }
 
         .toast {
             position: fixed; bottom: 20px; right: 20px; background-color: #10b981; color: white;
@@ -171,6 +181,69 @@
         .animation-delay-2000 { animation-delay: 2s; }
         .animation-delay-4000 { animation-delay: 4s; }
 
+        /* --- Global Button Glassmorphism (70% Opacity & Uniformity) --- */
+        button.bg-blue-500, button.bg-blue-600, button[class*="from-blue-"], button.bg-blue-50, button.bg-indigo-50, button.text-xs.bg-blue-100,
+        button.bg-green-500, button.bg-green-600, button[class*="from-green-"], button.text-xs.bg-green-100,
+        button.bg-yellow-500, button.bg-yellow-600, button[class*="from-yellow-"], button.text-xs.bg-yellow-100,
+        button.bg-red-500, button.bg-red-600, button[class*="from-red-"], button.text-xs.bg-red-100,
+        button.bg-gray-500, button.bg-gray-600, button.bg-purple-500, button.bg-purple-600, .btn-glass-raised {
+            backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.5) !important;
+            border-bottom-width: 2px !important;
+            border-radius: 0.75rem !important; /* ขอบมนเท่ากัน (rounded-xl) */
+            min-height: 44px !important; /* ความสูงเท่ากัน */
+            padding: 0.5rem 1.25rem !important;
+            display: inline-flex !important; align-items: center !important; justify-content: center !important;
+            font-weight: 600 !important; font-size: 0.95rem !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), inset 0 2px 4px rgba(255, 255, 255, 0.3) !important;
+            color: #ffffff !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+            background-image: none !important; /* นำ gradient ออกเพื่อให้เห็น 70% ชัดเจน */
+        }
+
+        /* ลดขนาด padding/height สำหรับปุ่มเล็กๆ ในตารางหรือ Bulk */
+        button.text-xs[class*="bg-"], button.text-sm[class*="bg-"], button.text-sm[class*="from-"] {
+            min-height: 36px !important; padding: 0.25rem 0.75rem !important; font-size: 0.85rem !important; border-radius: 0.5rem !important;
+        }
+
+        button:hover.bg-blue-500, button:hover.bg-blue-600, button:hover[class*="from-blue-"], button:hover.bg-blue-50, button:hover.bg-indigo-50, button:hover.text-xs.bg-blue-100,
+        button:hover.bg-green-500, button:hover.bg-green-600, button:hover[class*="from-green-"], button:hover.text-xs.bg-green-100,
+        button:hover.bg-yellow-500, button:hover.bg-yellow-600, button:hover[class*="from-yellow-"], button:hover.text-xs.bg-yellow-100,
+        button:hover.bg-red-500, button:hover.bg-red-600, button:hover[class*="from-red-"], button:hover.text-xs.bg-red-100,
+        button:hover.bg-gray-500, button:hover.bg-gray-600, button:hover.bg-purple-500, button:hover.bg-purple-600, .btn-glass-raised:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1), inset 0 2px 4px rgba(255, 255, 255, 0.5) !important;
+        }
+
+        button:active.bg-blue-500, button:active.bg-blue-600, button:active[class*="from-blue-"], button:active.bg-blue-50, button:active.bg-indigo-50, button:active.text-xs.bg-blue-100,
+        button:active.bg-green-500, button:active.bg-green-600, button:active[class*="from-green-"], button:active.text-xs.bg-green-100,
+        button:active.bg-yellow-500, button:active.bg-yellow-600, button:active[class*="from-yellow-"], button:active.text-xs.bg-yellow-100,
+        button:active.bg-red-500, button:active.bg-red-600, button:active[class*="from-red-"], button:active.text-xs.bg-red-100,
+        button:active.bg-gray-500, button:active.bg-gray-600, button:active.bg-purple-500, button:active.bg-purple-600, .btn-glass-raised:active {
+            transform: translateY(0) !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05), inset 0 1px 2px rgba(255, 255, 255, 0.3) !important;
+        }
+
+        /* 70% Opacity Color Variations */
+        button.bg-blue-500, button.bg-blue-600, button[class*="from-blue-"], button.bg-blue-50, button.bg-indigo-50, button.text-xs.bg-blue-100 { background-color: rgba(37, 99, 235, 0.7) !important; border-bottom-color: rgba(29, 78, 216, 0.8) !important; }
+        button:hover.bg-blue-500, button:hover.bg-blue-600, button:hover[class*="from-blue-"], button:hover.bg-blue-50, button:hover.bg-indigo-50, button:hover.text-xs.bg-blue-100 { background-color: rgba(29, 78, 216, 0.85) !important; }
+        
+        button.bg-green-500, button.bg-green-600, button[class*="from-green-"], button.text-xs.bg-green-100 { background-color: rgba(22, 163, 74, 0.7) !important; border-bottom-color: rgba(21, 128, 61, 0.8) !important; }
+        button:hover.bg-green-500, button:hover.bg-green-600, button:hover[class*="from-green-"], button:hover.text-xs.bg-green-100 { background-color: rgba(21, 128, 61, 0.85) !important; }
+        
+        button.bg-yellow-500, button.bg-yellow-600, button[class*="from-yellow-"], button.text-xs.bg-yellow-100 { background-color: rgba(234, 179, 8, 0.7) !important; border-bottom-color: rgba(202, 138, 4, 0.8) !important; text-shadow: 0 1px 3px rgba(0,0,0,0.5) !important; }
+        button:hover.bg-yellow-500, button:hover.bg-yellow-600, button:hover[class*="from-yellow-"], button:hover.text-xs.bg-yellow-100 { background-color: rgba(202, 138, 4, 0.85) !important; }
+        
+        button.bg-red-500, button.bg-red-600, button[class*="from-red-"], button.text-xs.bg-red-100 { background-color: rgba(220, 38, 38, 0.7) !important; border-bottom-color: rgba(185, 28, 28, 0.8) !important; }
+        button:hover.bg-red-500, button:hover.bg-red-600, button:hover[class*="from-red-"], button:hover.text-xs.bg-red-100 { background-color: rgba(185, 28, 28, 0.85) !important; }
+        
+        button.bg-gray-500, button.bg-gray-600 { background-color: rgba(75, 85, 99, 0.7) !important; border-bottom-color: rgba(55, 65, 81, 0.8) !important; }
+        button:hover.bg-gray-500, button:hover.bg-gray-600 { background-color: rgba(55, 65, 81, 0.85) !important; }
+        
+        button.bg-purple-500, button.bg-purple-600 { background-color: rgba(147, 51, 234, 0.7) !important; border-bottom-color: rgba(126, 34, 206, 0.8) !important; }
+        button:hover.bg-purple-500, button:hover.bg-purple-600 { background-color: rgba(126, 34, 206, 0.85) !important; }
+
         /* --- Mobile Responsive Table (Card View) --- */
         @media (max-width: 768px) {
             .mobile-card-table, .mobile-card-table tbody, .mobile-card-table tr, .mobile-card-table td {
@@ -189,7 +262,18 @@
             .mobile-card-table tbody td {
                 padding: 0.75rem 1rem;
                 text-align: left;
+                border-bottom: 1px solid #f1f5f9;
+            }
+            .mobile-card-table tbody td:last-child {
                 border-bottom: none;
+            }
+            .mobile-card-table tbody td[data-label]::before {
+                content: attr(data-label);
+                display: block;
+                font-size: 0.75rem;
+                font-weight: 700;
+                color: #64748b;
+                margin-bottom: 0.25rem;
             }
             
             /* ปรับแต่งส่วนแสดงชื่อให้โดดเด่น */
@@ -223,7 +307,8 @@
                 margin: 0;
                 padding: 0.85rem 0; /* ทำให้ปุ่มสูงขึ้น กดง่าย */
                 font-size: 1.05rem;
-                border-radius: 0.5rem;
+                border-radius: 0.75rem; /* ขอบมนเท่าปุ่มหลัก */
+                min-height: 48px;
             }
         }
     </style>
@@ -299,7 +384,7 @@
     </div>
 
     <!-- Main App Header -->
-    <header class="glass-header text-white shadow-xl relative z-10 w-full hidden rounded-b-2xl sm:rounded-b-3xl mb-4" id="app-header">
+    <header class="glass-header text-white shadow-xl sticky top-0 z-50 w-full hidden rounded-b-2xl sm:rounded-b-3xl mb-4" id="app-header">
         <div class="container mx-auto px-4 py-3 md:py-5 flex justify-between items-center w-full">
             <div class="flex items-center gap-3">
                 <img src="logopng.png" alt="School Logo" class="w-12 h-12 md:w-16 md:h-16 flex-shrink-0">
@@ -313,8 +398,8 @@
                     <p class="font-bold text-white" id="current-user-name">ชื่อผู้ใช้</p>
                     <p class="text-green-200 text-xs" id="current-user-role">สถานะ</p>
                 </div>
-                <button onclick="logout()" class="hidden md:flex bg-green-800 hover:bg-green-900 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-green-600">
-                    <i class="fas fa-sign-out-alt mr-1"></i> ออกจากระบบ
+                <button onclick="logout()" class="hidden md:flex items-center justify-center bg-green-800 hover:bg-green-900 w-10 h-10 rounded-lg transition-colors border border-green-600" title="ออกจากระบบ">
+                    <i class="fas fa-sign-out-alt text-lg"></i>
                 </button>
                 <button id="mobile-menu-btn" onclick="toggleMobileMenu()" class="md:hidden bg-green-800 hover:bg-green-900 px-3 py-2 rounded-lg transition-colors border border-green-600 focus:outline-none">
                     <i class="fas fa-bars text-white text-xl" id="mobile-menu-icon"></i>
@@ -328,7 +413,7 @@
                     <div class="bg-green-100 p-3 rounded-full text-green-600 mb-2"><i class="fas fa-user text-2xl"></i></div>
                     <p class="font-bold text-white text-lg text-center" id="mobile-user-name">ชื่อผู้ใช้</p>
                     <p class="text-green-200 text-sm mb-4 text-center" id="mobile-user-role">สถานะ</p>
-                    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-6 py-2 rounded-lg text-sm font-bold text-white transition-colors shadow-sm w-3/4 max-w-xs text-center"><i class="fas fa-sign-out-alt mr-1"></i> ออกจากระบบ</button>
+                    <button onclick="logout()" class=" bg-green-800 hover:bg-green-900 w-12 h-12 flex items-center justify-center rounded-full text-white transition-colors shadow-sm" title="ออกจากระบบ"><i class="fas fa-sign-out-alt text-xl"></i></button>
                 </div>
                 <ul class="flex flex-col md:flex-row md:whitespace-nowrap py-2 md:py-0 w-full justify-start lg:justify-center">
                     <!-- Student Menu -->
@@ -341,8 +426,6 @@
                     <li id="menu-club-checkin" class="hidden w-full md:w-auto"><button onclick="switchTab('club-checkin')" class="nav-btn w-full text-left md:text-center border-transparent text-green-200 px-4 py-3 md:py-4 font-medium hover:bg-green-600 border-l-4 md:border-l-0 md:border-b-4 hover:text-white focus:outline-none transition-colors duration-200 rounded-r-lg md:rounded-none mb-1 md:mb-0" id="nav-club-checkin"><i class="fas fa-users-cog w-6 text-center"></i> เช็คชื่อชุมนุม</button></li>
                     <li id="menu-history" class="hidden w-full md:w-auto"><button onclick="switchTab('history')" class="nav-btn w-full text-left md:text-center border-transparent text-green-200 px-4 py-3 md:py-4 font-medium hover:bg-green-600 border-l-4 md:border-l-0 md:border-b-4 hover:text-white focus:outline-none transition-colors duration-200 rounded-r-lg md:rounded-none mb-1 md:mb-0" id="nav-history"><i class="fas fa-history w-6 text-center"></i> ประวัติเข้าเรียน</button></li>
                     <li id="menu-stats" class="hidden w-full md:w-auto"><button onclick="switchTab('stats')" class="nav-btn w-full text-left md:text-center border-transparent text-green-200 px-4 py-3 md:py-4 font-medium hover:bg-green-600 border-l-4 md:border-l-0 md:border-b-4 hover:text-white focus:outline-none transition-colors duration-200 rounded-r-lg md:rounded-none mb-1 md:mb-0" id="nav-stats"><i class="fas fa-chart-pie w-6 text-center"></i> สถิติ</button></li>
-                    <li id="menu-students" class="hidden w-full md:w-auto"><button onclick="switchTab('students')" class="nav-btn w-full text-left md:text-center border-transparent text-green-200 px-4 py-3 md:py-4 font-medium hover:bg-green-600 border-l-4 md:border-l-0 md:border-b-4 hover:text-white focus:outline-none transition-colors duration-200 rounded-r-lg md:rounded-none mb-1 md:mb-0" id="nav-students"><i class="fas fa-users-cog w-6 text-center"></i> จัดการนักเรียน</button></li>
-                    <li id="menu-club-manage" class="hidden w-full md:w-auto"><button onclick="switchTab('club-manage')" class="nav-btn w-full text-left md:text-center border-transparent text-green-200 px-4 py-3 md:py-4 font-medium hover:bg-green-600 border-l-4 md:border-l-0 md:border-b-4 hover:text-white focus:outline-none transition-colors duration-200 rounded-r-lg md:rounded-none mb-1 md:mb-0" id="nav-club-manage"><i class="fas fa-tasks w-6 text-center"></i> จัดการชุมนุม</button></li>
                     <li id="menu-home-visit" class="hidden w-full md:w-auto"><button onclick="switchTab('home-visit')" class="nav-btn w-full text-left md:text-center border-transparent text-green-200 px-4 py-3 md:py-4 font-medium hover:bg-green-600 border-l-4 md:border-l-0 md:border-b-4 hover:text-white focus:outline-none transition-colors duration-200 rounded-r-lg md:rounded-none mb-1 md:mb-0" id="nav-home-visit"><i class="fas fa-house-user w-6 text-center"></i> เยี่ยมบ้าน</button></li>
 
                     <!-- Admin Only Menu -->
@@ -616,14 +699,14 @@
                 </div>
 
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3 w-full">
-                    <button id="load-students-btn" onclick="loadCheckinList()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors shadow-sm focus:outline-none"><i class="fas fa-search mr-2"></i> โหลดรายชื่อ</button>
+                    <button id="load-students-btn" onclick="loadCheckinList()" class="w-full sm:w-auto bg-gradient-to-br from-blue-400/40 to-blue-600/30 text-blue-900 px-6 py-2 rounded-xl font-bold focus:outline-none btn-glass-raised"><i class="fas fa-search mr-2"></i> โหลดรายชื่อ</button>
                     <div id="bulk-actions" class="hidden items-center w-full sm:w-auto justify-between sm:justify-end flex-wrap gap-2">
                         <span class="text-sm font-medium text-gray-600 whitespace-nowrap">เช็คทั้งหมด:</span>
-                        <div class="flex gap-1">
-                            <button onclick="setAllAttendance('มา')" class="text-xs bg-green-100 text-green-800 hover:bg-green-200 px-3 py-2 rounded-full font-bold">มา</button>
-                            <button onclick="setAllAttendance('สาย')" class="text-xs bg-yellow-100 text-yellow-800 hover:bg-yellow-200 px-3 py-2 rounded-full font-bold">สาย</button>
-                            <button onclick="setAllAttendance('ลา')" class="text-xs bg-blue-100 text-blue-800 hover:bg-blue-200 px-3 py-2 rounded-full font-bold">ลา</button>
-                            <button onclick="setAllAttendance('ขาด')" class="text-xs bg-red-100 text-red-800 hover:bg-red-200 px-3 py-2 rounded-full font-bold">ขาด</button>
+                        <div class="flex gap-1 sm:gap-2">
+                            <button onclick="setAllAttendance('มา')" class="text-sm bg-gradient-to-br from-green-400/40 to-green-600/30 text-green-900 px-4 py-2 rounded-full font-bold btn-glass-raised">มา</button>
+                            <button onclick="setAllAttendance('สาย')" class="text-sm bg-gradient-to-br from-yellow-400/40 to-yellow-600/30 text-yellow-900 px-4 py-2 rounded-full font-bold btn-glass-raised">สาย</button>
+                            <button onclick="setAllAttendance('ลา')" class="text-sm bg-gradient-to-br from-blue-400/40 to-blue-600/30 text-blue-900 px-4 py-2 rounded-full font-bold btn-glass-raised">ลา</button>
+                            <button onclick="setAllAttendance('ขาด')" class="text-sm bg-gradient-to-br from-red-400/40 to-red-600/30 text-red-900 px-4 py-2 rounded-full font-bold btn-glass-raised">ขาด</button>
                         </div>
                     </div>
                 </div>
@@ -659,8 +742,8 @@
                 </div>
 
                 <div class="mt-8 flex flex-col sm:flex-row justify-end gap-3 hidden" id="save-btn-container">
-                    <button onclick="exportCheckinCSV()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold text-lg shadow-md transition-colors"><i class="fas fa-file-csv mr-2"></i> ส่งออก CSV</button>
-                    <button id="save-attendance-btn" onclick="saveAttendance()" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold text-lg shadow-md transition-colors"><i class="fas fa-save mr-2"></i> บันทึกข้อมูล</button>
+                    <button onclick="exportCheckinCSV()" class="w-full sm:w-auto bg-gradient-to-br from-blue-500/40 to-blue-700/30 text-blue-900 px-6 py-3 rounded-xl font-bold text-lg btn-glass-raised"><i class="fas fa-file-csv mr-2"></i> ส่งออก CSV</button>
+                    <button id="save-attendance-btn" onclick="saveAttendance()" class="w-full sm:w-auto bg-gradient-to-br from-green-500/40 to-green-700/30 text-green-900 px-8 py-3 rounded-xl font-bold text-lg btn-glass-raised"><i class="fas fa-save mr-2"></i> บันทึกข้อมูล</button>
                 </div>
             </div>
         </section>
@@ -740,95 +823,10 @@
             </div>
         </section>
 
-        <!-- CLUB MANAGEMENT TAB (1.1 & 1.2) -->
-        <section id="tab-club-manage" class="tab-content">
-            <div class="glass-panel rounded-2xl p-6 md:p-8">
-                <h3 class="text-2xl font-bold text-green-800 mb-6 border-b pb-3"><i class="fas fa-tasks mr-2"></i>ระบบจัดการกิจกรรมชุมนุม</h3>
-                
-                <!-- Sub Tabs inside Club Management -->
-                <div class="flex space-x-1 border-b border-gray-200 mb-6 overflow-x-auto w-full">
-                    <button onclick="switchClubSubTab('list')" id="csub-list" class="px-4 py-2 border-b-2 font-medium focus:outline-none border-green-600 text-green-700 whitespace-nowrap"><i class="fas fa-users mr-2"></i> รายชื่อชุมนุมทั้งหมด</button>
-                    <button onclick="switchClubSubTab('enroll')" id="csub-enroll" class="px-4 py-2 border-b-2 font-medium focus:outline-none border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap"><i class="fas fa-user-plus mr-2"></i> การจัดสรรลงทะเบียนชุมนุม</button>
-                </div>
-
-                <!-- SUB TAB: Club List -->
-                <div id="club-manage-list" class="club-manage-section w-full">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
-                        <h4 class="text-lg font-bold text-gray-700">รายชื่อกลุ่มชุมนุม</h4>
-                        <button onclick="openClubFormModal()" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm"><i class="fas fa-plus"></i> เพิ่มชุมนุมใหม่</button>
-                    </div>
-                    <div class="overflow-x-auto bg-white/40 border border-white/50 backdrop-blur-md rounded-xl shadow-sm w-full">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-white/50">
-                                <tr>
-                                    <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ปีการศึกษา/ภาค</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชื่อชุมนุม</th>
-                                    <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ครูที่ปรึกษาหลัก</th>
-                                    <th class="hidden md:table-cell px-4 py-2 text-center text-xs font-medium text-gray-500 whitespace-nowrap">ความจุ (คน)</th>
-                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 whitespace-nowrap">สถานะ</th>
-                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 whitespace-nowrap">จัดการ</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tbody-club-list" class="divide-y divide-gray-200"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- SUB TAB: Student Enroll Interface (1.2) -->
-                <div id="club-manage-enroll" class="club-manage-section hidden w-full">
-                    <h4 class="text-lg font-bold text-gray-700 mb-4">ระบบจัดสรรและอนุมัตินักเรียนเข้าชุมนุม</h4>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm w-full">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">ปีการศึกษา</label>
-                            <select id="enroll-year" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="onEnrollFilterChange()"></select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">ภาคเรียน</label>
-                            <select id="enroll-semester" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="onEnrollFilterChange()"><option value="1">1</option><option value="2">2</option></select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">กรองระดับชั้น</label>
-                            <select id="enroll-filter-class" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="renderEnrollStudents()"><option value="">ทุกชั้นเรียน</option></select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">ตัวเลือกการกรองพิเศษ</label>
-                            <select id="enroll-filter-status" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="renderEnrollStudents()">
-                                <option value="all">นักเรียนทุกคน</option>
-                                <option value="noclub">เฉพาะผู้ที่ยังไม่มีชุมนุม</option>
-                                <option value="hasclub">เฉพาะผู้ที่มีชุมนุมแล้ว</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-4 gap-3 w-full">
-                        <div class="flex gap-2 items-center w-full xl:w-auto">
-                            <input type="text" id="enroll-search" placeholder="พิมพ์รหัส หรือ ชื่อนักเรียน..." class="px-3 py-2 border rounded text-sm w-full sm:w-64 focus:ring-green-500" onkeyup="renderEnrollStudents()">
-                        </div>
-                        <div class="bg-blue-50 border p-3 rounded-lg flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full xl:w-auto">
-                            <label class="text-sm font-bold text-blue-800 whitespace-nowrap">ลงทะเบียนกลุ่มผู้เลือก:</label>
-                            <select id="enroll-assign-club" class="px-3 py-1.5 border rounded text-sm focus:ring-blue-500 w-full sm:w-auto"></select>
-                            <button onclick="bulkAssignClub()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded text-sm font-bold whitespace-nowrap"><i class="fas fa-check"></i> บันทึกจับคู่</button>
-                        </div>
-                    </div>
-
-                    <div class="overflow-x-auto bg-white/40 border border-white/50 backdrop-blur-md rounded-xl shadow-sm w-full">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-white/50">
-                                <tr>
-                                    <th class="px-4 py-2 text-center w-12 whitespace-nowrap"><input type="checkbox" id="enroll-select-all" onchange="toggleAllEnrollCheckboxes(this)"></th>
-                                    <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชั้น/เลขที่</th>
-                                    <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">รหัส</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชื่อ - นามสกุล</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">สถานะชุมนุม</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tbody-enroll-students" class="divide-y divide-gray-200"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </section>
+        <!-- CLUB MANAGEMENT HAS BEEN MOVED TO MASTER DATA TAB -->
+        <!-- placeholder to maintain structure integrity -->
+        <div id="tab-club-manage-placeholder" style="display:none;"></div>
+        <!-- END CLUB MANAGEMENT MOVED -->
 
         <!-- HISTORY TAB (UPDATED WITH CLUB/REGULAR TOGGLE) -->
         <section id="tab-history" class="tab-content">
@@ -944,52 +942,10 @@
             </div>
         </section>
 
-        <!-- MANAGE STUDENTS TAB -->
-        <section id="tab-students" class="tab-content">
-            <div class="glass-panel rounded-2xl p-6 md:p-8">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-3 gap-3 w-full">
-                    <h3 class="text-2xl font-bold text-green-800"><i class="fas fa-users mr-2"></i>ข้อมูลนักเรียนทั้งหมด</h3>
-                    <div class="flex gap-2 w-full sm:w-auto">
-                        <button onclick="openUploadCsvModal()" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm whitespace-nowrap"><i class="fas fa-file-csv mr-2"></i> อัปโหลด (CSV)</button>
-                        <button onclick="openStudentModal()" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm whitespace-nowrap"><i class="fas fa-plus mr-2"></i> เพิ่มนักเรียน</button>
-                    </div>
-                </div>
-                <div class="mb-6 flex gap-4 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm flex-col sm:flex-row w-full items-end">
-                    <div class="w-full sm:flex-1">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">กรองตามชั้นเรียน</label>
-                        <select id="manage-filter-class" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500" onchange="renderManageStudents()"><option value="">ดูทุกชั้นเรียน</option></select>
-                    </div>
-                    <div class="w-full sm:flex-1">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">ค้นหาชื่อ/รหัส</label>
-                        <input type="text" id="manage-search" placeholder="พิมพ์ชื่อ นามสกุล หรือรหัสประจำตัว..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500" onkeyup="renderManageStudents()">
-                    </div>
-                    <div class="w-full sm:w-auto mt-4 sm:mt-0">
-                        <button onclick="searchManageStudents()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm whitespace-nowrap"><i class="fas fa-sync-alt mr-2"></i> รีเฟรช</button>
-                    </div>
-                </div>
-                <div class="overflow-x-auto bg-white/40 border border-white/50 backdrop-blur-md rounded-xl shadow-sm w-full"> <!-- เพิ่ม div คลุมไว้เผื่อจอเล็กมาก ๆ จะได้ปัดซ้ายขวาได้นิดหน่อย -->
-    <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-white/50">
-            <tr>
-                <!-- ซ่อนบนมือถือ แสดงผลบนจอ md ขึ้นไป -->
-                <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">ชั้น/เลขที่</th>
-                <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">รหัส</th>
-                
-                <!-- แสดงตลอด -->
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">ชื่อ - นามสกุล (ชื่อเล่น)</th>
-                
-                <!-- ซ่อนบนมือถือ -->
-                <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">เบอร์โทร</th>
-                
-                <!-- แสดงตลอด -->
-                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">จัดการ</th>
-            </tr>
-        </thead>
-        <tbody class="bg-white divide-y divide-gray-200" id="manage-students-table-body"></tbody>
-    </table>
-</div>
-            </div>
-        </section>
+        <!-- MANAGE STUDENTS HAS BEEN MOVED TO MASTER DATA TAB -->
+        <!-- placeholder to maintain structure integrity -->
+        <div id="tab-students-placeholder" style="display:none;"></div>
+        <!-- END MANAGE STUDENTS MOVED -->
 
         <!-- HOME VISIT TAB -->
         <section id="tab-home-visit" class="tab-content">
@@ -1056,6 +1012,8 @@
                     <button onclick="switchMasterSubTab('subjects')" id="msub-subjects" class="px-4 py-2 border-b-2 font-medium focus:outline-none border-green-600 text-green-700 whitespace-nowrap"><i class="fas fa-book mr-2"></i>วิชา</button>
                     <button onclick="switchMasterSubTab('teachers')" id="msub-teachers" class="px-4 py-2 border-b-2 font-medium focus:outline-none border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap"><i class="fas fa-chalkboard-teacher mr-2"></i>ครูผู้สอน</button>
                     <button onclick="switchMasterSubTab('classes')" id="msub-classes" class="px-4 py-2 border-b-2 font-medium focus:outline-none border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap"><i class="fas fa-door-open mr-2"></i>ชั้นเรียน</button>
+                <button onclick="switchMasterSubTab('students')" id="msub-students" class="px-4 py-2 border-b-2 font-medium focus:outline-none border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap"><i class="fas fa-user-graduate mr-2"></i>นักเรียน</button>
+                <button onclick="switchMasterSubTab('club-manage')" id="msub-club-manage" class="px-4 py-2 border-b-2 font-medium focus:outline-none border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap"><i class="fas fa-users-cog mr-2"></i>ชุมนุม</button>
                 </div>
 
                 <!-- Subjects -->
@@ -1074,7 +1032,7 @@
                         </div>
                     </div>
                     <div class="overflow-x-auto bg-white/40 border border-white/50 backdrop-blur-md rounded-xl shadow-sm w-full">
-                        <table class="min-w-full divide-y divide-gray-200">
+                        <table class="min-w-full divide-y divide-gray-200 mobile-card-table">
                             <thead class="bg-white/50">
                                 <tr>
                                     <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">รหัสวิชา</th>
@@ -1085,6 +1043,11 @@
                             </thead>
                             <tbody id="tbody-subjects" class="divide-y divide-gray-200"></tbody>
                         </table>
+                    </div>
+                    <!-- Pagination Controls -->
+                    <div class="flex flex-col sm:flex-row justify-between items-center mt-4 px-2 gap-3 w-full">
+                        <div class="text-sm text-gray-600 font-medium" id="page-info-clubs"></div>
+                        <div class="flex gap-1 flex-wrap justify-center" id="pagination-clubs"></div>
                     </div>
                 </div>
 
@@ -1117,6 +1080,11 @@
                             <tbody id="tbody-teachers" class="divide-y divide-gray-200"></tbody>
                         </table>
                     </div>
+                    <!-- Pagination Controls -->
+                    <div class="flex flex-col sm:flex-row justify-between items-center mt-4 px-2 gap-3 w-full">
+                        <div class="text-sm text-gray-600 font-medium" id="page-info-enroll"></div>
+                        <div class="flex gap-1 flex-wrap justify-center" id="pagination-enroll"></div>
+                    </div>
                 </div>
 
                 <!-- Classes -->
@@ -1148,6 +1116,113 @@
                             <tbody id="tbody-classes" class="divide-y divide-gray-200"></tbody>
                         </table>
                     </div>
+                    <!-- Pagination Controls -->
+                    <div class="flex flex-col sm:flex-row justify-between items-center mt-4 px-2 gap-3 w-full">
+                        <div class="text-sm text-gray-600 font-medium" id="page-info-classes"></div>
+                        <div class="flex gap-1 flex-wrap justify-center" id="pagination-classes"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MOVED FROM MANAGE STUDENTS TAB -->
+            <div id="master-students" class="master-section hidden w-full">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-3 gap-3 w-full">
+                    <h4 class="text-xl font-bold text-green-800"><i class="fas fa-users mr-2"></i>ข้อมูลนักเรียนทั้งหมด</h4>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button onclick="openUploadCsvModal()" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm whitespace-nowrap"><i class="fas fa-file-csv mr-2"></i> อัปโหลด (CSV)</button>
+                        <button onclick="openStudentModal()" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm whitespace-nowrap"><i class="fas fa-plus mr-2"></i> เพิ่มนักเรียน</button>
+                    </div>
+                </div>
+                <div class="mb-6 flex gap-4 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm flex-col sm:flex-row w-full items-end">
+                    <div class="w-full sm:flex-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">กรองตามชั้นเรียน</label>
+                        <select id="manage-filter-class" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500" onchange="renderManageStudents()"><option value="">ดูทุกชั้นเรียน</option></select>
+                    </div>
+                    <div class="w-full sm:flex-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ค้นหาชื่อ/รหัส</label>
+                        <input type="text" id="manage-search" placeholder="พิมพ์ชื่อ นามสกุล หรือรหัสประจำตัว..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500" onkeyup="renderManageStudents()">
+                    </div>
+                    <div class="w-full sm:w-auto mt-4 sm:mt-0">
+                        <button onclick="searchManageStudents()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm whitespace-nowrap"><i class="fas fa-sync-alt mr-2"></i> รีเฟรช</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto bg-white/40 border border-white/50 backdrop-blur-md rounded-xl shadow-sm w-full">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-white/50">
+                            <tr>
+                                <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">ชั้น/เลขที่</th>
+                                <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">รหัส</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">ชื่อ - นามสกุล (ชื่อเล่น)</th>
+                                <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">เบอร์โทร</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="manage-students-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- MOVED FROM CLUB MANAGEMENT TAB -->
+            <div id="master-club-manage" class="master-section hidden w-full">
+                <h4 class="text-xl font-bold text-green-800 mb-6 border-b pb-3"><i class="fas fa-tasks mr-2"></i>ระบบจัดการกิจกรรมชุมนุม</h4>
+                <div class="flex space-x-1 border-b border-gray-200 mb-6 overflow-x-auto w-full">
+                    <button onclick="switchClubSubTab('list')" id="csub-list" class="px-4 py-2 border-b-2 font-medium focus:outline-none border-green-600 text-green-700 whitespace-nowrap"><i class="fas fa-users mr-2"></i> รายชื่อชุมนุมทั้งหมด</button>
+                    <button onclick="switchClubSubTab('enroll')" id="csub-enroll" class="px-4 py-2 border-b-2 font-medium focus:outline-none border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap"><i class="fas fa-user-plus mr-2"></i> การจัดสรรลงทะเบียนชุมนุม</button>
+                </div>
+
+                <!-- SUB TAB: Club List -->
+                <div id="club-manage-list" class="club-manage-section w-full">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                        <h4 class="text-lg font-bold text-gray-700">รายชื่อกลุ่มชุมนุม</h4>
+                        <button onclick="openClubFormModal()" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm"><i class="fas fa-plus"></i> เพิ่มชุมนุมใหม่</button>
+                    </div>
+                    <div class="overflow-x-auto bg-white/40 border border-white/50 backdrop-blur-md rounded-xl shadow-sm w-full">
+                        <table class="min-w-full divide-y divide-gray-200 mobile-card-table">
+                            <thead class="bg-white/50">
+                                <tr>
+                                    <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ปีการศึกษา/ภาค</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชื่อชุมนุม</th>
+                                    <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ครูที่ปรึกษาหลัก</th>
+                                    <th class="hidden md:table-cell px-4 py-2 text-center text-xs font-medium text-gray-500 whitespace-nowrap">ความจุ (คน)</th>
+                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 whitespace-nowrap">สถานะ</th>
+                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 whitespace-nowrap">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-club-list" class="divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                    <div class="flex flex-col sm:flex-row justify-between items-center mt-4 px-2 gap-3 w-full">
+                        <div class="text-sm text-gray-600 font-medium" id="page-info-subjects"></div>
+                        <div class="flex gap-1 flex-wrap justify-center" id="pagination-subjects"></div>
+                    </div>
+                </div>
+
+                <!-- SUB TAB: Student Enroll Interface -->
+                <div id="club-manage-enroll" class="club-manage-section hidden w-full">
+                    <h4 class="text-lg font-bold text-gray-700 mb-4">ระบบจัดสรรและอนุมัตินักเรียนเข้าชุมนุม</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm w-full">
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">ปีการศึกษา</label><select id="enroll-year" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="onEnrollFilterChange()"></select></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">ภาคเรียน</label><select id="enroll-semester" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="onEnrollFilterChange()"><option value="1">1</option><option value="2">2</option></select></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">กรองระดับชั้น</label><select id="enroll-filter-class" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="renderEnrollStudents()"><option value="">ทุกชั้นเรียน</option></select></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">ตัวเลือกการกรองพิเศษ</label><select id="enroll-filter-status" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="renderEnrollStudents()"><option value="all">นักเรียนทุกคน</option><option value="noclub">เฉพาะผู้ที่ยังไม่มีชุมนุม</option><option value="hasclub">เฉพาะผู้ที่มีชุมนุมแล้ว</option></select></div>
+                    </div>
+                    <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-4 gap-3 w-full">
+                        <div class="flex gap-2 items-center w-full xl:w-auto"><input type="text" id="enroll-search" placeholder="พิมพ์รหัส หรือ ชื่อนักเรียน..." class="px-3 py-2 border rounded text-sm w-full sm:w-64 focus:ring-green-500" onkeyup="renderEnrollStudents()"></div>
+                        <div class="bg-blue-50 border p-3 rounded-lg flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full xl:w-auto">
+                            <label class="text-sm font-bold text-blue-800 whitespace-nowrap">ลงทะเบียนกลุ่มผู้เลือก:</label>
+                            <select id="enroll-assign-club" class="px-3 py-1.5 border rounded text-sm focus:ring-blue-500 w-full sm:w-auto"></select>
+                            <button onclick="bulkAssignClub()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded text-sm font-bold whitespace-nowrap"><i class="fas fa-check"></i> บันทึกจับคู่</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto bg-white/40 border border-white/50 backdrop-blur-md rounded-xl shadow-sm w-full">
+                        <table class="min-w-full divide-y divide-gray-200 mobile-card-table">
+                            <thead class="bg-white/50">
+                                <tr><th class="px-4 py-2 text-center w-12 whitespace-nowrap"><input type="checkbox" id="enroll-select-all" onchange="toggleAllEnrollCheckboxes(this)"></th><th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชั้น/เลขที่</th><th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">รหัส</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชื่อ - นามสกุล</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">สถานะชุมนุม</th></tr>
+                            </thead>
+                            <tbody id="tbody-enroll-students" class="divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                    <div class="flex flex-col sm:flex-row justify-between items-center mt-4 px-2 gap-3 w-full"><div class="text-sm text-gray-600 font-medium" id="page-info-teachers"></div><div class="flex gap-1 flex-wrap justify-center" id="pagination-teachers"></div></div>
                 </div>
             </div>
         </section>

@@ -155,21 +155,11 @@ function switchTab(tabId) {
         const cont = document.getElementById('stats-content'); if (cont) cont.classList.add('hidden');
         const btn = document.getElementById('btn-export-stats'); if (btn) btn.classList.add('hidden');
         if (window.onStatsTypeChange) window.onStatsTypeChange(true); 
-    } else if (tabId === 'students') {
-        ['manage-search', 'manage-filter-class'].forEach(id => {
-            clearInputValue(id);
-        });
-        if (window.renderManageStudents) window.renderManageStudents(); 
-    } else if (tabId === 'club-manage') {
-        ['enroll-search', 'enroll-filter-class'].forEach(id => {
+    } else if (tabId === 'master') {
+        ['search-subject', 'search-teacher', 'search-class', 'manage-search', 'manage-filter-class', 'enroll-search', 'enroll-filter-class'].forEach(id => {
             clearInputValue(id);
         });
         const st = document.getElementById('enroll-filter-status'); if (st) st.value = 'all';
-        if (window.switchClubSubTab) window.switchClubSubTab('list'); 
-    } else if (tabId === 'master') {
-        ['search-subject', 'search-teacher', 'search-class'].forEach(id => {
-            clearInputValue(id);
-        });
         if (window.switchMasterSubTab) window.switchMasterSubTab('subjects'); 
     } else if (tabId === 'my-profile' && window.renderStudentProfile) {
         window.renderStudentProfile();
