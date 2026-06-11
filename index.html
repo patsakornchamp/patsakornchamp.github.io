@@ -154,7 +154,7 @@
             background: rgba(255, 255, 255, 0.3) !important; color: #6b7280 !important; cursor: not-allowed;
         }
         .ts-control { background: rgba(255, 255, 255, 0.6) !important; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.8) !important; }
-        .ts-dropdown { background: rgba(255, 255, 255, 0.9) !important; backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.8) !important; }
+        .ts-dropdown { background: rgba(255, 255, 255, 0.9) !important; backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.8) !important; z-index: 100 !important; }
         .glass-card {
             background: rgba(255, 255, 255, 0.45);
             backdrop-filter: blur(16px);
@@ -244,6 +244,9 @@
         button.bg-purple-500, button.bg-purple-600 { background-color: rgba(147, 51, 234, 0.7) !important; border-bottom-color: rgba(126, 34, 206, 0.8) !important; }
         button:hover.bg-purple-500, button:hover.bg-purple-600 { background-color: rgba(126, 34, 206, 0.85) !important; }
 
+        /* บังคับซ่อนปุ่มที่มีคลาส hidden เพื่อหักล้างกับค่า display !important ของปุ่ม */
+        button.hidden { display: none !important; }
+
         /* --- Mobile Responsive Table (Card View) --- */
         @media (max-width: 768px) {
             .mobile-card-table, .mobile-card-table tbody, .mobile-card-table tr, .mobile-card-table td {
@@ -309,6 +312,14 @@
                 font-size: 1.05rem;
                 border-radius: 0.75rem; /* ขอบมนเท่าปุ่มหลัก */
                 min-height: 48px;
+            }
+
+            /* เพิ่มระยะห่างด้านล่างสำหรับหน้าเช็คชื่อปกติและชุมนุมเมื่อยังไม่โหลดรายชื่อ */
+            #tab-checkin:has(#student-list-container.hidden) .glass-panel {
+                padding-bottom: 16rem !important;
+            }
+            #tab-club-checkin:has(#club-student-list-container.hidden) .glass-panel {
+                padding-bottom: 16rem !important;
             }
         }
     </style>
@@ -398,9 +409,11 @@
                     <p class="font-bold text-white" id="current-user-name">ชื่อผู้ใช้</p>
                     <p class="text-green-200 text-xs" id="current-user-role">สถานะ</p>
                 </div>
-                <button onclick="logout()" class="hidden md:flex items-center justify-center bg-green-800 hover:bg-green-900 w-10 h-10 rounded-lg transition-colors border border-green-600" title="ออกจากระบบ">
+            <div class="hidden md:flex">
+                <button onclick="logout()" class="flex items-center justify-center bg-green-800 hover:bg-green-900 w-10 h-10 rounded-lg transition-colors border border-green-600" title="ออกจากระบบ">
                     <i class="fas fa-sign-out-alt text-lg"></i>
                 </button>
+            </div>
                 <button id="mobile-menu-btn" onclick="toggleMobileMenu()" class="md:hidden bg-green-800 hover:bg-green-900 px-3 py-2 rounded-lg transition-colors border border-green-600 focus:outline-none">
                     <i class="fas fa-bars text-white text-xl" id="mobile-menu-icon"></i>
                 </button>
@@ -420,6 +433,7 @@
                     <li id="menu-my-profile" class="hidden w-full md:w-auto"><button onclick="switchTab('my-profile')" class="nav-btn w-full text-left md:text-center border-transparent text-green-200 px-4 py-3 md:py-4 font-medium hover:bg-green-600 border-l-4 md:border-l-0 md:border-b-4 hover:text-white focus:outline-none transition-colors duration-200 rounded-r-lg md:rounded-none mb-1 md:mb-0" id="nav-my-profile"><i class="fas fa-id-card w-6 text-center"></i> ข้อมูลส่วนตัว</button></li>
                     <li id="menu-my-club" class="hidden w-full md:w-auto"><button onclick="switchTab('my-club')" class="nav-btn w-full text-left md:text-center border-transparent text-green-200 px-4 py-3 md:py-4 font-medium hover:bg-green-600 border-l-4 md:border-l-0 md:border-b-4 hover:text-white focus:outline-none transition-colors duration-200 rounded-r-lg md:rounded-none mb-1 md:mb-0" id="nav-my-club"><i class="fas fa-users w-6 text-center"></i> ชุมนุมของฉัน</button></li>
                     <li id="menu-academic" class="hidden w-full md:w-auto"><button onclick="switchTab('academic')" class="nav-btn w-full text-left md:text-center border-transparent text-green-200 px-4 py-3 md:py-4 font-medium hover:bg-green-600 border-l-4 md:border-l-0 md:border-b-4 hover:text-white focus:outline-none transition-colors duration-200 rounded-r-lg md:rounded-none mb-1 md:mb-0" id="nav-academic"><i class="fas fa-graduation-cap w-6 text-center"></i> ผลการเรียน & เวลาเรียน</button></li>
+                    <li id="menu-my-assignments" class="hidden w-full md:w-auto"><button onclick="switchTab('my-assignments')" class="nav-btn w-full text-left md:text-center border-transparent text-green-200 px-4 py-3 md:py-4 font-medium hover:bg-green-600 border-l-4 md:border-l-0 md:border-b-4 hover:text-white focus:outline-none transition-colors duration-200 rounded-r-lg md:rounded-none mb-1 md:mb-0" id="nav-my-assignments"><i class="fas fa-book-open w-6 text-center"></i> การบ้านและงาน</button></li>
                     
                     <!-- Teacher & Admin Menu -->
                     <li id="menu-checkin" class="hidden w-full md:w-auto"><button onclick="switchTab('checkin')" class="nav-btn active w-full text-left md:text-center px-4 py-3 md:py-4 font-medium hover:bg-green-600 border-l-4 md:border-l-0 md:border-b-4 border-white text-white focus:outline-none transition-colors duration-200 rounded-r-lg md:rounded-none mb-1 md:mb-0" id="nav-checkin"><i class="fas fa-user-check w-6 text-center"></i> เช็คชื่อปกติ</button></li>
@@ -427,6 +441,7 @@
                     <li id="menu-history" class="hidden w-full md:w-auto"><button onclick="switchTab('history')" class="nav-btn w-full text-left md:text-center border-transparent text-green-200 px-4 py-3 md:py-4 font-medium hover:bg-green-600 border-l-4 md:border-l-0 md:border-b-4 hover:text-white focus:outline-none transition-colors duration-200 rounded-r-lg md:rounded-none mb-1 md:mb-0" id="nav-history"><i class="fas fa-history w-6 text-center"></i> ประวัติเข้าเรียน</button></li>
                     <li id="menu-stats" class="hidden w-full md:w-auto"><button onclick="switchTab('stats')" class="nav-btn w-full text-left md:text-center border-transparent text-green-200 px-4 py-3 md:py-4 font-medium hover:bg-green-600 border-l-4 md:border-l-0 md:border-b-4 hover:text-white focus:outline-none transition-colors duration-200 rounded-r-lg md:rounded-none mb-1 md:mb-0" id="nav-stats"><i class="fas fa-chart-pie w-6 text-center"></i> สถิติ</button></li>
                     <li id="menu-home-visit" class="hidden w-full md:w-auto"><button onclick="switchTab('home-visit')" class="nav-btn w-full text-left md:text-center border-transparent text-green-200 px-4 py-3 md:py-4 font-medium hover:bg-green-600 border-l-4 md:border-l-0 md:border-b-4 hover:text-white focus:outline-none transition-colors duration-200 rounded-r-lg md:rounded-none mb-1 md:mb-0" id="nav-home-visit"><i class="fas fa-house-user w-6 text-center"></i> เยี่ยมบ้าน</button></li>
+                    <li id="menu-assignments" class="hidden w-full md:w-auto"><button onclick="switchTab('assignments')" class="nav-btn w-full text-left md:text-center border-transparent text-green-200 px-4 py-3 md:py-4 font-medium hover:bg-green-600 border-l-4 md:border-l-0 md:border-b-4 hover:text-white focus:outline-none transition-colors duration-200 rounded-r-lg md:rounded-none mb-1 md:mb-0" id="nav-assignments"><i class="fas fa-clipboard-list w-6 text-center"></i> งานและคะแนน</button></li>
 
                     <!-- Admin Only Menu -->
                     <li id="menu-master" class="hidden w-full md:w-auto"><button onclick="switchTab('master')" class="nav-btn w-full text-left md:text-center border-transparent text-green-200 px-4 py-3 md:py-4 font-medium hover:bg-green-600 border-l-4 md:border-l-0 md:border-b-4 hover:text-white focus:outline-none transition-colors duration-200 rounded-r-lg md:rounded-none mb-1 md:mb-0" id="nav-master"><i class="fas fa-database w-6 text-center"></i> ข้อมูลพื้นฐาน</button></li>
@@ -622,28 +637,45 @@
                     </table>
                 </div>
 
-                <!-- FUTURE SCOPE: GRADING & ASSIGNMENT ARCHITECTURE PLACEHOLDER -->
-                <div class="mt-8 border-t pt-6">
-                    <div class="flex items-center gap-2 mb-4">
-                        <span class="bg-indigo-100 text-indigo-800 font-bold text-xs px-2.5 py-1 rounded"><i class="fas fa-bolt mr-1"></i> Coming Soon</span>
-                        <h4 class="text-lg font-bold text-indigo-900">ระบบบันทึกคะแนนสอบและภาระงาน (Grading & Assignment Portal)</h4>
+            </div>
+        </section>
+
+        <!-- STUDENT ASSIGNMENTS & HOMEWORK TAB -->
+        <section id="tab-my-assignments" class="tab-content">
+            <div class="glass-panel rounded-2xl p-6 md:p-8">
+                <h3 class="text-2xl font-bold text-indigo-800 mb-6 border-b pb-3"><i class="fas fa-book-open mr-2"></i>การบ้านและงานที่ได้รับมอบหมาย</h3>
+                
+                <!-- Dashboard: สรุปคะแนนตามรายวิชา -->
+                <div class="mb-8">
+                    <h4 class="text-lg font-bold text-gray-700 mb-4"><i class="fas fa-chart-line mr-2"></i>แดชบอร์ดคะแนนสะสมรายวิชา</h4>
+                    <div id="stu-asm-dashboard" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Dynamic Subject Score Cards -->
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 opacity-75">
-                        <div class="bg-indigo-50/50 p-4 rounded-lg border border-indigo-100">
-                            <h5 class="font-bold text-sm text-indigo-800 mb-2"><i class="fas fa-tasks mr-2"></i>งานที่ได้รับมอบหมาย (Assignments)</h5>
-                            <ul class="space-y-2 text-xs text-gray-600">
-                                <li class="flex justify-between p-2 bg-white rounded shadow-sm border border-gray-100"><span>ใบงานที่ 1: แผนผังวิชาชุมนุม</span><span class="font-bold text-green-600">ส่งแล้ว (10/10 คะแนน)</span></li>
-                                <li class="flex justify-between p-2 bg-white rounded shadow-sm border border-gray-100"><span>แบบทดสอบกลางภาค</span><span class="font-bold text-blue-600">รอกรรมการตรวจสอบ</span></li>
-                            </ul>
-                        </div>
-                        <div class="bg-indigo-50/50 p-4 rounded-lg border border-indigo-100">
-                            <h5 class="font-bold text-sm text-indigo-800 mb-2"><i class="fas fa-chart-line mr-2"></i>สัดส่วนคะแนนสะสม (Grade Book Preview)</h5>
-                            <div class="w-full bg-gray-200 rounded-full h-4 mb-2">
-                                <div class="bg-indigo-600 h-4 rounded-full" style="width: 78%"></div>
-                            </div>
-                            <p class="text-xs text-gray-500">คะแนนเก็บปัจจุบัน: 78% (เกรดคาดการณ์: 3.5)</p>
-                        </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="flex flex-col sm:flex-row gap-4 mb-6 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+                    <div class="flex-1">
+                        <label class="block text-sm font-bold text-indigo-800 mb-1">กรองตามรายวิชา</label>
+                        <select id="stu-asm-filter-sub" class="w-full px-3 py-2 border rounded-lg focus:ring-indigo-500" onchange="renderStudentAssignments()">
+                            <option value="">-- ทุกรายวิชา --</option>
+                        </select>
                     </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-bold text-indigo-800 mb-1">สถานะงาน</label>
+                        <select id="stu-asm-filter-status" class="w-full px-3 py-2 border rounded-lg focus:ring-indigo-500" onchange="renderStudentAssignments()">
+                            <option value="">-- ทุกสถานะ --</option>
+                            <option value="รอส่ง">รอส่ง</option>
+                            <option value="ทวงงาน">ทวงงาน</option>
+                            <option value="ส่งแล้ว">ส่งแล้ว</option>
+                            <option value="ตรวจแล้ว">ตรวจแล้ว</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Assignments List -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="stu-asm-list-container">
+                    <!-- Dynamic Assignments Cards -->
                 </div>
             </div>
         </section>
@@ -653,7 +685,7 @@
             <div class="glass-panel rounded-2xl p-4 sm:p-6 md:p-8">
                 <h3 class="text-xl sm:text-2xl font-bold text-green-800 mb-4 border-b pb-3"><i class="fas fa-edit mr-2"></i>บันทึกการเข้าเรียนปกติ</h3>
                 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4 mb-6 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4 mb-6 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm relative z-20">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">ปีการศึกษา</label>
                         <select id="checkin-year" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" onchange="onCheckinYearSemesterChange(); resetCheckinTable();"></select>
@@ -686,7 +718,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">ชั้นเรียน</label>
-                        <select id="checkin-class" class="w-full border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" onchange="resetCheckinTable()"><option value="">-- เลือกชั้นเรียน --</option></select>
+                        <select id="checkin-class" class="w-full border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" onchange="onCheckinClassChange()"><option value="">-- เลือกชั้นเรียน --</option></select>
                     </div>
                         <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">ครูผู้สอน</label>
@@ -753,7 +785,7 @@
             <div class="glass-panel rounded-2xl p-4 sm:p-6 md:p-8">
                 <h3 class="text-xl sm:text-2xl font-bold text-green-800 mb-4 border-b pb-3"><i class="fas fa-users-cog mr-2"></i>บันทึกการเข้ากิจกรรมชุมนุม</h3>
                 
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm relative z-20">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">วันที่ทำกิจกรรม</label>
                         <input type="date" id="club-checkin-date" class="w-full px-3 py-2 border rounded focus:ring-green-500 shadow-sm" required onchange="resetClubCheckinTable()">
@@ -832,7 +864,7 @@
         <section id="tab-history" class="tab-content">
             <div class="glass-panel rounded-2xl p-6 md:p-8">
                 <h3 class="text-2xl font-bold text-green-800 mb-6 border-b pb-3"><i class="fas fa-calendar-alt mr-2"></i>ประวัติการเช็คชื่อผู้เรียน</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-6 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm w-full">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-6 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm w-full relative z-20">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทการเข้าเรียน</label>
                         <select id="history-type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500" onchange="onHistoryTypeChange()">
@@ -875,7 +907,7 @@
         <section id="tab-stats" class="tab-content">
             <div class="glass-panel rounded-2xl p-6 md:p-8">
                 <h3 class="text-2xl font-bold text-green-800 mb-6 border-b pb-3"><i class="fas fa-chart-bar mr-2"></i>สถิติและรายงานผลสัมฤทธิ์เวลาเรียน</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm w-full">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm w-full relative z-20">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทการเข้าเรียน</label>
                         <select id="stats-type" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="onStatsTypeChange()">
@@ -952,26 +984,26 @@
             <div class="glass-panel rounded-2xl p-6 md:p-8">
                 <h3 class="text-2xl font-bold text-green-800 mb-6 border-b pb-3"><i class="fas fa-house-user mr-2"></i>ระบบเยี่ยมบ้านนักเรียน</h3>
                 
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm w-full">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-6 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm w-full relative z-20">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">ปีการศึกษา</label>
-                        <select id="hv-year" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="renderHomeVisitList()"></select>
+                        <select id="hv-year" class="w-full px-3 py-2 border rounded focus:ring-green-500"></select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">ภาคเรียน</label>
-                        <select id="hv-semester" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="renderHomeVisitList()">
+                        <select id="hv-semester" class="w-full px-3 py-2 border rounded focus:ring-green-500">
                             <option value="1">1</option><option value="2">2</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">ชั้นเรียน (ที่ปรึกษา)</label>
-                        <select id="hv-class" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="renderHomeVisitList()">
+                        <select id="hv-class" class="w-full px-3 py-2 border rounded focus:ring-green-500">
                             <option value="">-- เลือกชั้นเรียน --</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">สถานะการเยี่ยมบ้าน</label>
-                        <select id="hv-status" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="renderHomeVisitList()">
+                        <select id="hv-status" class="w-full px-3 py-2 border rounded focus:ring-green-500">
                             <option value="all">ทั้งหมด</option>
                             <option value="ยังไม่เยี่ยม">ยังไม่เยี่ยม</option>
                             <option value="สำเร็จ">เยี่ยมแล้ว (สำเร็จ)</option>
@@ -982,6 +1014,9 @@
                             <option value="ผู้ปกครองไม่สะดวก">ผู้ปกครองไม่สะดวก</option>
                         </select>
                     </div>
+                    <div class="flex items-end">
+                        <button onclick="searchHomeVisit()" class="w-full bg-gradient-to-br from-blue-400/40 to-blue-600/30 text-blue-900 px-6 py-2 rounded-xl font-bold focus:outline-none btn-glass-raised"><i class="fas fa-search mr-2"></i> ค้นหา</button>
+                    </div>
                 </div>
 
                 <div class="overflow-x-auto bg-white/40 border border-white/50 backdrop-blur-md rounded-xl shadow-sm w-full">
@@ -991,6 +1026,7 @@
                                 <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 whitespace-nowrap">เลขที่</th>
                                 <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 whitespace-nowrap">รหัสนักเรียน</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชื่อ - นามสกุล</th>
+                                <th class="hidden lg:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ข้อมูลผู้ปกครอง (บิดา/มารดา/ผู้ปกครองหลัก)</th>
                                 <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 whitespace-nowrap">เบอร์โทรศัพท์ติดต่อ</th>
                                 <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 whitespace-nowrap">ข้อมูลที่พักนักเรียน</th>
                                 <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 whitespace-nowrap">สถานะการเยี่ยมบ้าน</th>
@@ -1133,7 +1169,7 @@
                         <button onclick="openStudentModal()" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm whitespace-nowrap"><i class="fas fa-plus mr-2"></i> เพิ่มนักเรียน</button>
                     </div>
                 </div>
-                <div class="mb-6 flex gap-4 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm flex-col sm:flex-row w-full items-end">
+                <div class="mb-6 flex gap-4 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm flex-col sm:flex-row w-full items-end relative z-20">
                     <div class="w-full sm:flex-1">
                         <label class="block text-sm font-medium text-gray-700 mb-1">กรองตามชั้นเรียน</label>
                         <select id="manage-filter-class" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500" onchange="renderManageStudents()"><option value="">ดูทุกชั้นเรียน</option></select>
@@ -1200,7 +1236,7 @@
                 <!-- SUB TAB: Student Enroll Interface -->
                 <div id="club-manage-enroll" class="club-manage-section hidden w-full">
                     <h4 class="text-lg font-bold text-gray-700 mb-4">ระบบจัดสรรและอนุมัตินักเรียนเข้าชุมนุม</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm w-full">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm w-full relative z-20">
                         <div><label class="block text-sm font-medium text-gray-700 mb-1">ปีการศึกษา</label><select id="enroll-year" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="onEnrollFilterChange()"></select></div>
                         <div><label class="block text-sm font-medium text-gray-700 mb-1">ภาคเรียน</label><select id="enroll-semester" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="onEnrollFilterChange()"><option value="1">1</option><option value="2">2</option></select></div>
                         <div><label class="block text-sm font-medium text-gray-700 mb-1">กรองระดับชั้น</label><select id="enroll-filter-class" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="renderEnrollStudents()"><option value="">ทุกชั้นเรียน</option></select></div>
@@ -1217,12 +1253,68 @@
                     <div class="overflow-x-auto bg-white/40 border border-white/50 backdrop-blur-md rounded-xl shadow-sm w-full">
                         <table class="min-w-full divide-y divide-gray-200 mobile-card-table">
                             <thead class="bg-white/50">
-                                <tr><th class="px-4 py-2 text-center w-12 whitespace-nowrap"><input type="checkbox" id="enroll-select-all" onchange="toggleAllEnrollCheckboxes(this)"></th><th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชั้น/เลขที่</th><th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">รหัส</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชื่อ - นามสกุล</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">สถานะชุมนุม</th></tr>
+                                <tr><th class="px-4 py-2 text-center w-12 whitespace-nowrap"><input type="checkbox" id="enroll-select-all" onchange="toggleAllEnrollCheckboxes(this)"></th><th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชั้น/เลขที่</th><th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">รหัส</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชื่อ - นามสกุล</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">สถานะชุมนุม</th><th class="px-4 py-2 text-center text-xs font-medium text-gray-500 whitespace-nowrap">จัดการ</th></tr>
                             </thead>
                             <tbody id="tbody-enroll-students" class="divide-y divide-gray-200"></tbody>
                         </table>
                     </div>
                     <div class="flex flex-col sm:flex-row justify-between items-center mt-4 px-2 gap-3 w-full"><div class="text-sm text-gray-600 font-medium" id="page-info-teachers"></div><div class="flex gap-1 flex-wrap justify-center" id="pagination-teachers"></div></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ASSIGNMENTS & GRADING TAB -->
+        <section id="tab-assignments" class="tab-content">
+            <div class="glass-panel rounded-2xl p-6 md:p-8">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-3 gap-3">
+                    <h3 class="text-2xl font-bold text-green-800"><i class="fas fa-clipboard-list mr-2"></i>จัดการงานและคะแนน</h3>
+                    <button onclick="openAssignmentModal()" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm whitespace-nowrap"><i class="fas fa-plus mr-2"></i> มอบหมายงานใหม่</button>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm w-full relative z-20">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ค้นหาชื่องาน</label>
+                        <input type="text" id="asm-filter-title" placeholder="พิมพ์ชื่องาน..." class="w-full px-3 py-2 border rounded focus:ring-green-500" onkeyup="renderAssignmentsList()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">กรองตามชั้นเรียน</label>
+                        <select id="asm-filter-class" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="onAsmFilterClassChange()"><option value="">-- ทุกชั้นเรียน --</option></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">กรองตามวิชา</label>
+                        <select id="asm-filter-subject" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="renderAssignmentsList()"><option value="">-- ทุกวิชา --</option></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">สถานะการส่งงาน</label>
+                        <select id="asm-filter-progress" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="renderAssignmentsList()">
+                            <option value="">-- ทั้งหมด --</option>
+                            <option value="complete">ส่งครบแล้ว</option>
+                            <option value="incomplete">ยังส่งไม่ครบ</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="searchAssignments()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm"><i class="fas fa-search mr-2"></i> ค้นหา</button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto bg-white/40 border border-white/50 backdrop-blur-md rounded-xl shadow-sm w-full">
+                    <table class="min-w-full divide-y divide-gray-200 mobile-card-table">
+                        <thead class="bg-white/50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชื่องาน</th>
+                                <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชั้นเรียน</th>
+                                <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 whitespace-nowrap">วิชา</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 whitespace-nowrap">วันที่สั่งงาน</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 whitespace-nowrap">กำหนดส่ง</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 whitespace-nowrap">ส่งงาน</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 whitespace-nowrap">ตรวจงาน</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 whitespace-nowrap">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-assignments" class="divide-y divide-gray-200">
+                            <!-- Load Dynamic Assignments -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </section>
@@ -1349,6 +1441,39 @@
         </div>
     </div>
 
+    <!-- VIEW STUDENT SUBMISSION MODAL -->
+    <div id="view-student-submission-modal" class="modal" style="z-index: 9058;">
+        <div class="glass-modal rounded-3xl w-full max-w-lg mx-4 flex flex-col max-h-[85vh]">
+            <div class="px-6 py-4 border-b border-white/30 flex justify-between items-center">
+                <h3 class="font-bold text-indigo-800"><i class="fas fa-file-import mr-2"></i>รายละเอียดการส่งงานของนักเรียน</h3>
+                <button onclick="closeModal('view-student-submission-modal')"><i class="fas fa-times text-gray-500 hover:text-gray-700"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-4 text-sm">
+                <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+                    <p class="mb-1"><strong>นักเรียน:</strong> <span id="vss-student-name" class="font-bold text-gray-800">-</span></p>
+                    <p class="mb-1"><strong>งาน:</strong> <span id="vss-assignment-title" class="text-gray-700">-</span></p>
+                    <p class="mb-1"><strong>ช่องทางการส่ง:</strong> <span id="vss-submit-method" class="text-indigo-600 font-semibold">-</span></p>
+                    <p><strong>เวลาที่ส่ง:</strong> <span id="vss-submit-time" class="text-gray-600">-</span></p>
+                </div>
+                
+                <div>
+                    <label class="font-bold text-gray-700 block mb-1">ข้อความ/หมายเหตุจากนักเรียน:</label>
+                    <div class="bg-gray-50 p-3 rounded-lg border text-gray-600 min-h-[60px] whitespace-pre-wrap" id="vss-student-note">-</div>
+                </div>
+
+                <div>
+                    <label class="font-bold text-gray-700 block mb-2">ไฟล์แนบจากนักเรียน (สูงสุด 3 ไฟล์):</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3" id="vss-files-container">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-white/30 flex justify-end">
+                <button onclick="closeModal('view-student-submission-modal')" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition-colors">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
     <!-- HOME VISIT MODAL (4-Step Wizard) -->
     <div id="home-visit-modal" class="modal">
         <div class="glass-modal rounded-3xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col">
@@ -1378,6 +1503,41 @@
                         <p class="text-sm"><strong>ชื่อ-นามสกุล:</strong> <span id="hv-display-name"></span></p>
                         <p class="text-sm"><strong>รหัสประจำตัว:</strong> <span id="hv-display-studentid"></span> | <strong>ชั้นเรียน:</strong> <span id="hv-display-class"></span></p>
                     </div>
+
+                    <!-- ข้อมูลครอบครัวจากฐานข้อมูลนักเรียน -->
+                    <div class="bg-gray-50 border border-gray-200 p-4 rounded-xl mb-4 text-sm space-y-3">
+                        <h5 class="font-bold text-gray-700 border-b pb-1.5"><i class="fas fa-users mr-1"></i>ข้อมูลครอบครัวจากฐานข้อมูลนักเรียน</h5>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="p-2.5 bg-white border border-gray-200 rounded-lg shadow-sm">
+                                <p class="text-xs text-gray-500 font-bold mb-1">บิดา</p>
+                                <p id="hv-db-father-name" class="font-bold text-gray-800">-</p>
+                                <p id="hv-db-father-phone" class="text-xs text-gray-600 font-mono mt-0.5">-</p>
+                                <p id="hv-db-father-job" class="text-xs text-gray-500 mt-0.5">-</p>
+                            </div>
+                            <div class="p-2.5 bg-white border border-gray-200 rounded-lg shadow-sm">
+                                <p class="text-xs text-gray-500 font-bold mb-1">มารดา</p>
+                                <p id="hv-db-mother-name" class="font-bold text-gray-800">-</p>
+                                <p id="hv-db-mother-phone" class="text-xs text-gray-600 font-mono mt-0.5">-</p>
+                                <p id="hv-db-mother-job" class="text-xs text-gray-500 mt-0.5">-</p>
+                            </div>
+                            <div class="p-2.5 bg-white border border-gray-200 rounded-lg shadow-sm">
+                                <p class="text-xs text-gray-500 font-bold mb-1">ผู้ปกครองหลัก</p>
+                                <p id="hv-db-parent-name" class="font-bold text-gray-800">-</p>
+                                <p id="hv-db-parent-phone" class="text-xs text-gray-600 font-mono mt-0.5">-</p>
+                                <p id="hv-db-parent-rel" class="text-xs text-gray-500 mt-0.5">-</p>
+                            </div>
+                        </div>
+
+                        <!-- ส่วนเลือกคัดลอกข้อมูล -->
+                        <div class="pt-2 border-t flex flex-wrap items-center gap-2">
+                            <span class="text-xs text-gray-500 font-bold">คัดลอกข้อมูลผู้ปกครองเยี่ยมบ้านจาก:</span>
+                            <button type="button" onclick="autofillHvGuardian('father')" class="bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs px-2.5 py-1 rounded-full font-bold transition"><i class="fas fa-copy mr-1"></i>ข้อมูลบิดา</button>
+                            <button type="button" onclick="autofillHvGuardian('mother')" class="bg-pink-100 hover:bg-pink-200 text-pink-700 text-xs px-2.5 py-1 rounded-full font-bold transition"><i class="fas fa-copy mr-1"></i>ข้อมูลมารดา</button>
+                            <button type="button" onclick="autofillHvGuardian('parent')" class="bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs px-2.5 py-1 rounded-full font-bold transition"><i class="fas fa-copy mr-1"></i>ผู้ปกครองหลัก</button>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div><label class="text-sm font-medium">ชื่อ-นามสกุลผู้ปกครอง *</label><input type="text" id="hv-guardian-name" class="w-full px-3 py-2 border rounded"></div>
                         <div><label class="text-sm font-medium">ความสัมพันธ์ *</label>
@@ -1544,6 +1704,33 @@
         </div>
     </div>
 
+    <!-- TRANSFER CLUB MODAL -->
+    <div id="transfer-club-modal" class="modal" style="z-index: 9065;">
+        <div class="glass-modal rounded-3xl w-full max-w-md mx-4">
+            <div class="px-6 py-4 border-b border-white/30 flex justify-between items-center">
+                <h3 class="font-bold text-green-800"><i class="fas fa-exchange-alt mr-2"></i>ย้ายชุมนุมนักเรียน</h3>
+                <button onclick="closeModal('transfer-club-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6">
+                <input type="hidden" id="transfer-student-id">
+                <div class="mb-4 bg-green-50 p-3 rounded border border-green-200">
+                    <p class="text-sm font-bold text-gray-800">นักเรียน: <span id="transfer-student-name" class="text-green-800">-</span></p>
+                    <p class="text-xs text-gray-600 mt-1">ชุมนุมปัจจุบัน: <span id="transfer-current-club" class="font-bold text-blue-700">-</span></p>
+                </div>
+                <div class="mb-5">
+                    <label class="text-sm font-bold text-gray-700 block mb-2">เลือกชุมนุมปลายทาง *</label>
+                    <select id="transfer-target-club" class="w-full px-3 py-2 border rounded-lg focus:ring-green-500 font-medium">
+                        <!-- Loaded Dynamically -->
+                    </select>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeModal('transfer-club-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-100 font-medium">ยกเลิก</button>
+                    <button onclick="submitTransferClub()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-bold">ยืนยันการย้าย</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- TEACHER REGISTER SEARCH MODAL -->
     <div id="teacher-register-search-modal" class="modal">
         <div class="glass-modal rounded-3xl w-full max-w-sm mx-4">
@@ -1582,6 +1769,268 @@
     <!-- CLASS MODAL & EXTRAS -->
     <div id="csv-upload-modal" class="modal"><div class="glass-modal rounded-3xl w-full max-w-3xl mx-4 flex flex-col max-h-[90vh]"><div class="px-6 py-4 border-b border-white/30 flex justify-between items-center"><h3 class="text-xl font-bold text-blue-800"><i class="fas fa-upload mr-2"></i>อัปโหลดรายชื่อนักเรียน (CSV)</h3><button onclick="closeModal('csv-upload-modal')"><i class="fas fa-times"></i></button></div><div class="p-6 overflow-y-auto flex-grow"><div class="mb-4 bg-yellow-50 border border-yellow-200 p-4 rounded text-sm text-yellow-800"><p class="font-bold mb-1"><i class="fas fa-info-circle mr-1"></i> รูปแบบไฟล์ที่รองรับ (CSV)</p><p>หัวคอลัมน์ต้องเป็น: <span class="font-mono bg-white px-1">เลขที่, รหัสประจำตัว, คำนำหน้า, ชื่อ, นามสกุล, ชื่อเล่น(ไม่จำเป็น)</span> (ห้ามสลับลำดับ)</p></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div><label class="block text-sm font-medium text-gray-700 mb-1">เลือกชั้นเรียนที่ต้องการเพิ่ม *</label><select id="upload-class" class="w-full px-3 py-2 border rounded-md focus:ring-blue-500"><option value="">-- เลือกชั้นเรียน --</option></select></div><div><label class="block text-sm font-medium text-gray-700 mb-1">การอ่านภาษาไทย *</label><select id="upload-encoding" class="w-full px-3 py-2 border rounded-md focus:ring-blue-500" onchange="if(document.getElementById('upload-file').files[0]) previewCSV({target: document.getElementById('upload-file')})"><option value="windows-874">Excel ทั่วไป (Windows-874)</option><option value="UTF-8">Google Sheets (UTF-8)</option></select></div><div><label class="block text-sm font-medium text-gray-700 mb-1">เลือกไฟล์ CSV *</label><input type="file" id="upload-file" accept=".csv" class="w-full px-3 py-1.5 border rounded-md focus:ring-blue-500" onchange="previewCSV(event)"></div></div><div id="upload-preview-container" class="hidden w-full"><h4 class="font-bold text-gray-700 mb-2">พรีวิวข้อมูล (<span id="upload-count">0</span> รายการ)</h4><div class="overflow-x-auto border rounded-lg max-h-64 w-full"><table class="min-w-full divide-y divide-gray-200 text-sm"><thead class="bg-gray-50 sticky top-0"><tr><th class="px-4 py-2 text-left font-medium text-gray-500">เลขที่</th><th class="px-4 py-2 text-left font-medium text-gray-500">รหัสประจำตัว</th><th class="px-4 py-2 text-left font-medium text-gray-500">ชื่อ - สกุล (ชื่อเล่น)</th><th class="px-4 py-2 text-center font-medium text-gray-500">สถานะ</th></tr></thead><tbody id="upload-preview-body" class="bg-white divide-y divide-gray-200"></tbody></table></div></div></div><div class="px-6 py-4 border-t border-white/30 flex justify-end gap-2"><button onclick="closeModal('csv-upload-modal')" class="px-4 py-2 border rounded hover:bg-gray-100 font-medium">ยกเลิก</button><button onclick="saveCsvUpload()" id="btn-save-upload" disabled class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded font-medium transition">บันทึกข้อมูล</button></div></div></div>
     
+    <!-- ASSIGNMENT CREATE MODAL -->
+    <div id="assignment-modal" class="modal">
+        <div class="glass-modal rounded-3xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col">
+            <div class="px-6 py-4 border-b border-white/30 flex justify-between items-center">
+                <h3 class="font-bold text-blue-800" id="asm-modal-title"><i class="fas fa-tasks mr-2"></i>มอบหมายงาน</h3>
+                <button onclick="closeModal('assignment-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-grow">
+                <input type="hidden" id="asm-id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="md:col-span-2">
+                        <label class="text-sm font-medium text-gray-700 block mb-1">ชื่องาน / หัวข้อ *</label>
+                        <input type="text" id="asm-title" required class="w-full px-3 py-2 border rounded focus:ring-green-500">
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-700 block mb-1">ชั้นเรียน *</label>
+                        <select id="asm-class" required class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="onAsmFormClassChange()"></select>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-700 block mb-1">วิชา *</label>
+                        <select id="asm-subject" required class="w-full px-3 py-2 border rounded focus:ring-green-500"><option value="">-- กรุณาเลือกชั้นเรียนก่อน --</option></select>
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-700 block mb-1">วันที่สั่งงาน *</label>
+                        <input type="date" id="asm-assign-date" required class="w-full px-3 py-2 border rounded focus:ring-green-500">
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-700 block mb-1">เวลาสั่งงาน *</label>
+                        <input type="time" id="asm-assign-time" required class="w-full px-3 py-2 border rounded focus:ring-green-500">
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-700 block mb-1">กำหนดส่ง (วันที่) *</label>
+                        <input type="date" id="asm-due-date" required class="w-full px-3 py-2 border rounded focus:ring-green-500">
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-700 block mb-1">กำหนดส่ง (เวลา) *</label>
+                        <input type="time" id="asm-due-time" required class="w-full px-3 py-2 border rounded focus:ring-green-500">
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-700 block mb-1">สถานที่ส่งงาน *</label>
+                        <select id="asm-location" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="if(this.value==='อื่นๆ') document.getElementById('asm-loc-other').classList.remove('hidden'); else document.getElementById('asm-loc-other').classList.add('hidden');">
+                            <option value="ส่ง Online">ส่ง Online (ผ่านระบบ)</option>
+                            <option value="ส่งในคาบเรียน">ส่งในคาบเรียน</option>
+                            <option value="ส่งที่โต๊ะทำงานครู">ส่งที่โต๊ะทำงานครู</option>
+                            <option value="อื่นๆ">อื่นๆ (ระบุเอง)</option>
+                        </select>
+                        <input type="text" id="asm-loc-other" placeholder="ระบุสถานที่ส่ง..." class="w-full px-3 py-2 border rounded hidden mt-2">
+                    </div>
+                    <div>
+                        <label class="text-sm font-medium text-gray-700 block mb-1">คะแนนเต็ม *</label>
+                        <input type="number" id="asm-score" min="1" value="10" required class="w-full px-3 py-2 border rounded focus:ring-green-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="text-sm font-medium text-gray-700 block mb-1">รายละเอียด / คำสั่งเพิ่มเติม</label>
+                        <textarea id="asm-desc" rows="3" class="w-full px-3 py-2 border rounded focus:ring-green-500"></textarea>
+                    </div>
+                         <!-- เลือกนักเรียน -->
+                    <div class="md:col-span-2 bg-white border rounded-lg p-4">
+                        <label class="text-sm font-bold text-gray-800 block mb-2"><i class="fas fa-users mr-1 text-blue-600"></i> เลือกนักเรียนที่มอบหมายงาน *</label>
+                        <div class="mb-3 pb-2 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                            <label class="checkbox-container text-sm font-bold text-blue-800 inline-block mb-0">
+                                เลือกทั้งหมดในชั้นเรียน
+                                <input type="checkbox" id="asm-student-all" checked onchange="toggleAllAsmStudents(this)">
+                                <span class="checkmark"></span>
+                            </label>
+                            <div class="relative w-full sm:w-64">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"><i class="fas fa-search"></i></span>
+                                <input type="text" id="asm-student-search" placeholder="ค้นหารหัส หรือ ชื่อ..." class="w-full pl-10 pr-3 py-1.5 border border-gray-300 rounded text-sm focus:ring-green-500 focus:border-green-500" onkeyup="filterAsmStudents()">
+                            </div>
+                        </div>
+                        <div id="asm-students-container" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                            <div class="text-sm text-gray-500 italic col-span-full">กรุณาเลือกชั้นเรียนก่อน</div>
+                        </div>
+                    </div>
+                    <div class="md:col-span-2 bg-blue-50/50 p-4 border rounded-lg border-blue-200">
+                        <label class="text-sm font-bold text-blue-800 block mb-3"><i class="fas fa-paperclip mr-1"></i> แนบไฟล์สื่อการสอน (สูงสุด 3 ไฟล์, ไม่เกิน 10MB/ไฟล์)</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <!-- File 1 -->
+                            <div class="border-2 border-dashed border-blue-300 rounded-lg p-2 text-center bg-white flex flex-col justify-center relative min-h-[110px] hover:border-blue-500 hover:bg-blue-50 transition-colors">
+                                <label for="asm-file-1" class="cursor-pointer text-blue-500 hover:text-blue-700 flex flex-col items-center justify-center h-full w-full" id="asm-label-1">
+                                    <i class="fas fa-cloud-upload-alt text-2xl mb-1"></i><span class="text-xs font-medium">แนบไฟล์ 1</span>
+                                </label>
+                                <input type="file" id="asm-file-1" class="hidden" onchange="previewAsmFile(event, 1)">
+                                <div id="asm-preview-container-1" class="hidden absolute inset-0 bg-white rounded-lg flex flex-col items-center justify-center p-2 shadow-sm border border-gray-200 z-10">
+                                    <img id="asm-img-preview-1" src="" class="hidden w-full h-14 object-cover rounded border mb-1 cursor-pointer" onclick="viewLargeImage(this.src)" title="คลิกเพื่อดูรูปใหญ่">
+                                    <div id="asm-icon-preview-1" class="hidden flex flex-col items-center justify-center h-14 mb-1"><i class="fas fa-file text-3xl"></i></div>
+                                    <p id="asm-filename-1" class="text-[10px] text-gray-700 truncate w-full px-1 font-medium"></p>
+                                    <button type="button" onclick="removeAsmFile(1)" class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white w-6 h-6 rounded-full shadow-md flex items-center justify-center transition-colors"><i class="fas fa-times text-xs"></i></button>
+                                </div>
+                            </div>
+                            <!-- File 2 -->
+                            <div class="border-2 border-dashed border-blue-300 rounded-lg p-2 text-center bg-white flex flex-col justify-center relative min-h-[110px] hover:border-blue-500 hover:bg-blue-50 transition-colors">
+                                <label for="asm-file-2" class="cursor-pointer text-blue-500 hover:text-blue-700 flex flex-col items-center justify-center h-full w-full" id="asm-label-2">
+                                    <i class="fas fa-cloud-upload-alt text-2xl mb-1"></i><span class="text-xs font-medium">แนบไฟล์ 2</span>
+                                </label>
+                                <input type="file" id="asm-file-2" class="hidden" onchange="previewAsmFile(event, 2)">
+                                <div id="asm-preview-container-2" class="hidden absolute inset-0 bg-white rounded-lg flex flex-col items-center justify-center p-2 shadow-sm border border-gray-200 z-10">
+                                    <img id="asm-img-preview-2" src="" class="hidden w-full h-14 object-cover rounded border mb-1 cursor-pointer" onclick="viewLargeImage(this.src)" title="คลิกเพื่อดูรูปใหญ่">
+                                    <div id="asm-icon-preview-2" class="hidden flex flex-col items-center justify-center h-14 mb-1"><i class="fas fa-file text-3xl"></i></div>
+                                    <p id="asm-filename-2" class="text-[10px] text-gray-700 truncate w-full px-1 font-medium"></p>
+                                    <button type="button" onclick="removeAsmFile(2)" class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white w-6 h-6 rounded-full shadow-md flex items-center justify-center transition-colors"><i class="fas fa-times text-xs"></i></button>
+                                </div>
+                            </div>
+                            <!-- File 3 -->
+                            <div class="border-2 border-dashed border-blue-300 rounded-lg p-2 text-center bg-white flex flex-col justify-center relative min-h-[110px] hover:border-blue-500 hover:bg-blue-50 transition-colors">
+                                <label for="asm-file-3" class="cursor-pointer text-blue-500 hover:text-blue-700 flex flex-col items-center justify-center h-full w-full" id="asm-label-3">
+                                    <i class="fas fa-cloud-upload-alt text-2xl mb-1"></i><span class="text-xs font-medium">แนบไฟล์ 3</span>
+                                </label>
+                                <input type="file" id="asm-file-3" class="hidden" onchange="previewAsmFile(event, 3)">
+                                <div id="asm-preview-container-3" class="hidden absolute inset-0 bg-white rounded-lg flex flex-col items-center justify-center p-2 shadow-sm border border-gray-200 z-10">
+                                    <img id="asm-img-preview-3" src="" class="hidden w-full h-14 object-cover rounded border mb-1 cursor-pointer" onclick="viewLargeImage(this.src)" title="คลิกเพื่อดูรูปใหญ่">
+                                    <div id="asm-icon-preview-3" class="hidden flex flex-col items-center justify-center h-14 mb-1"><i class="fas fa-file text-3xl"></i></div>
+                                    <p id="asm-filename-3" class="text-[10px] text-gray-700 truncate w-full px-1 font-medium"></p>
+                                    <button type="button" onclick="removeAsmFile(3)" class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white w-6 h-6 rounded-full shadow-md flex items-center justify-center transition-colors"><i class="fas fa-times text-xs"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-white/30 flex justify-end gap-2">
+                <button onclick="closeModal('assignment-modal')" class="px-4 py-2 border rounded hover:bg-gray-100 font-medium text-sm">ยกเลิก</button>
+                <button onclick="saveAssignment()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium shadow-sm text-sm">บันทึกและมอบหมาย</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- STUDENT ASSIGNMENT SUBMISSION MODAL -->
+    <div id="student-assignment-modal" class="modal">
+        <div class="glass-modal rounded-3xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col">
+            <div class="px-6 py-4 border-b border-white/30 flex justify-between items-center bg-indigo-600 rounded-t-3xl">
+                <h3 class="font-bold text-white text-lg"><i class="fas fa-paper-plane mr-2"></i>รายละเอียดและส่งงาน</h3>
+                <button onclick="closeModal('student-assignment-modal')" class="text-white hover:text-gray-200"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-grow bg-gray-50/50">
+                <input type="hidden" id="stu-asm-assignment-id">
+                <input type="hidden" id="stu-asm-record-id">
+                
+                <!-- Assignment Info -->
+                <div class="bg-white p-5 rounded-xl border shadow-sm mb-6">
+                    <h4 class="text-xl font-extrabold text-indigo-900 mb-2" id="stu-asm-detail-title">-</h4>
+                    <p class="text-sm font-bold text-indigo-600 mb-4 pb-3 border-b" id="stu-asm-detail-sub">-</p>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm mb-4">
+                        <div><span class="text-gray-500 block mb-1">วันที่สั่งงาน:</span><span class="font-bold text-gray-800" id="stu-asm-detail-assign">-</span></div>
+                        <div><span class="text-gray-500 block mb-1">กำหนดส่ง:</span><span class="font-bold text-red-600" id="stu-asm-detail-due">-</span></div>
+                        <div><span class="text-gray-500 block mb-1">คะแนนเต็ม:</span><span class="font-bold text-green-600" id="stu-asm-detail-score">-</span></div>
+                        <div><span class="text-gray-500 block mb-1">สถานที่ส่ง/รูปแบบ:</span><span class="font-bold text-blue-600" id="stu-asm-detail-loc">-</span></div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <span class="text-gray-500 block mb-1 text-sm">คำสั่ง / รายละเอียดจากครู:</span>
+                        <div class="bg-gray-50 p-3 rounded border text-sm text-gray-700 whitespace-pre-line" id="stu-asm-detail-desc">-</div>
+                    </div>
+
+                    <div id="stu-asm-teacher-comment-box" class="hidden mb-2">
+                        <span class="text-red-500 font-bold block mb-1 text-sm"><i class="fas fa-comment-dots mr-1"></i>ข้อความหมายเหตุ / ทวงงานจากครู:</span>
+                        <div class="bg-red-50 p-3 rounded border border-red-200 text-sm text-red-800 font-bold" id="stu-asm-teacher-comment">-</div>
+                    </div>
+                </div>
+
+                <!-- Submission Form -->
+                <h4 class="font-bold text-gray-800 mb-3 border-b pb-2"><i class="fas fa-edit mr-2 text-indigo-500"></i>ส่วนของการส่งงาน</h4>
+                <div class="grid grid-cols-1 gap-4 mb-4">
+                    <div>
+                        <label class="text-sm font-bold text-gray-700 block mb-1">รูปแบบการส่งงานของคุณ *</label>
+                        <select id="stu-asm-submit-loc" class="w-full px-3 py-2 border rounded-lg focus:ring-indigo-500 font-medium">
+                            <option value="ส่ง Online">ส่ง Online (แนบไฟล์เข้าระบบ)</option>
+                            <option value="ส่งในชั้นเรียน">ส่งในชั้นเรียน / ในห้องเรียน</option>
+                            <option value="ส่งที่โต๊ะทำงานครู">ส่งที่โต๊ะทำงานครู</option>
+                            <option value="ส่งช่องทางอื่น">อื่นๆ (ระบุในหมายเหตุ)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-sm font-bold text-gray-700 block mb-1">หมายเหตุถึงครูผู้สอน (ถ้ามี)</label>
+                        <textarea id="stu-asm-student-note" rows="2" class="w-full px-3 py-2 border rounded-lg focus:ring-indigo-500" placeholder="พิมพ์ข้อความ..."></textarea>
+                    </div>
+                    
+                    <div id="stu-asm-upload-area" class="bg-indigo-50/50 p-4 border rounded-xl border-indigo-200">
+                        <label class="text-sm font-bold text-indigo-800 block mb-3"><i class="fas fa-paperclip mr-1"></i> แนบไฟล์ส่งงาน (สูงสุด 3 ไฟล์, ไม่เกิน 10MB/ไฟล์)</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="stu-asm-files-container">
+                            <!-- File slots generated via JS to match teacher layout -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Grading Result -->
+                <div id="stu-asm-grading-result" class="hidden bg-green-50 p-4 border border-green-200 rounded-xl text-center mt-4">
+                    <i class="fas fa-check-circle text-4xl text-green-500 mb-2"></i>
+                    <h4 class="font-bold text-green-800 text-lg">ครูตรวจงานนี้แล้ว</h4>
+                    <p class="text-2xl font-black text-green-600 mt-2">คะแนนที่ได้: <span id="stu-asm-graded-score">-</span></p>
+                    
+                    <!-- Uploaded files section when graded -->
+                    <div id="stu-asm-graded-files-section" class="mt-4 pt-3 border-t border-green-200 text-left hidden">
+                        <span class="text-xs font-bold text-green-800 block mb-2"><i class="fas fa-paperclip mr-1"></i> ไฟล์งานที่คุณอัปโหลดส่ง:</span>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center" id="stu-asm-graded-files-container"></div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3 bg-white rounded-b-3xl">
+                <button onclick="closeModal('student-assignment-modal')" class="px-5 py-2 border rounded-lg hover:bg-gray-100 font-bold text-gray-600 transition-colors">ยกเลิก</button>
+                <button id="btn-stu-asm-submit" onclick="submitStudentAssignment()" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold shadow-md transition-colors"><i class="fas fa-paper-plane mr-2"></i> บันทึกการส่งงาน</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRADING MODAL -->
+    <div id="grading-modal" class="modal">
+        <div class="glass-modal rounded-3xl w-full max-w-6xl mx-4 max-h-[95vh] flex flex-col">
+            <div class="px-6 py-4 border-b border-white/30 flex justify-between items-center">
+                <h3 class="font-bold text-blue-800"><i class="fas fa-check-double mr-2"></i>ตรวจงาน / ให้คะแนน: <span id="grading-title" class="text-gray-600"></span></h3>
+                <button onclick="closeModal('grading-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-4 sm:p-6 bg-gray-50/50 flex flex-col sm:flex-row items-end gap-4 border-b">
+                <div class="flex-1 w-full sm:w-auto">
+                    <div class="flex gap-4 w-full">
+                        <div class="flex-1">
+                            <label class="text-xs font-bold text-gray-700 block mb-1">ค้นหานักเรียน</label>
+                            <input type="text" id="grading-search" placeholder="ชื่อ, เลขที่..." class="border rounded px-3 py-1.5 text-sm w-full focus:ring-blue-500" onkeyup="renderGradingTable()">
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-xs font-bold text-gray-700 block mb-1">กรองสถานะ</label>
+                            <select id="grading-filter-status" class="border rounded px-3 py-1.5 text-sm w-full focus:ring-blue-500" onchange="renderGradingTable()">
+                                <option value="">-- ทั้งหมด --</option>
+                                <option value="รอส่ง">รอส่ง</option>
+                                <option value="ส่งแล้ว">ส่งแล้ว</option>
+                                <option value="ตรวจแล้ว">ตรวจแล้ว</option>
+                                <option value="ทวงงาน">ทวงงาน</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="w-full sm:w-auto">
+                    <label class="text-xs font-bold text-gray-700 block mb-1">ให้คะแนนทุกคนที่ค้นพบเท่ากับ:</label>
+                    <div class="flex mt-1"><input type="number" id="bulk-score" class="border rounded-l px-2 py-1.5 text-sm w-24" placeholder="คะแนน" onchange="validateBulkScore(this)" onkeyup="validateBulkScore(this)"><button onclick="applyBulkScore()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-r text-sm font-medium transition-colors">ปรับใช้</button></div>
+                </div>
+            </div>
+            <div class="p-0 overflow-y-auto flex-grow" id="grading-table-container">
+                <table class="min-w-full divide-y divide-gray-200 mobile-card-table">
+                    <thead class="bg-white/90 sticky top-0 shadow-sm z-10">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">เลขที่</th>
+                            <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500">รหัสประจำตัว</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500">ชื่อ - นามสกุล</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500">คะแนน <span id="grading-max-score" class="text-blue-500 font-bold"></span></th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500">ไฟล์แนบจาก นร.</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500">จัดการ</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500">หมายเหตุครู</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500">สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-grading" class="divide-y divide-gray-100 bg-white"></tbody>
+                </table>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-2 bg-gray-50">
+                <button onclick="closeModal('grading-modal')" class="px-4 py-2 border rounded hover:bg-gray-100 font-medium text-sm">ปิด (ไม่บันทึก)</button>
+                <button onclick="saveGrading()" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-medium shadow-sm text-sm"><i class="fas fa-save mr-1"></i> บันทึกข้อมูลทั้งหมด</button>
+            </div>
+        </div>
+    </div>
+
     <div id="student-modal" class="modal">
         <div class="glass-modal rounded-3xl w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col">
             <div class="px-6 py-4 border-b border-white/30 flex justify-between items-center">

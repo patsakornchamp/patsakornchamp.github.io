@@ -12,6 +12,7 @@ import './features/club.js';
 import './features/stats.js';
 import './features/history.js';
 import './features/homevisit.js';
+import './features/assignments.js';
 
 // 🌟 ฟังก์ชันจัดการ Select HTML ให้รองรับ Tom Select (ค้นหาได้)
 export function safeSetSelectHtml(id, html) {
@@ -19,6 +20,10 @@ export function safeSetSelectHtml(id, html) {
     if (!el) return;
     const currentVal = el.tomselect ? el.tomselect.getValue() : el.value;
     
+    if (el.tomselect) {
+        el.tomselect.clearOptions();
+    }
+
     el.innerHTML = html;
     
     if (el.tomselect) {
@@ -59,9 +64,19 @@ export function updateAllDropdowns() {
     safeSetSelectHtml('history-subject', '<option value="">-- กรุณาเลือกชั้นเรียนก่อน --</option>');
 
     let activeTeachers = AppState.allTeachers.filter(t => t.deleted_flg !== 'Y');
+    
+    // จัดเรียง: นำครูที่เข้าสู่ระบบขึ้นเป็นคนแรกสุด จากนั้นเรียงท่านอื่นตามตัวอักษร
     if (AppState.currentUser && AppState.currentUser.role === 'teacher') {
-        activeTeachers = activeTeachers.filter(t => t.id === AppState.currentUser.data.id);
+        const loggedInId = AppState.currentUser.data.id;
+        activeTeachers.sort((a, b) => {
+            if (a.id === loggedInId) return -1;
+            if (b.id === loggedInId) return 1;
+            return (a.firstName || '').localeCompare(b.firstName || '');
+        });
+    } else {
+        activeTeachers.sort((a, b) => (a.firstName || '').localeCompare(b.firstName || ''));
     }
+    
     const teacherOptions = '<option value="">-- เลือกครูผู้สอน --</option>' + activeTeachers.map(t => `<option value="${t.id}">${t.firstName} ${t.lastName}</option>`).join('');
     safeSetSelectHtml('checkin-teacher', teacherOptions);
 
@@ -167,6 +182,14 @@ function switchTab(tabId) {
         window.renderStudentClubDashboard();
     } else if (tabId === 'academic' && window.renderStudentAcademicPortal) {
         window.renderStudentAcademicPortal();
+    } else if (tabId === 'my-assignments' && window.renderStudentAssignments) {
+        // วาดข้อมูลเดิมจากแคชในเครื่องขึ้นมาก่อนทันทีเพื่อไม่ให้หน้าจอว่างเปล่า
+        window.renderStudentAssignments();
+        
+        // ซิงค์ข้อมูลล่าสุดจาก Google Sheets ในพื้นหลัง แล้ววาดซ้ำอีกครั้งเมื่อเสร็จ
+        syncDataFromServer(true).then(() => {
+            window.renderStudentAssignments();
+        });
     } else if (tabId === 'settings') {
         const el = document.getElementById('google-sheet-url');
         if (el) el.value = AppState.googleSheetUrl || '';
@@ -174,6 +197,9 @@ function switchTab(tabId) {
         clearInputValue('hv-class');
         const st = document.getElementById('hv-status'); if (st) st.value = 'all';
         if (window.initHomeVisitTab) window.initHomeVisitTab();
+    } else if (tabId === 'assignments') {
+        ['asm-filter-class', 'asm-filter-subject'].forEach(id => clearInputValue(id));
+        if (window.initAssignmentsTab) window.initAssignmentsTab();
     }
 
     // 🌟 เปิดใช้งานระบบ Searchable Dropdown (Tom Select)
@@ -298,18 +324,32 @@ export function onCheckinYearSemesterChange() {
     const yr = document.getElementById('checkin-year').value;
     const sem = document.getElementById('checkin-semester').value;
     updateClassDropdown(yr, sem, 'checkin-class', '-- เลือกชั้นเรียน --');
+    const teacherId = document.getElementById('checkin-teacher')?.value;
+    const classId = document.getElementById('checkin-class')?.value;
+    populateCheckinSubjectDropdown(teacherId, classId);
     if (window.resetCheckinTable) window.resetCheckinTable();
 }
 
 // 3. ฟังก์ชันกรองวิชาตามครู (สมบูรณ์)
-export function populateCheckinSubjectDropdown(teacherId) {
+export function populateCheckinSubjectDropdown(teacherId, classId) {
     let html = '<option value="">-- กรุณาเลือกครูผู้สอนก่อน --</option>';
     if (teacherId) {
         const teacher = AppState.allTeachers.find(t => t.id === teacherId && t.deleted_flg !== 'Y');
         if (teacher && teacher.subjects && teacher.subjects.length > 0) {
-            const teacherSubjects = AppState.allSubjects.filter(s => teacher.subjects.includes(s.id) && s.deleted_flg !== 'Y');
+            let teacherSubjects = AppState.allSubjects.filter(s => teacher.subjects.includes(s.id) && s.deleted_flg !== 'Y');
+            
+            if (classId) {
+                const clsObj = AppState.allClasses.find(c => c.id === classId && c.deleted_flg !== 'Y');
+                if (clsObj && clsObj.subjects && clsObj.subjects.length > 0) {
+                    teacherSubjects = teacherSubjects.filter(s => clsObj.subjects.includes(s.id));
+                }
+            }
             teacherSubjects.sort((a, b) => (a.code || a.name).localeCompare(b.code || b.name));
-            html = '<option value="">-- เลือกวิชา --</option>' + teacherSubjects.map(s => `<option value="${s.id}">${s.code} - ${s.name}</option>`).join('');
+            if (teacherSubjects.length > 0) {
+                html = '<option value="">-- เลือกวิชา --</option>' + teacherSubjects.map(s => `<option value="${s.id}">${s.code} - ${s.name}</option>`).join('');
+            } else {
+                html = '<option value="">-- ไม่พบวิชาของครูในชั้นเรียนนี้ --</option>';
+            }
         } else {
             html = '<option value="">-- ไม่พบวิชาที่สอน --</option>';
         }
@@ -318,7 +358,15 @@ export function populateCheckinSubjectDropdown(teacherId) {
 }
 export function onTeacherChange() {
     const teacherId = document.getElementById('checkin-teacher').value;
-    populateCheckinSubjectDropdown(teacherId);
+    const classId = document.getElementById('checkin-class')?.value;
+    populateCheckinSubjectDropdown(teacherId, classId);
+    if (window.resetCheckinTable) window.resetCheckinTable();
+}
+
+export function onCheckinClassChange() {
+    const teacherId = document.getElementById('checkin-teacher')?.value;
+    const classId = document.getElementById('checkin-class')?.value;
+    populateCheckinSubjectDropdown(teacherId, classId);
     if (window.resetCheckinTable) window.resetCheckinTable();
 }
 
@@ -504,6 +552,7 @@ window.updateClassDropdown = updateClassDropdown;
 window.populateCheckinSubjectDropdown = populateCheckinSubjectDropdown;
 window.onCheckinYearSemesterChange = onCheckinYearSemesterChange;
 window.onTeacherChange = onTeacherChange;
+window.onCheckinClassChange = onCheckinClassChange;
 window.onHistoryYearSemesterChange = onHistoryYearSemesterChange;
 window.onStatsYearSemesterChange = onStatsYearSemesterChange;
 window.onStatsClassChange = onStatsClassChange;

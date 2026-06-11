@@ -1,9 +1,10 @@
 import { DB_KEYS } from '../core/config.js';
-import { saveToDB } from '../services/api.js';
+import { saveToDB, syncDataFromServer } from '../services/api.js';
 import { AppState } from '../core/state.js';
 import { getStudentFullName, showLoading, hideLoading, showToast, customAlert, getBangkokDate, getISOTimestamp } from '../utils/helpers.js';
 
 let currentHvStep = 1;
+let currentStudentFamilyData = null;
 
 // ฟังก์ชันแปลงลิงก์ Google Drive เป็นลิงก์ที่แสดงภาพได้โดยตรง
 function getDirectImageUrl(url) {
@@ -60,6 +61,26 @@ export function initHomeVisitTab() {
     classSelect.innerHTML = '<option value="">-- เลือกชั้นเรียน --</option>' + 
         advisorClasses.map(c => `<option value="${c.className}">${c.className}</option>`).join('');
     
+    const tbody = document.getElementById('tbody-home-visit');
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-500">กรุณาเลือกชั้นเรียนและกดปุ่มค้นหาเพื่อแสดงข้อมูล</td></tr>';
+    }
+}
+
+export async function searchHomeVisit() {
+    const clsName = document.getElementById('hv-class').value;
+    if (!clsName) {
+        return customAlert('กรุณาเลือกชั้นเรียนก่อนค้นหา');
+    }
+
+    showLoading('กำลังดึงข้อมูลล่าสุดจากเซิร์ฟเวอร์...');
+    try {
+        await syncDataFromServer(true);
+    } catch (e) {
+        console.error('Error syncing home visit data:', e);
+    }
+    hideLoading();
+
     renderHomeVisitList();
 }
 
@@ -69,7 +90,7 @@ export function renderHomeVisitList() {
     const tbody = document.getElementById('tbody-home-visit');
 
     if (!clsName) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">กรุณาเลือกชั้นเรียนที่ท่านเป็นที่ปรึกษา</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-500">กรุณาเลือกชั้นเรียนที่ท่านเป็นที่ปรึกษา</td></tr>';
         return;
     }
 
@@ -86,7 +107,7 @@ export function renderHomeVisitList() {
     students.sort((a, b) => a.number - b.number);
 
     if (students.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">ไม่พบนักเรียนภายใต้เงื่อนไขที่เลือก</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-500">ไม่พบนักเรียนภายใต้เงื่อนไขที่เลือก</td></tr>';
         return;
     }
 
@@ -112,6 +133,14 @@ export function renderHomeVisitList() {
             </select>
         `;
 
+        const fatherName = (s.fatherFirstName || s.fatherLastName) ? `${s.fatherFirstName || ''} ${s.fatherLastName || ''}`.trim() : '';
+        const fatherPhone = s.fatherPhone || '';
+        const motherName = (s.motherFirstName || s.motherLastName) ? `${s.motherFirstName || ''} ${s.motherLastName || ''}`.trim() : '';
+        const motherPhone = s.motherPhone || '';
+        const parentName = (s.parentFirstName || s.parentLastName) ? `${s.parentTitle || ''}${s.parentFirstName || ''} ${s.parentLastName || ''}`.trim() : '';
+        const parentPhone = s.parentPhone || '';
+        const parentRelation = s.parentRelation || '';
+
         return `
         <tr class="hover:bg-gray-50 cursor-pointer transition-colors" onclick="openHomeVisitModal('${s.id}')">
             <td class="hidden md:table-cell px-4 py-3 text-sm" data-label="เลขที่">${s.number || '-'}</td>
@@ -120,6 +149,18 @@ export function renderHomeVisitList() {
                 <div class="td-name-content font-bold text-gray-800">${getStudentFullName(s)}</div>
                 <div class="md:hidden mt-1 text-xs text-gray-500">เลขที่ ${s.number || '-'} | รหัส: ${s.studentId || '-'}</div>
                 <div class="md:hidden mt-1 text-xs text-gray-500">โทร: ${s.phone || '-'}</div>
+                <div class="md:hidden mt-1.5 pt-1.5 border-t border-gray-200/60 text-[11px] text-gray-600 space-y-0.5">
+                    <div><strong>บิดา:</strong> ${fatherName || '<span class="text-gray-400">ไม่ระบุ</span>'} ${fatherPhone ? `(${fatherPhone})` : ''}</div>
+                    <div><strong>มารดา:</strong> ${motherName || '<span class="text-gray-400">ไม่ระบุ</span>'} ${motherPhone ? `(${motherPhone})` : ''}</div>
+                    <div><strong>ผู้ปกครอง:</strong> ${parentName || '<span class="text-gray-400">ไม่ระบุ</span>'} ${parentRelation ? `(${parentRelation})` : ''} ${parentPhone ? `(${parentPhone})` : ''}</div>
+                </div>
+            </td>
+            <td class="hidden lg:table-cell px-4 py-3 text-xs text-gray-600" data-label="ข้อมูลผู้ปกครอง">
+                <div class="space-y-1">
+                    <div><strong class="text-gray-700">บิดา:</strong> ${fatherName || '<span class="text-gray-400">ไม่ระบุ</span>'} ${fatherPhone ? `<span class="font-mono text-gray-500">(${fatherPhone})</span>` : ''}</div>
+                    <div><strong class="text-gray-700">มารดา:</strong> ${motherName || '<span class="text-gray-400">ไม่ระบุ</span>'} ${motherPhone ? `<span class="font-mono text-gray-500">(${motherPhone})</span>` : ''}</div>
+                    <div><strong class="text-gray-700">ผู้ปกครอง:</strong> ${parentName || '<span class="text-gray-400">ไม่ระบุ</span>'} ${parentRelation ? `<span class="text-indigo-600 font-semibold">(${parentRelation})</span>` : ''} ${parentPhone ? `<span class="font-mono text-gray-500">(${parentPhone})</span>` : ''}</div>
+                </div>
             </td>
             <td class="hidden md:table-cell px-4 py-3 text-sm text-gray-600" data-label="เบอร์โทรศัพท์ติดต่อ">${s.phone || '-'}</td>
             <td class="px-4 py-3 text-center" data-label="ข้อมูลที่พักนักเรียน" onclick="event.stopPropagation();">
@@ -189,6 +230,31 @@ export async function openHomeVisitModal(studentId) {
     document.getElementById('hv-display-name').innerText = getStudentFullName(student);
     document.getElementById('hv-display-studentid').innerText = student.studentId || '-';
     document.getElementById('hv-display-class').innerText = student.class || '-';
+    
+    // ดึงข้อมูลครอบครัวจากฐานข้อมูลนักเรียนมาจัดเก็บและแสดงผล
+    currentStudentFamilyData = {
+        fatherName: (student.fatherFirstName || student.fatherLastName) ? `${student.fatherFirstName || ''} ${student.fatherLastName || ''}`.trim() : '',
+        fatherPhone: student.fatherPhone || '',
+        fatherJob: student.fatherJob || '',
+        motherName: (student.motherFirstName || student.motherLastName) ? `${student.motherFirstName || ''} ${student.motherLastName || ''}`.trim() : '',
+        motherPhone: student.motherPhone || '',
+        motherJob: student.motherJob || '',
+        parentName: (student.parentFirstName || student.parentLastName) ? `${student.parentTitle || ''}${student.parentFirstName || ''} ${student.parentLastName || ''}`.trim() : '',
+        parentPhone: student.parentPhone || '',
+        parentRelation: student.parentRelation || ''
+    };
+
+    document.getElementById('hv-db-father-name').innerText = currentStudentFamilyData.fatherName || 'ไม่ระบุ';
+    document.getElementById('hv-db-father-phone').innerText = currentStudentFamilyData.fatherPhone ? `📞 ${currentStudentFamilyData.fatherPhone}` : 'ไม่มีเบอร์โทร';
+    document.getElementById('hv-db-father-job').innerText = currentStudentFamilyData.fatherJob ? `💼 ${currentStudentFamilyData.fatherJob}` : 'ไม่ระบุอาชีพ';
+
+    document.getElementById('hv-db-mother-name').innerText = currentStudentFamilyData.motherName || 'ไม่ระบุ';
+    document.getElementById('hv-db-mother-phone').innerText = currentStudentFamilyData.motherPhone ? `📞 ${currentStudentFamilyData.motherPhone}` : 'ไม่มีเบอร์โทร';
+    document.getElementById('hv-db-mother-job').innerText = currentStudentFamilyData.motherJob ? `💼 ${currentStudentFamilyData.motherJob}` : 'ไม่ระบุอาชีพ';
+
+    document.getElementById('hv-db-parent-name').innerText = currentStudentFamilyData.parentName || 'ไม่ระบุ';
+    document.getElementById('hv-db-parent-phone').innerText = currentStudentFamilyData.parentPhone ? `📞 ${currentStudentFamilyData.parentPhone}` : 'ไม่มีเบอร์โทร';
+    document.getElementById('hv-db-parent-rel').innerText = currentStudentFamilyData.parentRelation ? `👥 ${currentStudentFamilyData.parentRelation}` : 'ไม่ระบุความสัมพันธ์';
     
     document.querySelectorAll('#hv-form-container input[type="text"], #hv-form-container input[type="tel"], #hv-form-container input[type="date"], #hv-form-container textarea').forEach(el => el.value = '');
     document.querySelectorAll('.hv-watchlist').forEach(cb => cb.checked = false);
@@ -496,8 +562,46 @@ export async function submitHomeVisit() {
     hideLoading();
 }
 
+export function autofillHvGuardian(role) {
+    if (!currentStudentFamilyData) return;
+
+    const nameInput = document.getElementById('hv-guardian-name');
+    const relSelect = document.getElementById('hv-guardian-rel');
+    const phoneInput = document.getElementById('hv-guardian-phone');
+    const otherRelInput = document.getElementById('hv-guardian-rel-other');
+
+    if (role === 'father') {
+        nameInput.value = currentStudentFamilyData.fatherName;
+        relSelect.value = 'บิดา';
+        phoneInput.value = currentStudentFamilyData.fatherPhone;
+        if (otherRelInput) { otherRelInput.classList.add('hidden'); otherRelInput.value = ''; }
+    } else if (role === 'mother') {
+        nameInput.value = currentStudentFamilyData.motherName;
+        relSelect.value = 'มารดา';
+        phoneInput.value = currentStudentFamilyData.motherPhone;
+        if (otherRelInput) { otherRelInput.classList.add('hidden'); otherRelInput.value = ''; }
+    } else if (role === 'parent') {
+        nameInput.value = currentStudentFamilyData.parentName;
+        phoneInput.value = currentStudentFamilyData.parentPhone;
+        
+        const relVal = currentStudentFamilyData.parentRelation;
+        const selectOptions = Array.from(relSelect.options).map(opt => opt.value);
+        if (selectOptions.includes(relVal)) {
+            relSelect.value = relVal;
+            if (otherRelInput) { otherRelInput.classList.add('hidden'); otherRelInput.value = ''; }
+        } else {
+            relSelect.value = 'ผู้ปกครองอื่นๆ';
+            if (otherRelInput) {
+                otherRelInput.classList.remove('hidden');
+                otherRelInput.value = relVal;
+            }
+        }
+    }
+}
+
 window.initHomeVisitTab = initHomeVisitTab;
 window.renderHomeVisitList = renderHomeVisitList;
+window.searchHomeVisit = searchHomeVisit;
 window.openHomeVisitModal = openHomeVisitModal;
 window.changeHvStep = changeHvStep;
 window.getGPSLocation = getGPSLocation;
@@ -509,3 +613,4 @@ window.updateInlineHomeVisitStatus = updateInlineHomeVisitStatus;
 window.toggleHvOther = toggleHvOther;
 window.updateMapLink = updateMapLink;
 window.openStudentHomeInfoModal = openStudentHomeInfoModal;
+window.autofillHvGuardian = autofillHvGuardian;

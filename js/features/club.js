@@ -219,6 +219,12 @@ export function renderEnrollStudents() {
             `<span class="bg-yellow-100 text-yellow-800 text-xs px-2.5 py-1 rounded-full font-bold whitespace-nowrap"><i class="fas fa-exclamation-triangle mr-1"></i> ไม่มีชุมนุม</span>`;
 
         const checkboxHtml = m.club ? '' : `<input type="checkbox" value="${s.id}" class="enroll-select-cb">`;
+        const actionsHtml = m.club ? `
+            <div class="flex justify-center gap-2">
+                <button onclick="openTransferClubModal('${s.id}', '${m.club.id}', '${m.club.name.replace(/'/g, "\\'")}', '${getStudentFullName(s).replace(/'/g, "\\'")}')" class="text-blue-600 hover:text-blue-800 text-xs font-bold" title="ย้ายชุมนุม"><i class="fas fa-exchange-alt mr-1"></i>ย้าย</button>
+                <button onclick="removeFromClub('${s.id}', '${m.club.name.replace(/'/g, "\\'")}')" class="text-red-600 hover:text-red-800 text-xs font-bold" title="ออกจากชุมนุม"><i class="fas fa-user-minus mr-1"></i>ออก</button>
+            </div>
+        ` : `<span class="text-gray-400 text-xs">-</span>`;
 
         return `<tr>
             <td class="px-4 py-2 text-center whitespace-nowrap">${checkboxHtml}</td>
@@ -229,6 +235,7 @@ export function renderEnrollStudents() {
                 <div class="md:hidden mt-1 text-xs text-gray-500">${s.class} เลขที่ ${s.number} | รหัส: ${s.studentId}</div>
             </td>
             <td class="px-4 py-2 text-sm whitespace-nowrap">${clubStatusText}</td>
+            <td class="px-4 py-2 text-center whitespace-nowrap" data-label="จัดการ">${actionsHtml}</td>
         </tr>`;
     }).join('');
 
@@ -251,36 +258,159 @@ export async function bulkAssignClub() {
 
     if(selectedStudentIds.length === 0) return customAlert('กรุณาเลือกนักเรียนอย่างน้อย 1 คน');
 
+    let targetClub = null;
+    let clubName = 'ปล่อยว่าง (ไม่ระบุชุมนุม)';
     if(clubId) {
-        const targetClub = AppState.allClubs.find(c => c.id === clubId && c.deleted_flg !== 'Y');
+        targetClub = AppState.allClubs.find(c => c.id === clubId && c.deleted_flg !== 'Y');
         if (!targetClub) return customAlert('ไม่พบข้อมูลชุมนุมที่เลือก');
+        clubName = targetClub.name;
+
         const currentEnrolled = AppState.allClubEnrollments.filter(e => e.clubId === clubId && e.year == yr && e.semester == sem && e.deleted_flg !== 'Y').length;
         if(currentEnrolled + selectedStudentIds.length > targetClub.capacity) {
             return customAlert(`ไม่สามารถลงทะเบียนได้เนื่องจากเกินความจุห้องชุมนุม (ความจุคงเหลือ: ${targetClub.capacity - currentEnrolled} คน)`);
         }
     }
 
-    selectedStudentIds.forEach(stuId => {
-        // Soft-delete any existing enrollment for this student in this semester
-        const existingEnrollmentIdx = AppState.allClubEnrollments.findIndex(e => e.studentId === stuId && e.year == yr && e.semester == sem && e.deleted_flg !== 'Y');
-        if (existingEnrollmentIdx > -1) {
-            AppState.allClubEnrollments[existingEnrollmentIdx].deleted_flg = 'Y';
-            AppState.allClubEnrollments[existingEnrollmentIdx].deletedAt = now;
-            AppState.allClubEnrollments[existingEnrollmentIdx].deletedBy = userId;
-        }
+    const selectedStudents = AppState.allStudents.filter(s => selectedStudentIds.includes(s.id));
+    const studentNamesHtml = selectedStudents.map(s => `<li>- ${s.class} เลขที่ ${s.number} ${getStudentFullName(s)} (รหัส: ${s.studentId})</li>`).join('');
 
-        // Add new one if a club is selected
-        if(clubId) {
-            AppState.allClubEnrollments.push({ 
-                id: generateId(), studentId: stuId, clubId: clubId, year: yr, semester: sem,
-                createdAt: now, createdBy: userId, updatedAt: now, updatedBy: userId,
-                deleted_flg: 'N', deletedAt: null, deletedBy: null,
-            });
+    const confirmContent = `
+        <div class="text-left bg-blue-50 p-3 rounded border border-blue-200 mb-3 shadow-sm text-sm">
+            <p class="font-bold text-blue-900 mb-1">ชุมนุมปลายทาง: <span class="text-blue-700">${clubName}</span></p>
+            <p class="text-xs text-gray-600">ปีการศึกษา/ภาคเรียน: ${yr}/${sem}</p>
+        </div>
+        <div class="text-left text-sm max-h-40 overflow-y-auto border p-2 rounded bg-white">
+            <p class="font-bold text-gray-800 mb-2">รายชื่อนักเรียนที่เลือก (${selectedStudents.length} คน):</p>
+            <ul class="space-y-1 text-gray-700 font-medium">
+                ${studentNamesHtml}
+            </ul>
+        </div>
+        <p class="mt-4 text-gray-800 font-bold">ยืนยันการลงทะเบียนจับคู่นี้หรือไม่?</p>
+    `;
+
+    customConfirm('ยืนยันการลงทะเบียนชุมนุมกลุ่ม', confirmContent, async () => {
+        selectedStudentIds.forEach(stuId => {
+            // Soft-delete any existing enrollment for this student in this semester
+            const existingEnrollmentIdx = AppState.allClubEnrollments.findIndex(e => e.studentId === stuId && e.year == yr && e.semester == sem && e.deleted_flg !== 'Y');
+            if (existingEnrollmentIdx > -1) {
+                AppState.allClubEnrollments[existingEnrollmentIdx].deleted_flg = 'Y';
+                AppState.allClubEnrollments[existingEnrollmentIdx].deletedAt = now;
+                AppState.allClubEnrollments[existingEnrollmentIdx].deletedBy = userId;
+            }
+
+            // Add new one if a club is selected
+            if(clubId) {
+                AppState.allClubEnrollments.push({ 
+                    id: generateId(), studentId: stuId, clubId: clubId, year: yr, semester: sem,
+                    createdAt: now, createdBy: userId, updatedAt: now, updatedBy: userId,
+                    deleted_flg: 'N', deletedAt: null, deletedBy: null,
+                });
+            }
+        });
+
+        await saveToDB(DB_KEYS.CLUB_ENROLLMENTS, AppState.allClubEnrollments, 'saveClubEnrollments');
+        showToast('ปรับปรุงข้อมูลการลงทะเบียนชุมนุมเรียบร้อยแล้ว');
+        renderEnrollStudents();
+    });
+}
+
+export async function removeFromClub(studentId, clubName) {
+    const yr = parseInt(document.getElementById('enroll-year').value);
+    const sem = parseInt(document.getElementById('enroll-semester').value);
+
+    customConfirm(
+        'ยืนยันการนำนักเรียนออกจากชุมนุม', 
+        `คุณต้องการนำนักเรียนออกจากชุมนุม <b>${clubName}</b> ในภาคเรียนที่ ${yr}/${sem} ใช่หรือไม่?`, 
+        async () => {
+            const now = getISOTimestamp();
+            const userId = getCurrentUserId();
+
+            const existingEnrollmentIdx = AppState.allClubEnrollments.findIndex(
+                e => e.studentId === studentId && e.year == yr && e.semester == sem && e.deleted_flg !== 'Y'
+            );
+
+            if (existingEnrollmentIdx > -1) {
+                AppState.allClubEnrollments[existingEnrollmentIdx].deleted_flg = 'Y';
+                AppState.allClubEnrollments[existingEnrollmentIdx].deletedAt = now;
+                AppState.allClubEnrollments[existingEnrollmentIdx].deletedBy = userId;
+
+                await saveToDB(DB_KEYS.CLUB_ENROLLMENTS, AppState.allClubEnrollments, 'saveClubEnrollments');
+                showToast('นำนักเรียนออกจากชุมนุมเรียบร้อยแล้ว');
+                renderEnrollStudents();
+            } else {
+                customAlert('ไม่พบข้อมูลการลงทะเบียนชุมนุมของนักเรียนคนนี้');
+            }
         }
+    );
+}
+
+export function openTransferClubModal(studentId, currentClubId, currentClubName, studentName) {
+    const yr = document.getElementById('enroll-year').value;
+    const sem = document.getElementById('enroll-semester').value;
+
+    document.getElementById('transfer-student-id').value = studentId;
+    document.getElementById('transfer-student-name').innerText = studentName;
+    document.getElementById('transfer-current-club').innerText = currentClubName;
+
+    const selectEl = document.getElementById('transfer-target-club');
+    const filteredClubs = AppState.allClubs.filter(
+        c => c.year == yr && c.semester == sem && c.status === 'เปิด' && c.deleted_flg !== 'Y' && c.id !== currentClubId
+    );
+
+    if (filteredClubs.length === 0) {
+        selectEl.innerHTML = '<option value="">-- ไม่มีชุมนุมอื่นที่เปิดรับสมัคร --</option>';
+    } else {
+        selectEl.innerHTML = filteredClubs.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    }
+
+    document.getElementById('transfer-club-modal').classList.add('show');
+}
+
+export async function submitTransferClub() {
+    const studentId = document.getElementById('transfer-student-id').value;
+    const targetClubId = document.getElementById('transfer-target-club').value;
+    const yr = parseInt(document.getElementById('enroll-year').value);
+    const sem = parseInt(document.getElementById('enroll-semester').value);
+
+    if (!targetClubId) {
+        return customAlert('กรุณาเลือกชุมนุมปลายทาง');
+    }
+
+    const targetClub = AppState.allClubs.find(c => c.id === targetClubId && c.deleted_flg !== 'Y');
+    if (!targetClub) {
+        return customAlert('ไม่พบข้อมูลชุมนุมปลายทาง');
+    }
+
+    const enrolledCount = AppState.allClubEnrollments.filter(
+        e => e.clubId === targetClubId && e.year == yr && e.semester == sem && e.deleted_flg !== 'Y'
+    ).length;
+
+    if (enrolledCount >= targetClub.capacity) {
+        return customAlert(`ชุมนุมปลายทางเต็มแล้ว (ความจุ: ${targetClub.capacity} คน)`);
+    }
+
+    const now = getISOTimestamp();
+    const userId = getCurrentUserId();
+
+    const existingEnrollmentIdx = AppState.allClubEnrollments.findIndex(
+        e => e.studentId === studentId && e.year == yr && e.semester == sem && e.deleted_flg !== 'Y'
+    );
+
+    if (existingEnrollmentIdx > -1) {
+        AppState.allClubEnrollments[existingEnrollmentIdx].deleted_flg = 'Y';
+        AppState.allClubEnrollments[existingEnrollmentIdx].deletedAt = now;
+        AppState.allClubEnrollments[existingEnrollmentIdx].deletedBy = userId;
+    }
+
+    AppState.allClubEnrollments.push({
+        id: generateId(), studentId: studentId, clubId: targetClubId, year: yr, semester: sem,
+        createdAt: now, createdBy: userId, updatedAt: now, updatedBy: userId,
+        deleted_flg: 'N', deletedAt: null, deletedBy: null,
     });
 
     await saveToDB(DB_KEYS.CLUB_ENROLLMENTS, AppState.allClubEnrollments, 'saveClubEnrollments');
-    showToast('ปรับปรุงข้อมูลการลงทะเบียนชุมนุมเรียบร้อย');
+    closeModal('transfer-club-modal');
+    showToast('ย้ายชุมนุมนักเรียนเรียบร้อยแล้ว');
     renderEnrollStudents();
 }
 
@@ -657,6 +787,9 @@ window.onEnrollFilterChange = onEnrollFilterChange;
 window.renderEnrollStudents = renderEnrollStudents;
 window.toggleAllEnrollCheckboxes = toggleAllEnrollCheckboxes;
 window.bulkAssignClub = bulkAssignClub;
+window.removeFromClub = removeFromClub;
+window.openTransferClubModal = openTransferClubModal;
+window.submitTransferClub = submitTransferClub;
 window.updateClubDropdown = updateClubDropdown;
 window.onClubCheckinYearSemesterChange = onClubCheckinYearSemesterChange;
 window.resetClubCheckinTable = resetClubCheckinTable;

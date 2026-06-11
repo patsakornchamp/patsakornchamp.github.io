@@ -122,14 +122,14 @@ export function logout() {
 }
 
 export function updateMenuVisibility() {
-    ['menu-my-profile', 'menu-my-club', 'menu-academic', 'menu-checkin', 'menu-club-checkin', 'menu-history', 'menu-stats', 'menu-master', 'menu-settings', 'menu-home-visit'].forEach(id => {
+    ['menu-my-profile', 'menu-my-club', 'menu-academic', 'menu-my-assignments', 'menu-checkin', 'menu-club-checkin', 'menu-history', 'menu-stats', 'menu-master', 'menu-settings', 'menu-home-visit', 'menu-assignments'].forEach(id => {
         document.getElementById(id).classList.add('hidden');
     });
 
     const periodSelect = document.getElementById('checkin-period');
 
     if(AppState.currentUser.role === 'admin') {
-        ['menu-checkin', 'menu-club-checkin', 'menu-history', 'menu-stats', 'menu-master', 'menu-settings', 'menu-home-visit'].forEach(id => document.getElementById(id).classList.remove('hidden'));
+        ['menu-checkin', 'menu-club-checkin', 'menu-history', 'menu-stats', 'menu-master', 'menu-settings', 'menu-home-visit', 'menu-assignments'].forEach(id => document.getElementById(id).classList.remove('hidden'));
         const msubTeacher = document.getElementById('msub-teachers');
         if(msubTeacher) msubTeacher.classList.remove('hidden');
         
@@ -140,7 +140,7 @@ export function updateMenuVisibility() {
         if(window.switchTab) window.switchTab('checkin');
     } 
     else if (AppState.currentUser.role === 'teacher') {
-        ['menu-checkin', 'menu-club-checkin', 'menu-history', 'menu-stats', 'menu-master', 'menu-home-visit'].forEach(id => document.getElementById(id).classList.remove('hidden'));
+        ['menu-checkin', 'menu-club-checkin', 'menu-history', 'menu-stats', 'menu-master', 'menu-home-visit', 'menu-assignments'].forEach(id => document.getElementById(id).classList.remove('hidden'));
         const msubTeacher = document.getElementById('msub-teachers');
         if(msubTeacher) msubTeacher.classList.add('hidden');
         
@@ -151,7 +151,7 @@ export function updateMenuVisibility() {
         if(window.switchTab) window.switchTab('checkin');
     }
     else if (AppState.currentUser.role === 'student') {
-        ['menu-my-profile', 'menu-my-club', 'menu-academic'].forEach(id => document.getElementById(id).classList.remove('hidden'));
+        ['menu-my-profile', 'menu-my-club', 'menu-academic', 'menu-my-assignments'].forEach(id => document.getElementById(id).classList.remove('hidden'));
         if(window.switchTab) window.switchTab('my-profile');
     }
 }

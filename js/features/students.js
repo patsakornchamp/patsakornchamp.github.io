@@ -1,7 +1,15 @@
 import { AppState } from '../core/state.js';
 import { DB_KEYS } from '../core/config.js';
-import { generateId, getStudentFullName, showToast, customAlert, customConfirm, closeModal, validateThaiCitizenId, validatePhoneNumber, matchRecordYearSemester, getISOTimestamp, getCurrentUserId, showLoading, hideLoading } from '../utils/helpers.js';
+import { generateId, getStudentFullName, showToast, customAlert, customConfirm, closeModal, validateThaiCitizenId, validatePhoneNumber, matchRecordYearSemester, getISOTimestamp, getCurrentUserId, showLoading, hideLoading, getBangkokDate } from '../utils/helpers.js';
 import { saveToDB, syncDataFromServer } from '../services/api.js';
+
+// ฟังก์ชันสำหรับแปลงไฟล์เป็น Base64
+const fileToBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = error => reject(error);
+});
 
 // --- Helper functions for Student Profile ---
 function getDirectImageUrl(url) {
@@ -858,6 +866,554 @@ export function removeImageForProfile(index) {
     // For now, we just clear the preview. The URL will be overwritten on save.
 }
 
+// ==========================================
+// STUDENT ASSIGNMENTS & HOMEWORK PORTAL
+// ==========================================
+
+export function renderStudentAssignments() {
+    if (!AppState.currentUser || AppState.currentUser.role !== 'student') return;
+    
+    if (!AppState.allAssignments) AppState.allAssignments = [];
+    if (!AppState.allStudentAssignments) AppState.allStudentAssignments = [];
+
+    // แปลงให้เป็น String และลบช่องว่างทิ้งเพื่อป้องกันการเทียบข้อมูลผิดพลาด
+    const stuId = String(AppState.currentUser.data.id).trim();
+    const stuCode = AppState.currentUser.data.studentId ? String(AppState.currentUser.data.studentId).trim() : '';
+    const stuClass = String(AppState.currentUser.data.class || '').trim();
+    
+    const filterSub = document.getElementById('stu-asm-filter-sub').value;
+    const filterStatus = document.getElementById('stu-asm-filter-status').value;
+    
+    // 1. ค้นหาประวัติ/สถานะการส่งงานของนักเรียนคนนี้จากตาราง StudentAssignments
+    const mySubmissionRecords = AppState.allStudentAssignments.filter(sa => 
+        sa.deleted_flg !== 'Y' && 
+        (String(sa.studentId).trim() === stuId || (stuCode && String(sa.studentId).trim() === stuCode))
+    );
+    const assignedIdsFromRecords = mySubmissionRecords.map(sa => String(sa.assignmentId).trim());
+
+    // 2. ดึงรายละเอียดงานทั้งหมดจากตาราง Assignments (ที่มอบหมายเป็นรายบุคคล หรือ มอบหมายให้ห้องเรียนของนักเรียน)
+    const myClass = AppState.allClasses.find(c => c.className === stuClass && c.deleted_flg !== 'Y');
+    const myClassId = myClass ? String(myClass.id).trim() : '';
+
+    let myAssignments = AppState.allAssignments.filter(a => {
+        if (a.deleted_flg === 'Y') return false;
+        
+        const isDirectlyAssigned = assignedIdsFromRecords.some(saId => 
+            saId === String(a.id).trim() || 
+            saId.startsWith(String(a.id).trim()) || 
+            String(a.id).trim().startsWith(saId)
+        );
+        const isClassAssigned = myClassId && (String(a.classId).trim() === myClassId || String(a.classId).trim() === stuClass);
+        
+        return isDirectlyAssigned || isClassAssigned;
+    });
+
+    // 3. จับคู่ (Join) รายละเอียดเข้ากับข้อมูลการส่งงานและรายวิชา
+    let mappedData = myAssignments.map(a => {
+        const aSubId = String(a.subjectId).trim();
+        let sub = AppState.allSubjects.find(s => String(s.id).trim() === aSubId);
+        if (!sub) sub = AppState.allSubjects.find(s => String(s.name).trim() === aSubId); // สำรองกรณี Sheets บันทึกชื่อวิชาแทน UUID
+        if (!sub) sub = { name: a.subjectId || 'ไม่ระบุวิชา' };
+        
+        let record = mySubmissionRecords.find(sa => {
+            const saId = String(sa.assignmentId).trim();
+            const aId = String(a.id).trim();
+            return saId === aId || saId.startsWith(aId) || aId.startsWith(saId);
+        });
+        
+        // ถ้ายังไม่มี Record ใน DB ให้ถือว่าสถานะ = รอส่ง
+        if (!record) {
+            record = { status: 'รอส่ง', score: null, teacherComment: '' };
+        }
+        
+        let isOverdue = false;
+        if (a.dueDate && a.dueTime && record.status === 'รอส่ง') {
+            const dueDateTime = new Date(`${a.dueDate}T${a.dueTime}:00+07:00`);
+            if (new Date() > dueDateTime) isOverdue = true;
+        }
+
+        return { asm: a, subject: sub, rec: record, isOverdue };
+    });
+
+    // 3. วาด Dashboard สรุปคะแนนสะสมแยกตามรายวิชา
+    const dashboardEl = document.getElementById('stu-asm-dashboard');
+    const subDropdown = document.getElementById('stu-asm-filter-sub');
+    let subjectScores = {};
+    
+    mappedData.forEach(item => {
+        const subName = item.subject.name;
+        if (!subjectScores[subName]) subjectScores[subName] = { subId: item.asm.subjectId, totalMax: 0, myScore: 0, count: 0 };
+        
+        subjectScores[subName].totalMax += parseFloat(item.asm.maxScore || 0);
+        subjectScores[subName].count++;
+        
+        if (item.rec.status === 'ตรวจแล้ว' && item.rec.score !== null) {
+            subjectScores[subName].myScore += parseFloat(item.rec.score);
+        }
+    });
+
+    let dashHtml = '';
+    let dropdownHtml = '<option value="">-- ทุกรายวิชา --</option>';
+    
+    for (const [subName, stats] of Object.entries(subjectScores)) {
+        const pct = stats.totalMax > 0 ? Math.round((stats.myScore / stats.totalMax) * 100) : 0;
+        dropdownHtml += `<option value="${stats.subId}">${subName}</option>`;
+        dashHtml += `
+            <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
+                <p class="font-bold text-indigo-900 text-sm truncate mb-2" title="${subName}">${subName}</p>
+                <div>
+                    <div class="flex justify-between items-end mb-1">
+                        <span class="text-2xl font-black text-green-600">${stats.myScore}<span class="text-sm text-gray-500 font-medium">/${stats.totalMax}</span></span>
+                        <span class="text-xs font-bold ${pct >= 80 ? 'text-green-500' : pct >= 50 ? 'text-yellow-500' : 'text-red-500'}">${pct}%</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-2">
+                        <div class="bg-green-500 h-2 rounded-full" style="width: ${pct}%"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    if(dashHtml === '') dashHtml = '<div class="col-span-full text-sm text-gray-500 italic">ยังไม่มีข้อมูลงานที่ได้รับมอบหมาย</div>';
+    dashboardEl.innerHTML = dashHtml;
+    
+    // Retain dropdown value
+    const currentSubVal = subDropdown.value;
+    subDropdown.innerHTML = dropdownHtml;
+    if (currentSubVal) subDropdown.value = currentSubVal;
+
+    // 4. กรองและแสดงผลตารางรายการงาน
+    if (filterSub) {
+        mappedData = mappedData.filter(m => 
+            String(m.asm.subjectId).trim() === String(filterSub).trim() ||
+            (m.subject && String(m.subject.name).trim() === String(filterSub).trim()) ||
+            (m.subject && String(m.subject.id).trim() === String(filterSub).trim())
+        );
+    }
+    if (filterStatus) {
+        mappedData = mappedData.filter(m => m.rec.status === filterStatus);
+    }
+
+    // เรียง: ทวงงาน/เกินกำหนด ขึ้นก่อน -> รอส่ง -> ส่งแล้ว -> ตรวจแล้ว
+    mappedData.sort((a,b) => {
+        const weight = (m) => {
+            if (m.rec.status === 'ทวงงาน') return 0;
+            if (m.isOverdue) return 1;
+            if (m.rec.status === 'รอส่ง') return 2;
+            if (m.rec.status === 'ส่งแล้ว') return 3;
+            return 4; // ตรวจแล้ว
+        };
+        const wA = weight(a); const wB = weight(b);
+        if (wA !== wB) return wA - wB;
+        return new Date(b.asm.assignDate) - new Date(a.asm.assignDate);
+    });
+
+    const listContainer = document.getElementById('stu-asm-list-container');
+    if (mappedData.length === 0) {
+        listContainer.innerHTML = '<div class="col-span-full text-center py-10 bg-white rounded-xl border text-gray-500">ไม่พบรายการงานภายใต้เงื่อนไขที่เลือก</div>';
+        return;
+    }
+
+    listContainer.innerHTML = mappedData.map(m => {
+        const a = m.asm;
+        const r = m.rec;
+        
+        let statusBadge = '';
+        let cardBgClass = 'bg-white';
+        let cardBorder = 'border-gray-200';
+        let shadowColor = 'shadow-gray-100/50';
+        let btnClass = 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200';
+        let subjectColor = 'text-indigo-600';
+
+        if (r.status === 'ทวงงาน') {
+            statusBadge = `<span class="bg-red-500 text-white text-[10px] px-2.5 py-1 rounded-full shadow-sm font-bold animate-pulse"><i class="fas fa-bullhorn mr-1"></i>ครูทวงงาน!</span>`;
+            cardBgClass = 'bg-gradient-to-br from-red-50/70 to-orange-50/20';
+            cardBorder = 'border-red-300';
+            shadowColor = 'shadow-red-200/40';
+            btnClass = 'bg-red-600 hover:bg-red-700 text-white border-transparent';
+            subjectColor = 'text-red-700';
+        } else if (r.status === 'ตรวจแล้ว') {
+            statusBadge = `<span class="bg-emerald-600 text-white text-[10px] px-2.5 py-1 rounded-full shadow-sm font-bold"><i class="fas fa-check-double mr-1"></i>ตรวจแล้ว</span>`;
+            cardBgClass = 'bg-gradient-to-br from-emerald-50/70 to-teal-50/20';
+            cardBorder = 'border-emerald-300';
+            shadowColor = 'shadow-emerald-200/40';
+            btnClass = 'bg-emerald-600 hover:bg-emerald-700 text-white border-transparent';
+            subjectColor = 'text-emerald-800';
+        } else if (r.status === 'ส่งแล้ว') {
+            statusBadge = `<span class="bg-blue-600 text-white text-[10px] px-2.5 py-1 rounded-full shadow-sm font-bold"><i class="fas fa-paper-plane mr-1"></i>ส่งแล้ว</span>`;
+            cardBgClass = 'bg-gradient-to-br from-blue-50/70 to-indigo-50/20';
+            cardBorder = 'border-blue-300';
+            shadowColor = 'shadow-blue-200/40';
+            btnClass = 'bg-blue-600 hover:bg-blue-700 text-white border-transparent';
+            subjectColor = 'text-blue-800';
+        } else if (m.isOverdue) {
+            statusBadge = `<span class="bg-orange-500 text-white text-[10px] px-2.5 py-1 rounded-full shadow-sm font-bold"><i class="fas fa-exclamation-circle mr-1"></i>เลยกำหนดส่ง</span>`;
+            cardBgClass = 'bg-gradient-to-br from-orange-50/70 to-amber-50/20';
+            cardBorder = 'border-orange-300';
+            shadowColor = 'shadow-orange-200/40';
+            btnClass = 'bg-orange-500 hover:bg-orange-600 text-white border-transparent';
+            subjectColor = 'text-orange-800';
+        } else {
+            statusBadge = `<span class="bg-slate-100 text-slate-700 text-[10px] px-2.5 py-1 rounded-full font-bold border border-slate-200">รอส่ง</span>`;
+            cardBgClass = 'bg-gradient-to-br from-slate-50/80 to-indigo-50/10';
+            cardBorder = 'border-slate-200';
+            shadowColor = 'shadow-slate-200/30';
+            btnClass = 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200';
+            subjectColor = 'text-slate-600';
+        }
+
+        const scoreText = r.status === 'ตรวจแล้ว' ? `
+            <div class="mt-4 flex items-center justify-between bg-emerald-100/60 border border-emerald-200/40 px-3.5 py-2 rounded-xl">
+                <span class="text-xs font-bold text-emerald-800"><i class="fas fa-trophy mr-1 text-amber-500 animate-bounce"></i>คะแนนที่ได้</span>
+                <span class="text-sm font-black text-emerald-700">${r.score !== null ? r.score : 0} <span class="text-xs text-emerald-600/70 font-bold">/ ${a.maxScore}</span></span>
+            </div>` : '';
+
+        return `
+        <div class="${cardBgClass} p-5 rounded-2xl border ${cardBorder} shadow-sm hover:shadow-lg ${shadowColor} transform hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between cursor-pointer" onclick="openStudentAssignmentModal('${a.id}')">
+            <div>
+                <div class="flex justify-between items-start mb-3">
+                    <span class="text-xs font-black uppercase ${subjectColor} bg-white/60 px-2.5 py-1 rounded-lg border border-transparent truncate max-w-[150px] shadow-sm" title="${m.subject.name}">${m.subject.name}</span>
+                    ${statusBadge}
+                </div>
+                <h4 class="font-bold text-gray-800 text-base leading-snug mb-3 hover:text-indigo-600 transition-colors">${a.title}</h4>
+                <div class="space-y-1.5 border-t border-gray-100 pt-3">
+                    <div class="text-xs text-gray-500 flex items-center"><i class="far fa-calendar-alt w-5 text-center mr-1 text-gray-400"></i>สั่งเมื่อ: ${getBangkokDate(a.assignDate)}</div>
+                    <div class="text-xs ${m.isOverdue ? 'text-red-600 font-bold' : 'text-gray-500'} flex items-center"><i class="far fa-clock w-5 text-center mr-1 ${m.isOverdue ? 'text-red-500 animate-pulse' : 'text-gray-400'}"></i>กำหนด: ${getBangkokDate(a.dueDate)} ${a.dueTime}</div>
+                </div>
+            </div>
+            ${scoreText}
+            <button class="mt-4 w-full ${btnClass} text-xs font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1.5 hover:shadow">
+                ${r.status === 'ตรวจแล้ว' ? '<i class="fas fa-eye"></i> ดูผลการตรวจ' : '<i class="fas fa-paper-plane"></i> ดูรายละเอียด / ส่งงาน'}
+            </button>
+        </div>`;
+    }).join('');
+}
+
+export function openStudentAssignmentModal(asmId) {
+    const asm = AppState.allAssignments.find(a => String(a.id).trim() === String(asmId).trim());
+    if (!asm) return;
+    
+    const aSubId = String(asm.subjectId).trim();
+    let sub = AppState.allSubjects.find(s => String(s.id).trim() === aSubId);
+    if (!sub) sub = AppState.allSubjects.find(s => String(s.name).trim() === aSubId);
+    if (!sub) sub = { name: asm.subjectId || 'ไม่ระบุวิชา' };
+
+    const stuId = String(AppState.currentUser.data.id).trim();
+    const stuCode = AppState.currentUser.data.studentId ? String(AppState.currentUser.data.studentId).trim() : '';
+    let rec = AppState.allStudentAssignments && AppState.allStudentAssignments.find(sa => 
+        String(sa.assignmentId).trim() === String(asmId).trim() && 
+        (String(sa.studentId).trim() === stuId || (stuCode && String(sa.studentId).trim() === stuCode)) && 
+        sa.deleted_flg !== 'Y'
+    );
+    
+    document.getElementById('stu-asm-assignment-id').value = asm.id;
+    document.getElementById('stu-asm-record-id').value = rec ? rec.id : '';
+    
+    document.getElementById('stu-asm-detail-title').innerText = asm.title;
+    document.getElementById('stu-asm-detail-sub').innerHTML = `<i class="fas fa-book mr-1"></i>${sub.name}`;
+    document.getElementById('stu-asm-detail-assign').innerText = `${getBangkokDate(asm.assignDate)} ${asm.assignTime || ''}`;
+    document.getElementById('stu-asm-detail-due').innerText = `${getBangkokDate(asm.dueDate)} ${asm.dueTime || ''}`;
+    document.getElementById('stu-asm-detail-score').innerText = `${asm.maxScore} คะแนน`;
+    document.getElementById('stu-asm-detail-loc').innerText = asm.submitLocation || 'ไม่ระบุ';
+    document.getElementById('stu-asm-detail-desc').innerText = asm.description || 'ไม่มีคำอธิบายเพิ่มเติม';
+
+    // Teacher Comment
+    const tCommentBox = document.getElementById('stu-asm-teacher-comment-box');
+    if (rec && rec.teacherComment) {
+        document.getElementById('stu-asm-teacher-comment').innerText = rec.teacherComment;
+        tCommentBox.classList.remove('hidden');
+    } else {
+        tCommentBox.classList.add('hidden');
+    }
+
+    // Existing Student Submission Data
+    document.getElementById('stu-asm-student-note').value = rec && rec.studentNote ? rec.studentNote : '';
+    document.getElementById('stu-asm-submit-loc').value = rec && rec.submitMethod ? rec.submitMethod : (asm.submitLocation === 'อื่นๆ' ? 'ส่งช่องทางอื่น' : asm.submitLocation);
+
+    // Grading State
+    const btnSubmit = document.getElementById('btn-stu-asm-submit');
+    const gradingResult = document.getElementById('stu-asm-grading-result');
+    const gradedFilesSection = document.getElementById('stu-asm-graded-files-section');
+    const gradedFilesContainer = document.getElementById('stu-asm-graded-files-container');
+    const uploadArea = document.getElementById('stu-asm-upload-area');
+    
+    if (rec && rec.status === 'ตรวจแล้ว') {
+        btnSubmit.classList.add('hidden');
+        gradingResult.classList.remove('hidden');
+        if (uploadArea) uploadArea.classList.add('hidden'); // Hide upload area when graded
+        document.getElementById('stu-asm-graded-score').innerText = `${rec.score !== null ? rec.score : 0}`;
+        document.getElementById('stu-asm-student-note').disabled = true;
+        document.getElementById('stu-asm-submit-loc').disabled = true;
+        
+        let files = [];
+        try { files = typeof rec.files === 'string' ? JSON.parse(rec.files) : rec.files; } catch(e) {}
+        if (!Array.isArray(files)) files = [];
+        
+        if (files.length > 0) {
+            gradedFilesSection.classList.remove('hidden');
+            gradedFilesContainer.innerHTML = files.map((file, idx) => {
+                const fileName = file.name || file.n || 'ไฟล์แนบ';
+                let fileUrl = file.url || file.u || '';
+                
+                if (!fileUrl && file.base64) {
+                    fileUrl = `data:${file.mimeType || 'image/jpeg'};base64,${file.base64}`;
+                }
+                
+                const isImg = fileName.match(/\.(jpeg|jpg|gif|png|webp)$/i);
+                const isValidUrl = fileUrl && (fileUrl.startsWith('http://') || fileUrl.startsWith('https://') || fileUrl.startsWith('data:'));
+                
+                let previewInner = '';
+                if (isImg && isValidUrl) {
+                    previewInner = `<img src="${getDirectImageUrl(fileUrl)}" class="w-full h-16 object-cover rounded border mb-1 cursor-pointer" onclick="viewLargeImage(this.src)" title="คลิกเพื่อดูรูปใหญ่">`;
+                } else {
+                    let faIcon = 'fa-file-alt text-indigo-500';
+                    if (fileName.match(/\.pdf$/i)) faIcon = 'fa-file-pdf text-red-500';
+                    else if (fileName.match(/\.(doc|docx)$/i)) faIcon = 'fa-file-word text-blue-600';
+                    else if (fileName.match(/\.(xls|xlsx|csv)$/i)) faIcon = 'fa-file-excel text-green-600';
+                    else if (fileName.match(/\.(zip|rar)$/i)) faIcon = 'fa-file-archive text-gray-700';
+                    previewInner = `<div class="flex flex-col items-center justify-center h-16 mb-1"><i class="fas ${faIcon} text-3xl"></i></div>`;
+                }
+                
+                const linkHtml = isValidUrl
+                    ? `<a href="${fileUrl}" target="_blank" class="text-[10px] text-indigo-600 hover:underline mt-1 font-bold"><i class="fas fa-download mr-1"></i>ดาวน์โหลด</a>`
+                    : `<span class="text-[10px] text-gray-400 mt-1 italic">ไม่มีลิงก์</span>`;
+                
+                return `
+                <div class="border border-green-200 rounded-lg p-2 text-center bg-white flex flex-col justify-center relative shadow-sm hover:shadow-md transition-shadow">
+                    ${previewInner}
+                    <p class="text-[10px] text-gray-700 truncate w-full px-1 font-medium" title="${fileName}">${fileName}</p>
+                    ${linkHtml}
+                </div>`;
+            }).join('');
+        } else {
+            gradedFilesSection.classList.add('hidden');
+            gradedFilesContainer.innerHTML = '';
+        }
+    } else {
+        btnSubmit.classList.remove('hidden');
+        gradingResult.classList.add('hidden');
+        if (uploadArea) uploadArea.classList.remove('hidden'); // Show upload area when not graded
+        document.getElementById('stu-asm-student-note').disabled = false;
+        document.getElementById('stu-asm-submit-loc').disabled = false;
+        gradedFilesSection.classList.add('hidden');
+        gradedFilesContainer.innerHTML = '';
+    }
+
+    // Render File Upload Slots
+    renderStudentAsmFileSlots(rec ? rec.files : '[]');
+
+    document.getElementById('student-assignment-modal').classList.add('show');
+}
+
+function renderStudentAsmFileSlots(existingFilesJson) {
+    const container = document.getElementById('stu-asm-files-container');
+    let files = [];
+    try { files = typeof existingFilesJson === 'string' ? JSON.parse(existingFilesJson) : existingFilesJson; } catch(e) {}
+    if (!Array.isArray(files)) files = [];
+
+    const isGraded = document.getElementById('stu-asm-grading-result').classList.contains('hidden') === false;
+
+    let html = '';
+    for(let i=1; i<=3; i++) {
+        const file = files[i-1];
+        if (file) {
+            const fileName = file.name || file.n;
+            let fileUrl = file.url || file.u;
+            
+            // If URL is missing but base64 is present, use it as a Data URL
+            if (!fileUrl && file.base64) {
+                fileUrl = `data:${file.mimeType || 'image/jpeg'};base64,${file.base64}`;
+            }
+
+            const isValidUrl = fileUrl && (fileUrl.startsWith('http://') || fileUrl.startsWith('https://') || fileUrl.startsWith('data:'));
+            const isImg = fileName.match(/\.(jpeg|jpg|gif|png|webp)$/i);
+            
+            let previewInner = '';
+            if (isImg && isValidUrl) {
+                previewInner = `<img src="${getDirectImageUrl(fileUrl)}" class="w-full h-14 object-cover rounded border mb-1 cursor-pointer" onclick="viewLargeImage(this.src)">`;
+            } else {
+                let faIcon = 'fa-file-alt text-indigo-500';
+                if (fileName.match(/\.pdf$/i)) faIcon = 'fa-file-pdf text-red-500';
+                else if (fileName.match(/\.(doc|docx)$/i)) faIcon = 'fa-file-word text-blue-600';
+                else if (fileName.match(/\.(xls|xlsx|csv)$/i)) faIcon = 'fa-file-excel text-green-600';
+                else if (fileName.match(/\.(zip|rar)$/i)) faIcon = 'fa-file-archive text-gray-700';
+                previewInner = `<div class="flex flex-col items-center justify-center h-14 mb-1"><i class="fas ${faIcon} text-3xl"></i></div>`;
+            }
+
+            const removeBtn = isGraded ? '' : `<button type="button" onclick="removeStudentAsmFile(${i})" class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white w-6 h-6 rounded-full shadow-md flex items-center justify-center"><i class="fas fa-times text-xs"></i></button>`;
+
+            const linkHtml = isValidUrl 
+                ? `<a href="${fileUrl}" target="_blank" class="text-[10px] text-indigo-600 hover:underline mt-1 font-bold">ดาวน์โหลด</a>` 
+                : `<span class="text-[10px] text-gray-400 mt-1 italic">อัปโหลดสำเร็จ (ไม่มีลิงก์)</span>`;
+
+            html += `
+            <div class="border border-indigo-200 rounded-lg p-2 text-center bg-white flex flex-col justify-center relative min-h-[110px]" id="stu-file-slot-${i}" data-existing='${JSON.stringify(file)}'>
+                ${previewInner}
+                <p class="text-[10px] text-gray-700 truncate w-full px-1 font-medium" title="${fileName}">${fileName}</p>
+                ${linkHtml}
+                ${removeBtn}
+            </div>`;
+        } else {
+            if (isGraded) {
+                html += `<div class="border border-dashed border-gray-300 rounded-lg p-2 flex flex-col items-center justify-center bg-gray-50 min-h-[110px]"><span class="text-xs text-gray-400 font-medium">ไม่มีไฟล์</span></div>`;
+            } else {
+                html += `
+                <div class="border-2 border-dashed border-indigo-300 rounded-lg p-2 text-center bg-white flex flex-col justify-center relative min-h-[110px] hover:border-indigo-500 hover:bg-indigo-50 transition-colors" id="stu-file-slot-${i}">
+                    <label for="stu-asm-file-${i}" class="cursor-pointer text-indigo-500 hover:text-indigo-700 flex flex-col items-center justify-center h-full w-full">
+                        <i class="fas fa-cloud-upload-alt text-2xl mb-1"></i><span class="text-xs font-medium">แนบไฟล์ ${i}</span>
+                    </label>
+                    <input type="file" id="stu-asm-file-${i}" class="hidden" onchange="previewStudentAsmFile(event, ${i})">
+                </div>`;
+            }
+        }
+    }
+    container.innerHTML = html;
+}
+
+export function previewStudentAsmFile(event, index) {
+    const file = event.target.files[0];
+    const slot = document.getElementById(`stu-file-slot-${index}`);
+    
+    if (file) {
+        if (file.size > 10 * 1024 * 1024) {
+            customAlert('ไฟล์มีขนาดใหญ่เกิน 10MB');
+            event.target.value = '';
+            return;
+        }
+        const isImg = file.type.startsWith('image/');
+        let previewInner = '';
+        if (isImg) {
+            const url = URL.createObjectURL(file);
+            previewInner = `<img src="${url}" class="w-full h-14 object-cover rounded border mb-1 cursor-pointer" onclick="viewLargeImage(this.src)">`;
+        } else {
+            previewInner = `<div class="flex flex-col items-center justify-center h-14 mb-1"><i class="fas fa-file-alt text-3xl text-indigo-500"></i></div>`;
+        }
+
+        slot.innerHTML = `
+            ${previewInner}
+            <p class="text-[10px] text-gray-700 truncate w-full px-1 font-medium">${file.name}</p>
+            <span class="text-[10px] text-orange-500 font-bold mt-1">รอการบันทึก...</span>
+            <button type="button" onclick="removeStudentAsmFile(${index}, true)" class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white w-6 h-6 rounded-full shadow-md flex items-center justify-center"><i class="fas fa-times text-xs"></i></button>
+            <input type="file" id="stu-asm-file-${index}" class="hidden"> 
+        `;
+        // Re-attach file object to the newly created hidden input
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        document.getElementById(`stu-asm-file-${index}`).files = dt.files;
+    }
+}
+
+export function removeStudentAsmFile(index, isNew = false) {
+    const slot = document.getElementById(`stu-file-slot-${index}`);
+    slot.removeAttribute('data-existing');
+    slot.innerHTML = `
+        <label for="stu-asm-file-${index}" class="cursor-pointer text-indigo-500 hover:text-indigo-700 flex flex-col items-center justify-center h-full w-full">
+            <i class="fas fa-cloud-upload-alt text-2xl mb-1"></i><span class="text-xs font-medium">แนบไฟล์ ${index}</span>
+        </label>
+        <input type="file" id="stu-asm-file-${index}" class="hidden" onchange="previewStudentAsmFile(event, ${index})">
+    `;
+    slot.className = "border-2 border-dashed border-indigo-300 rounded-lg p-2 text-center bg-white flex flex-col justify-center relative min-h-[110px] hover:border-indigo-500 hover:bg-indigo-50 transition-colors";
+}
+
+export async function submitStudentAssignment() {
+    const asmId = document.getElementById('stu-asm-assignment-id').value;
+    const recId = document.getElementById('stu-asm-record-id').value || generateId();
+    const submitMethod = document.getElementById('stu-asm-submit-loc').value;
+    const studentNote = document.getElementById('stu-asm-student-note').value.trim();
+    const stuId = AppState.currentUser.data.id;
+
+    showLoading('กำลังส่งงานและอัปโหลดไฟล์...');
+
+    try {
+        const files = [];
+        for (let i = 1; i <= 3; i++) {
+            const slot = document.getElementById(`stu-file-slot-${i}`);
+            const fileInput = document.getElementById(`stu-asm-file-${i}`);
+            
+            if (fileInput && fileInput.files.length > 0) {
+                const f = fileInput.files[0];
+                let base64Data;
+                if (f.type.startsWith('image/')) {
+                    base64Data = await compressImage(f);
+                } else {
+                    base64Data = await fileToBase64(f);
+                }
+                files.push({
+                    name: f.name,
+                    mimeType: f.type.startsWith('image/') ? 'image/jpeg' : f.type,
+                    base64: base64Data
+                });
+            } else if (slot && slot.dataset.existing) {
+                try { files.push(JSON.parse(slot.dataset.existing)); } catch(e) {}
+            }
+        }
+
+        const now = getISOTimestamp();
+        const payload = {
+            id: recId,
+            assignmentId: asmId,
+            studentId: stuId,
+            submitMethod: submitMethod,
+            studentNote: studentNote,
+            status: 'ส่งแล้ว',
+            files: JSON.stringify(files),
+            score: null, 
+            teacherComment: '', // ครูเป็นคนอัปเดตช่องนี้
+            createdAt: now,
+            createdBy: stuId,
+            updatedAt: now,
+            updatedBy: stuId,
+            deleted_flg: 'N'
+        };
+
+        // การอัปโหลดไฟล์ไป Google Drive เราจะใช้ action สร้างไว้ให้รองรับการแยกไฟล์ หรือใช้ร่วมกับตาราง
+        // หมายเหตุ: ฝั่ง Apps Script จำเป็นต้องมี action "submitStudentAssignment" เพื่อสกัดไฟล์และอัปโหลด
+        const response = await fetch(AppState.googleSheetUrl, {
+            method: 'POST',
+            redirect: 'follow',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'submitStudentAssignment', payload: payload })
+        });
+        
+        const text = await response.text();
+        let result = {};
+        try { result = JSON.parse(text); } catch (e) {}
+
+        const isSuccess = response.ok || result.status === 'success' || result.success === true || text.toLowerCase().includes('success') || text.includes('สำเร็จ');
+        
+        if (!isSuccess) throw new Error(result.message || text || 'เกิดข้อผิดพลาดในการส่งข้อมูล');
+
+        // แปลงไฟล์ตอบกลับให้อยู่ในโครงสร้างปกติ
+        let finalObj = { ...payload };
+        if (result && typeof result === 'object' && result.data) { finalObj = { ...finalObj, ...result.data }; }
+        try {
+            let filesData = finalObj.files || payload.files || '[]';
+            let parsedFiles = typeof filesData === 'string' ? JSON.parse(filesData) : filesData;
+            if (Array.isArray(parsedFiles)) {
+                parsedFiles = parsedFiles.map(f => ({ n: f.name || f.n, u: f.url || f.u || 'อัปโหลดสำเร็จ' }));
+                finalObj.files = JSON.stringify(parsedFiles);
+            }
+        } catch(e) {}
+
+        // บันทึกลง Local State
+        const existIdx = AppState.allStudentAssignments.findIndex(sa => sa.id === recId);
+        if (existIdx > -1) { AppState.allStudentAssignments[existIdx] = { ...AppState.allStudentAssignments[existIdx], ...finalObj }; }
+        else { AppState.allStudentAssignments.push(finalObj); }
+
+        // สำรองการเซฟลง DB
+        await saveToDB('STUDENT_ASSIGNMENTS', AppState.allStudentAssignments, 'saveStudentAssignments');
+
+        hideLoading();
+        closeModal('student-assignment-modal');
+        renderStudentAssignments();
+        showToast('ส่งงานและอัปโหลดไฟล์เรียบร้อยแล้ว!');
+
+    } catch (err) {
+        hideLoading();
+        customAlert('ระบบแจ้งเตือน: ' + err.message + '\n\n(หากเกิดข้อผิดพลาดนี้ กรุณาติดต่อครูเพื่อตรวจสอบสคริปต์หลังบ้าน)');
+    }
+}
+
 // ผูกฟังก์ชันเข้า Window
 window.renderStudentProfile = renderStudentProfile;
 window.toggleProfileEditMode = toggleProfileEditMode;
@@ -875,6 +1431,11 @@ window.searchManageStudents = searchManageStudents;
 window.renderStudentAcademicPortal = renderStudentAcademicPortal;
 window.getGPSLocationForProfile = getGPSLocationForProfile;
 window.removeImageForProfile = removeImageForProfile;
+window.renderStudentAssignments = renderStudentAssignments;
+window.openStudentAssignmentModal = openStudentAssignmentModal;
+window.previewStudentAsmFile = previewStudentAsmFile;
+window.removeStudentAsmFile = removeStudentAsmFile;
+window.submitStudentAssignment = submitStudentAssignment;
 
 // Event listeners for profile image uploads
 document.getElementById('profile-pic-upload').addEventListener('change', (e) => previewImageForProfile(e, 'profile-pic-preview', null));
