@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="th">
+<!-- ไว้อาลัย (ลบคลาส mourning-mode ออกเมื่อต้องการให้สีกลับมาเป็นปกติ) -->
+<html lang="th" class="mourning-mode">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,6 +13,13 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
         
+        /* โหมดไว้อาลัย (Mourning Mode) - เปิดใช้งานโดยการเพิ่ม class="mourning-mode" ที่แท็ก html ด้านบนสุด */
+        html.mourning-mode {
+            /* ไว้อาลัย - ย้อมสีหน้าเว็บให้อ่อนลงจางลง */
+            filter: saturate(30%) contrast(95%) !important;
+            -webkit-filter: saturate(30%) contrast(95%) !important;
+        }
+
         body {
             font-family: 'Sarabun', sans-serif;
             color: #1f2937;
@@ -1765,6 +1773,27 @@
     <div id="custom-confirm-modal" class="modal">
         <div class="glass-modal rounded-2xl w-full max-w-sm mx-4 text-center p-6"><div class="text-yellow-500 mb-4"><i class="fas fa-exclamation-circle text-5xl"></i></div><h3 class="text-lg font-bold text-gray-800 mb-2" id="confirm-title">ยืนยันการดำเนินการ</h3><div class="text-sm text-gray-600 mb-6" id="confirm-message">คุณแน่ใจหรือไม่?</div><div class="flex justify-center gap-3"><button onclick="closeModal('custom-confirm-modal')" class="flex-1 px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 font-medium">ยกเลิก</button><button id="confirm-ok-btn" class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-medium">ยืนยัน</button></div></div>
     </div>
+
+    <!-- PR ANNOUNCEMENT POPUP MODAL -->
+    <div id="pr-announcement-modal" class="modal">
+        <div class="relative w-full max-w-lg mx-4 flex flex-col items-center text-center bg-transparent border-0 shadow-none">
+            <!-- Close button in top-right, positioned absolute relative to the transparent modal wrapper -->
+            <button onclick="closeModal('pr-announcement-modal')" class="absolute -top-12 right-0 bg-white/90 hover:bg-white text-gray-800 w-10 h-10 rounded-full flex items-center justify-center transition shadow-md border border-gray-200/50 focus:outline-none z-50">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+            
+            <!-- PR Image Container -->
+            <div class="w-full rounded-2xl overflow-hidden shadow-2xl border border-white/20 mb-6 flex justify-center items-center">
+                <img src="image/a1.jpg" alt="ประชาสัมพันธ์" class="max-w-full max-h-[70vh] object-contain hover:scale-[1.01] transition-transform duration-300">
+            </div>
+            
+            <!-- Action Button -->
+            <button onclick="closeModal('pr-announcement-modal')" class="px-8 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg w-full transition-all">
+                ปิดหน้าต่าง
+            </button>
+        </div>
+    </div>
+
 
     <!-- CLASS MODAL & EXTRAS -->
     <div id="csv-upload-modal" class="modal"><div class="glass-modal rounded-3xl w-full max-w-3xl mx-4 flex flex-col max-h-[90vh]"><div class="px-6 py-4 border-b border-white/30 flex justify-between items-center"><h3 class="text-xl font-bold text-blue-800"><i class="fas fa-upload mr-2"></i>อัปโหลดรายชื่อนักเรียน (CSV)</h3><button onclick="closeModal('csv-upload-modal')"><i class="fas fa-times"></i></button></div><div class="p-6 overflow-y-auto flex-grow"><div class="mb-4 bg-yellow-50 border border-yellow-200 p-4 rounded text-sm text-yellow-800"><p class="font-bold mb-1"><i class="fas fa-info-circle mr-1"></i> รูปแบบไฟล์ที่รองรับ (CSV)</p><p>หัวคอลัมน์ต้องเป็น: <span class="font-mono bg-white px-1">เลขที่, รหัสประจำตัว, คำนำหน้า, ชื่อ, นามสกุล, ชื่อเล่น(ไม่จำเป็น)</span> (ห้ามสลับลำดับ)</p></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div><label class="block text-sm font-medium text-gray-700 mb-1">เลือกชั้นเรียนที่ต้องการเพิ่ม *</label><select id="upload-class" class="w-full px-3 py-2 border rounded-md focus:ring-blue-500"><option value="">-- เลือกชั้นเรียน --</option></select></div><div><label class="block text-sm font-medium text-gray-700 mb-1">การอ่านภาษาไทย *</label><select id="upload-encoding" class="w-full px-3 py-2 border rounded-md focus:ring-blue-500" onchange="if(document.getElementById('upload-file').files[0]) previewCSV({target: document.getElementById('upload-file')})"><option value="windows-874">Excel ทั่วไป (Windows-874)</option><option value="UTF-8">Google Sheets (UTF-8)</option></select></div><div><label class="block text-sm font-medium text-gray-700 mb-1">เลือกไฟล์ CSV *</label><input type="file" id="upload-file" accept=".csv" class="w-full px-3 py-1.5 border rounded-md focus:ring-blue-500" onchange="previewCSV(event)"></div></div><div id="upload-preview-container" class="hidden w-full"><h4 class="font-bold text-gray-700 mb-2">พรีวิวข้อมูล (<span id="upload-count">0</span> รายการ)</h4><div class="overflow-x-auto border rounded-lg max-h-64 w-full"><table class="min-w-full divide-y divide-gray-200 text-sm"><thead class="bg-gray-50 sticky top-0"><tr><th class="px-4 py-2 text-left font-medium text-gray-500">เลขที่</th><th class="px-4 py-2 text-left font-medium text-gray-500">รหัสประจำตัว</th><th class="px-4 py-2 text-left font-medium text-gray-500">ชื่อ - สกุล (ชื่อเล่น)</th><th class="px-4 py-2 text-center font-medium text-gray-500">สถานะ</th></tr></thead><tbody id="upload-preview-body" class="bg-white divide-y divide-gray-200"></tbody></table></div></div></div><div class="px-6 py-4 border-t border-white/30 flex justify-end gap-2"><button onclick="closeModal('csv-upload-modal')" class="px-4 py-2 border rounded hover:bg-gray-100 font-medium">ยกเลิก</button><button onclick="saveCsvUpload()" id="btn-save-upload" disabled class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded font-medium transition">บันทึกข้อมูล</button></div></div></div>

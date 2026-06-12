@@ -11,5 +11,7 @@ export const DB_KEYS = {
     CLUB_RECORDS: 'school_club_records'
 };
 
-// export const DEFAULT_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw1El5QcAG90ubffnanxH5bMJ3C3X3Db9lXPZ9Amjc8DUeGLtTYkXkZrYLfxj2A1zm5/exec";  //uat
 export const DEFAULT_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz2FOJJkWTgGDy7hnNCnuMtBXQdSFXBPX6Kw-BieV91U-8lDh-JnKSWja26LXwyVwwcQA/exec";
+
+// เวอร์ชันการ deploy (เมื่อมีการ deploy ใหม่ ให้เปลี่ยนค่านี้ เช่น วันเวลา หรือเลขเวอร์ชัน เพื่อบังคับให้ครูและแอดมินล็อกอินใหม่)
+export const DEPLOY_VERSION = "20260612_2212";

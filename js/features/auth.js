@@ -108,6 +108,12 @@ export function loginSuccess(userObj) {
 
     updateMenuVisibility();
     if(window.updateAllDropdowns) window.updateAllDropdowns();
+
+    // Show PR announcement modal on every login/refresh
+    const prModal = document.getElementById('pr-announcement-modal');
+    if (prModal) {
+        prModal.classList.add('show');
+    }
 }
 
 export function logout() {

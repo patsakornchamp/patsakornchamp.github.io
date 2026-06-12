@@ -1,4 +1,4 @@
-import { DB_KEYS, DEFAULT_GOOGLE_SCRIPT_URL } from './core/config.js';
+import { DB_KEYS, DEFAULT_GOOGLE_SCRIPT_URL, DEPLOY_VERSION } from './core/config.js';
 import { AppState } from './core/state.js';
 import { syncDataFromServer, saveToDB } from './services/api.js';
 import { getBangkokDate, getDefaultAcademicYearAndSemester, showToast, customAlert, customConfirm, getISOTimestamp, getCurrentUserId } from './utils/helpers.js'; // 🌟 นำเข้าฟังก์ชันจัดการวันที่ของไทย
@@ -277,6 +277,21 @@ async function initApp() {
 
     } catch (e) {
         console.error(e); 
+    }
+
+    // ตรวจสอบรุ่นการ deploy เพื่อบังคับให้ครูและแอดมินล็อกอินใหม่หากมีการเปลี่ยนแปลง
+    const savedDeployVersion = localStorage.getItem('app_deploy_version');
+    if (savedDeployVersion !== DEPLOY_VERSION) {
+        localStorage.setItem('app_deploy_version', DEPLOY_VERSION);
+        const savedSession = localStorage.getItem(DB_KEYS.SESSION);
+        if (savedSession) {
+            try {
+                const parsedUser = JSON.parse(savedSession);
+                if (parsedUser.role === 'teacher' || parsedUser.role === 'admin') {
+                    localStorage.removeItem(DB_KEYS.SESSION);
+                }
+            } catch(e) {}
+        }
     }
 
     // ตรวจสอบ Session แบบเข้มงวด
