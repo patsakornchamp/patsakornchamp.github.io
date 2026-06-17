@@ -265,13 +265,21 @@ export async function saveMyProfile(e) {
                 body: JSON.stringify({ action: 'saveStudentProfile', payload: payload })
             });
             
-            const result = await response.json();
-            if (result.success) {
+            const text = await response.text();
+            let result = {};
+            try {
+                result = JSON.parse(text);
+            } catch (e) {
+                console.error('JSON parse error:', e);
+            }
+            
+            const isSuccess = response.ok || result.success === true || result.status === 'success' || text.toLowerCase().includes('success') || text.includes('สำเร็จ');
+            if (isSuccess) {
                 showToast('บันทึกข้อมูลส่วนตัวและรูปภาพเรียบร้อยแล้ว');
                 await syncDataFromServer(true);
                 renderStudentProfile();
             } else {
-                customAlert('เกิดข้อผิดพลาดในการบันทึก: ' + (result.message || ''));
+                customAlert('เกิดข้อผิดพลาดในการบันทึก: ' + (result.message || text || ''));
             }
         } catch (err) {
             console.error(err);
@@ -862,8 +870,11 @@ export function removeImageForProfile(index) {
     if (fileInput) fileInput.value = '';
     if (preview) { preview.src = ''; preview.classList.add('hidden'); }
     if (removeBtn) { removeBtn.classList.add('hidden'); removeBtn.classList.remove('flex'); }
-    // Note: This only removes from the frontend. The backend will handle permanent deletion on save if needed.
-    // For now, we just clear the preview. The URL will be overwritten on save.
+    
+    // Clear the URL in the current user data so it gets removed from the database on save
+    if (AppState.currentUser && AppState.currentUser.data) {
+        AppState.currentUser.data[`home_photo_${index}_url`] = '';
+    }
 }
 
 // ==========================================

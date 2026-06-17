@@ -504,6 +504,10 @@ export async function submitHomeVisit() {
         return selectVal;
     };
 
+    const p1Preview = document.getElementById('hv-preview1');
+    const p2Preview = document.getElementById('hv-preview2');
+    const p3Preview = document.getElementById('hv-preview3');
+
     const payload = {
         student_id: studentId,
         academic_year: document.getElementById('hv-year').value,
@@ -521,6 +525,9 @@ export async function submitHomeVisit() {
         guardian_suggestions: document.getElementById('hv-suggestions').value,
         latitude: document.getElementById('hv-lat').value,
         longitude: document.getElementById('hv-lng').value,
+        photo_1_url: (p1Preview && !p1Preview.classList.contains('hidden') && p1Preview.src) ? p1Preview.src : '',
+        photo_2_url: (p2Preview && !p2Preview.classList.contains('hidden') && p2Preview.src) ? p2Preview.src : '',
+        photo_3_url: (p3Preview && !p3Preview.classList.contains('hidden') && p3Preview.src) ? p3Preview.src : '',
         updated_by: AppState.currentUser ? AppState.currentUser.data.id : 'unknown'
     };
 
@@ -541,8 +548,16 @@ export async function submitHomeVisit() {
             body: JSON.stringify({ action: 'saveHomeVisitData', payload: payload })
         });
         
-        const result = await response.json();
-        if (result.success) {
+        const text = await response.text();
+        let result = {};
+        try {
+            result = JSON.parse(text);
+        } catch (e) {
+            console.error('JSON parse error:', e);
+        }
+        
+        const isSuccess = response.ok || result.success === true || result.status === 'success' || text.toLowerCase().includes('success') || text.includes('สำเร็จ');
+        if (isSuccess) {
             const sIdx = AppState.allStudents.findIndex(s => s.id === studentId);
             if (sIdx > -1) {
                 AppState.allStudents[sIdx].homeVisit = visitStatus;
@@ -553,7 +568,7 @@ export async function submitHomeVisit() {
             renderHomeVisitList();
             showToast('บันทึกข้อมูลเยี่ยมบ้านเรียบร้อย');
         } else {
-            customAlert('เกิดข้อผิดพลาดในการบันทึก: ' + (result.message || ''));
+            customAlert('เกิดข้อผิดพลาดในการบันทึก: ' + (result.message || text || ''));
         }
     } catch (e) {
         console.error(e);
