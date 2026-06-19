@@ -37,11 +37,26 @@ export function hideLoading() {
     if (overlay) overlay.classList.remove('show');
 }
 
-export function showToast(msg) {
+export function showToast(msg, type = 'success') {
     const toast = document.getElementById('toast');
     const toastMsg = document.getElementById('toast-msg');
+    const toastIcon = toast ? toast.querySelector('i') : null;
     if(!toast || !toastMsg) return;
+    
     toastMsg.innerText = msg;
+    
+    if (type === 'error') {
+        toast.classList.add('error');
+        if (toastIcon) {
+            toastIcon.className = 'fas fa-exclamation-circle';
+        }
+    } else {
+        toast.classList.remove('error');
+        if (toastIcon) {
+            toastIcon.className = 'fas fa-check-circle';
+        }
+    }
+    
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 3000);
 }

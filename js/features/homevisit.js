@@ -124,9 +124,8 @@ export function renderHomeVisitList() {
     tbody.innerHTML = students.map(s => {
         let bgColorClass = '';
         const hv = s.homeVisit || 'ยังไม่เยี่ยม';
-        if (hv === 'สำเร็จ') bgColorClass = 'bg-green-100 text-green-800';
-        else if (hv === 'ยังไม่เยี่ยม') bgColorClass = 'bg-gray-100 text-gray-800';
-        else bgColorClass = 'bg-yellow-100 text-yellow-800';
+        if (hv === 'สำเร็จ') bgColorClass = 'bg-green-600 text-white';
+        else bgColorClass = 'bg-red-500 text-white';
 
         const statusSelect = `
             <select class="${bgColorClass} text-xs font-bold px-2 py-1 rounded-full cursor-pointer outline-none border-none hover:opacity-80 transition-opacity" 
@@ -238,9 +237,126 @@ export async function updateInlineHomeVisitStatus(studentId, newStatus) {
     }
 }
 
+export function setHomeVisitFieldsDisabled(disabled) {
+    const container = document.getElementById('hv-form-container');
+    if (!container) return;
+    
+    // Disable inputs, selects, textareas
+    container.querySelectorAll('input, select, textarea').forEach(el => {
+        if (el.id === 'hv-student-id' || el.id === 'hv-lat' || el.id === 'hv-lng') return;
+        
+        if (disabled) {
+            el.setAttribute('disabled', 'true');
+            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                el.classList.add('bg-gray-100');
+            }
+        } else {
+            el.removeAttribute('disabled');
+            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                el.classList.remove('bg-gray-100');
+            }
+        }
+    });
+
+    // Disable file label triggers (camera buttons)
+    const fileLabels = container.querySelectorAll('label[for^="hv-photo"]');
+    fileLabels.forEach(lbl => {
+        if (disabled) {
+            lbl.style.pointerEvents = 'none';
+            lbl.classList.add('opacity-50');
+        } else {
+            lbl.style.pointerEvents = 'auto';
+            lbl.classList.remove('opacity-50');
+        }
+    });
+
+    // Disable remove image buttons
+    const removeBtns = container.querySelectorAll('button[id^="hv-remove"]');
+    removeBtns.forEach(btn => {
+        if (disabled) {
+            btn.classList.add('hidden');
+            btn.classList.remove('flex');
+        } else {
+            const index = btn.id.replace('hv-remove', '');
+            const preview = document.getElementById(`hv-preview${index}`);
+            if (preview && !preview.classList.contains('hidden') && preview.src) {
+                btn.classList.remove('hidden');
+                btn.classList.add('flex');
+            }
+        }
+    });
+
+    // Disable watchdog checkboxes
+    container.querySelectorAll('.hv-watchlist').forEach(cb => {
+        const label = cb.closest('label');
+        if (label) {
+            if (disabled) {
+                label.classList.add('opacity-60', 'pointer-events-none');
+            } else {
+                label.classList.remove('opacity-60', 'pointer-events-none');
+            }
+        }
+    });
+
+    // Disable copy buttons (autofill)
+    const copyButtons = container.querySelectorAll('button[onclick^="autofillHvGuardian"]');
+    copyButtons.forEach(btn => {
+        if (disabled) {
+            btn.classList.add('opacity-50', 'pointer-events-none');
+        } else {
+            btn.classList.remove('opacity-50', 'pointer-events-none');
+        }
+    });
+
+    // Disable GPS button
+    const gpsBtn = container.querySelector('button[onclick="getGPSLocation()"]');
+    if (gpsBtn) {
+        if (disabled) {
+            gpsBtn.classList.add('opacity-50', 'pointer-events-none');
+        } else {
+            gpsBtn.classList.remove('opacity-50', 'pointer-events-none');
+        }
+    }
+
+    // Disable Signature clear button
+    const clearSigBtn = container.querySelector('button[onclick="clearSignature()"]');
+    if (clearSigBtn) {
+        if (disabled) {
+            clearSigBtn.classList.add('opacity-50', 'pointer-events-none');
+        } else {
+            clearSigBtn.classList.remove('opacity-50', 'pointer-events-none');
+        }
+    }
+
+    // Disable Save button
+    const saveBtn = document.getElementById('hv-btn-save');
+    if (saveBtn) {
+        if (disabled) {
+            saveBtn.classList.add('opacity-50', 'pointer-events-none');
+        } else {
+            saveBtn.classList.remove('opacity-50', 'pointer-events-none');
+        }
+    }
+}
+
+export function enableHomeVisitEditing() {
+    window.hvIsReadOnly = false;
+    setHomeVisitFieldsDisabled(false);
+    
+    // Hide the Edit button
+    const editBtn = document.getElementById('hv-btn-edit-mode');
+    if (editBtn) editBtn.classList.add('hidden');
+    showToast('เปิดโหมดแก้ไขข้อมูลเรียบร้อย');
+}
+
 export async function openHomeVisitModal(studentId) {
     const student = AppState.allStudents.find(s => s.id === studentId);
     if (!student) return;
+
+    window.hvIsReadOnly = false;
+    setHomeVisitFieldsDisabled(false);
+    const editBtn = document.getElementById('hv-btn-edit-mode');
+    if (editBtn) editBtn.classList.add('hidden');
 
     document.getElementById('hv-student-id').value = student.id;
     document.getElementById('hv-display-name').innerText = getStudentFullName(student);
@@ -359,17 +475,14 @@ export async function openHomeVisitModal(studentId) {
             if (data.photo_1_url) { 
                 document.getElementById('hv-preview1').src = getDirectImageUrl(data.photo_1_url); 
                 document.getElementById('hv-preview1').classList.remove('hidden'); 
-                document.getElementById('hv-remove1').classList.remove('hidden'); document.getElementById('hv-remove1').classList.add('flex');
             }
             if (data.photo_2_url) { 
                 document.getElementById('hv-preview2').src = getDirectImageUrl(data.photo_2_url); 
                 document.getElementById('hv-preview2').classList.remove('hidden'); 
-                document.getElementById('hv-remove2').classList.remove('hidden'); document.getElementById('hv-remove2').classList.add('flex');
             }
             if (data.photo_3_url) { 
                 document.getElementById('hv-preview3').src = getDirectImageUrl(data.photo_3_url); 
                 document.getElementById('hv-preview3').classList.remove('hidden'); 
-                document.getElementById('hv-remove3').classList.remove('hidden'); document.getElementById('hv-remove3').classList.add('flex');
             }
             if (data.signature_url) {
                 const savedSigContainer = document.getElementById('hv-saved-sig-container');
@@ -378,6 +491,11 @@ export async function openHomeVisitModal(studentId) {
                 if (savedSigContainer) savedSigContainer.classList.remove('hidden');
             }
             if (printBtn) printBtn.classList.remove('hidden');
+
+            // Lock fields for editing if a record exists
+            window.hvIsReadOnly = true;
+            setHomeVisitFieldsDisabled(true);
+            if (editBtn) editBtn.classList.remove('hidden');
         }
     } catch (e) {
         console.error(e);
@@ -463,6 +581,7 @@ function resizeSigCanvas() {
 }
 
 function startDrawing(e) {
+    if (window.hvIsReadOnly) return;
     isDrawingSig = true;
     const rect = sigCanvas.getBoundingClientRect();
     sigCtx.beginPath();
@@ -472,7 +591,7 @@ function startDrawing(e) {
 }
 
 function draw(e) {
-    if (!isDrawingSig) return;
+    if (window.hvIsReadOnly || !isDrawingSig) return;
     const rect = sigCanvas.getBoundingClientRect();
     sigCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
     sigCtx.stroke();
@@ -484,6 +603,7 @@ function stopDrawing() {
 }
 
 function handleTouchStart(e) {
+    if (window.hvIsReadOnly) return;
     if (e.touches.length === 1) {
         const touch = e.touches[0];
         const rect = sigCanvas.getBoundingClientRect();
@@ -497,6 +617,7 @@ function handleTouchStart(e) {
 }
 
 function handleTouchMove(e) {
+    if (window.hvIsReadOnly) return;
     if (isDrawingSig && e.touches.length === 1) {
         const touch = e.touches[0];
         const rect = sigCanvas.getBoundingClientRect();
@@ -539,19 +660,26 @@ export function previewImage(event, previewId, removeBtnId) {
     const file = event.target.files[0];
     const preview = document.getElementById(previewId);
     const removeBtn = document.getElementById(removeBtnId);
+    
+    // Revoke old object URL if exists to prevent memory leaks
+    if (preview && preview.src && preview.src.startsWith('blob:')) {
+        URL.revokeObjectURL(preview.src);
+    }
+    
     if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            preview.src = e.target.result;
+        if (preview) {
+            preview.src = URL.createObjectURL(file);
             preview.classList.remove('hidden');
-            if (removeBtn) {
-                removeBtn.classList.remove('hidden');
-                removeBtn.classList.add('flex');
-            }
         }
-        reader.readAsDataURL(file);
+        if (removeBtn) {
+            removeBtn.classList.remove('hidden');
+            removeBtn.classList.add('flex');
+        }
     } else {
-        preview.classList.add('hidden');
+        if (preview) {
+            preview.src = '';
+            preview.classList.add('hidden');
+        }
         if (removeBtn) {
             removeBtn.classList.add('hidden');
             removeBtn.classList.remove('flex');
@@ -565,8 +693,17 @@ export function removeImage(index) {
     const removeBtn = document.getElementById(`hv-remove${index}`);
     
     if (fileInput) fileInput.value = '';
-    if (preview) { preview.src = ''; preview.classList.add('hidden'); }
-    if (removeBtn) { removeBtn.classList.add('hidden'); removeBtn.classList.remove('flex'); }
+    if (preview) {
+        if (preview.src && preview.src.startsWith('blob:')) {
+            URL.revokeObjectURL(preview.src);
+        }
+        preview.src = '';
+        preview.classList.add('hidden');
+    }
+    if (removeBtn) {
+        removeBtn.classList.add('hidden');
+        removeBtn.classList.remove('flex');
+    }
 }
 
 export function viewLargeImage(src) {
@@ -772,6 +909,8 @@ window.openStudentHomeInfoModal = openStudentHomeInfoModal;
 window.autofillHvGuardian = autofillHvGuardian;
 window.clearSignature = clearSignature;
 window.initSignaturePad = initSignaturePad;
+window.enableHomeVisitEditing = enableHomeVisitEditing;
+window.setHomeVisitFieldsDisabled = setHomeVisitFieldsDisabled;
 
 export async function printHomeVisitReport(studentId) {
     const student = AppState.allStudents.find(s => s.id === studentId);
@@ -853,6 +992,14 @@ export async function printHomeVisitReport(studentId) {
             '{{visit_id}}': `HV-${yr}-${sem}-${student.studentId || student.id}`,
             '{{student_name}}': getStudentFullName(student),
             '{{student_id}}': student.studentId || '-',
+            '{{father_name}}': `${student.fatherFirstName || ''} ${student.fatherLastName || ''}`.trim() || '-',
+            '{{father_age}}': student.fatherAge ? `${student.fatherAge} ปี` : '-',
+            '{{father_job}}': student.fatherJob || '-',
+            '{{father_phone}}': student.fatherPhone || '-',
+            '{{mother_name}}': `${student.motherFirstName || ''} ${student.motherLastName || ''}`.trim() || '-',
+            '{{mother_age}}': student.motherAge ? `${student.motherAge} ปี` : '-',
+            '{{mother_job}}': student.motherJob || '-',
+            '{{mother_phone}}': student.motherPhone || '-',
             '{{guardian_name}}': data.guardian_name || '-',
             '{{guardian_relationship}}': data.guardian_relationship || '-',
             '{{guardian_phone}}': data.guardian_phone || '-',
@@ -1037,6 +1184,14 @@ export async function printSelectedHomeVisits() {
                     '{{visit_id}}': `HV-${yr}-${sem}-${student.studentId || student.id}`,
                     '{{student_name}}': getStudentFullName(student),
                     '{{student_id}}': student.studentId || '-',
+                    '{{father_name}}': `${student.fatherFirstName || ''} ${student.fatherLastName || ''}`.trim() || '-',
+                    '{{father_age}}': student.fatherAge ? `${student.fatherAge} ปี` : '-',
+                    '{{father_job}}': student.fatherJob || '-',
+                    '{{father_phone}}': student.fatherPhone || '-',
+                    '{{mother_name}}': `${student.motherFirstName || ''} ${student.motherLastName || ''}`.trim() || '-',
+                    '{{mother_age}}': student.motherAge ? `${student.motherAge} ปี` : '-',
+                    '{{mother_job}}': student.motherJob || '-',
+                    '{{mother_phone}}': student.motherPhone || '-',
                     '{{guardian_name}}': data.guardian_name || '-',
                     '{{guardian_relationship}}': data.guardian_relationship || '-',
                     '{{guardian_phone}}': data.guardian_phone || '-',

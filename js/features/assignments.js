@@ -1006,9 +1006,12 @@ export function previewAsmFile(event, index) {
         container.classList.remove('hidden');
 
         if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = function(e) { imgPreview.src = e.target.result; imgPreview.classList.remove('hidden'); iconPreview.classList.add('hidden'); }
-            reader.readAsDataURL(file);
+            if (imgPreview.src && imgPreview.src.startsWith('blob:')) {
+                URL.revokeObjectURL(imgPreview.src);
+            }
+            imgPreview.src = URL.createObjectURL(file);
+            imgPreview.classList.remove('hidden');
+            iconPreview.classList.add('hidden');
         } else {
             imgPreview.classList.add('hidden'); iconPreview.classList.remove('hidden');
             let faIcon = 'fa-file text-gray-500';
@@ -1034,7 +1037,12 @@ export function removeAsmFile(index) {
         delete container.dataset.existingFile;
     }
     const img = document.getElementById(`asm-img-preview-${index}`);
-    if (img) img.src = '';
+    if (img) {
+        if (img.src && img.src.startsWith('blob:')) {
+            URL.revokeObjectURL(img.src);
+        }
+        img.src = '';
+    }
 }
 
 window.initAssignmentsTab = initAssignmentsTab;

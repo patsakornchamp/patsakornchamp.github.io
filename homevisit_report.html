@@ -138,11 +138,34 @@
             <td class="value" style="width:35%">{{student_id}}</td>
         </tr>
     </table>
+    <div class="section-title">ข้อมูลบิดา-มารดา</div>
+    <table class="layout-table" style="font-size: 8.5pt;">
+        <tr>
+            <td class="label" style="width:10%">บิดา:</td>
+            <td class="value" style="width:30%">{{father_name}}</td>
+            <td class="label" style="width:6%">อายุ:</td>
+            <td class="value" style="width:8%">{{father_age}}</td>
+            <td class="label" style="width:8%">อาชีพ:</td>
+            <td class="value" style="width:20%">{{father_job}}</td>
+            <td class="label" style="width:6%">โทร:</td>
+            <td class="value" style="width:12%">{{father_phone}}</td>
+        </tr>
+        <tr>
+            <td class="label" style="width:10%">มารดา:</td>
+            <td class="value" style="width:30%">{{mother_name}}</td>
+            <td class="label" style="width:6%">อายุ:</td>
+            <td class="value" style="width:8%">{{mother_age}}</td>
+            <td class="label" style="width:8%">อาชีพ:</td>
+            <td class="value" style="width:20%">{{mother_job}}</td>
+            <td class="label" style="width:6%">โทร:</td>
+            <td class="value" style="width:12%">{{mother_phone}}</td>
+        </tr>
+    </table>
 
-    <div class="section-title">1. ข้อมูลผู้ปกครอง</div>
+    <div class="section-title">ข้อมูลผู้ปกครอง</div>
     <table class="layout-table">
         <tr>
-            <td class="label">ชื่อ-สกุล ผู้ปกครอง:</td>
+            <td class="label">ผู้ปกครอง:</td>
             <td class="value">{{guardian_name}}</td>
             <td class="label">ความสัมพันธ์:</td>
             <td class="value">{{guardian_relationship}}</td>
@@ -155,7 +178,7 @@
         </tr>
     </table>
 
-    <div class="section-title">2. สภาพแวดล้อมและการเดินทาง</div>
+    <div class="section-title">สภาพแวดล้อมและการเดินทาง</div>
     <table class="layout-table">
         <tr>
             <td class="label">ลักษณะที่อยู่อาศัย:</td>
@@ -169,7 +192,7 @@
         </tr>
     </table>
 
-    <div class="section-title">3. พฤติกรรมและข้อเสนอแนะ</div>
+    <div class="section-title">พฤติกรรมและข้อเสนอแนะ</div>
     <div class="text-box-label">พฤติกรรมขณะอยู่บ้าน:</div>
     <div class="text-box">{{home_behavior}}</div>
 
@@ -179,7 +202,7 @@
     <div class="text-box-label">ข้อเสนอแนะจากผู้ปกครอง:</div>
     <div class="text-box">{{guardian_suggestions}}</div>
 
-    <div class="section-title">4. หลักฐานและพิกัดที่อยู่อาศัย</div>
+    <div class="section-title">หลักฐานและพิกัดที่อยู่อาศัย</div>
     <p class="label" style="margin-bottom: 2px; margin-top: 0;"><b>พิกัด GPS:</b> {{latitude}}, {{longitude}}</p>
     
     <table class="photo-table">

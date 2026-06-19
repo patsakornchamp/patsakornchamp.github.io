@@ -63,6 +63,12 @@ function previewImageForProfile(event, previewId, removeBtnId) {
     const file = event.target.files[0];
     const preview = document.getElementById(previewId);
     const removeBtn = removeBtnId ? document.getElementById(removeBtnId) : null;
+    
+    // Revoke old object URL if exists to prevent memory leaks
+    if (preview && preview.src && preview.src.startsWith('blob:')) {
+        URL.revokeObjectURL(preview.src);
+    }
+    
     if (file && preview) {
         preview.src = URL.createObjectURL(file);
         preview.classList.remove('hidden');
@@ -906,8 +912,17 @@ export function removeImageForProfile(index) {
     const removeBtn = document.getElementById(`sp-home-remove${index}`);
     
     if (fileInput) fileInput.value = '';
-    if (preview) { preview.src = ''; preview.classList.add('hidden'); }
-    if (removeBtn) { removeBtn.classList.add('hidden'); removeBtn.classList.remove('flex'); }
+    if (preview) {
+        if (preview.src && preview.src.startsWith('blob:')) {
+            URL.revokeObjectURL(preview.src);
+        }
+        preview.src = '';
+        preview.classList.add('hidden');
+    }
+    if (removeBtn) {
+        removeBtn.classList.add('hidden');
+        removeBtn.classList.remove('flex');
+    }
     
     // Clear the URL in the current user data so it gets removed from the database on save
     if (AppState.currentUser && AppState.currentUser.data) {
@@ -1491,3 +1506,41 @@ document.getElementById('profile-pic-upload').addEventListener('change', (e) => 
 for(let i=1; i<=3; i++) {
     document.getElementById(`sp-home-photo${i}`).addEventListener('change', (e) => previewImageForProfile(e, `sp-home-preview${i}`, `sp-home-remove${i}`));
 }
+
+// ฟังก์ชันสำหรับตรวจฟอร์แมตข้อมูลส่วนตัวเรียลไทม์ (on change)
+function validateProfileInputFormat(event) {
+    const input = event.target;
+    const val = input.value.trim();
+    if (!val) {
+        input.classList.remove('border-red-500', 'bg-red-50');
+        return;
+    }
+
+    if (input.id === 'sp-citizenid') {
+        const cleaned = val.replace(/\s+/g, '');
+        if (!validateThaiCitizenId(cleaned)) {
+            showToast('เลขประจำตัวประชาชน 13 หลัก ไม่ถูกต้อง', 'error');
+            input.classList.add('border-red-500', 'bg-red-50');
+            setTimeout(() => input.focus(), 50);
+        } else {
+            input.classList.remove('border-red-500', 'bg-red-50');
+        }
+    } else if (['sp-phone', 'sp-p-phone', 'sp-f-phone', 'sp-m-phone'].includes(input.id)) {
+        if (!validatePhoneNumber(val)) {
+            showToast('รูปแบบเบอร์โทรศัพท์ไม่ถูกต้อง (ต้องเป็นตัวเลข 9-10 หลัก)', 'error');
+            input.classList.add('border-red-500', 'bg-red-50');
+            setTimeout(() => input.focus(), 50);
+        } else {
+            input.classList.remove('border-red-500', 'bg-red-50');
+        }
+    }
+}
+
+// ผูกเหตุการณ์การเปลี่ยนแปลงข้อมูล (onchange) เพื่อความถูกต้องก่อนบันทึก
+const idsToValidate = ['sp-citizenid', 'sp-phone', 'sp-p-phone', 'sp-f-phone', 'sp-m-phone'];
+idsToValidate.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+        el.addEventListener('change', validateProfileInputFormat);
+    }
+});
