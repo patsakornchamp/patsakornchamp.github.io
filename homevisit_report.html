@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>รายงานการเยี่ยมบ้านนักเรียน</title>
+    <style>
+        /* ตั้งค่าหน้ากระดาษ A4 ให้กระชับใน 1 หน้า */
+        @page {
+            size: A4;
+            margin: 8mm 12mm;
+        }
+        
+        * { box-sizing: border-box; }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            font-size: 9.5pt;
+            line-height: 1.4;
+            color: #1e293b;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #0f766e;
+            padding-bottom: 4px;
+            margin-bottom: 10px;
+        }
+
+        .header h1 {
+            color: #0f766e;
+            font-size: 11pt;
+            margin: 0 0 2px 0;
+        }
+
+        .header p {
+            margin: 0;
+            font-size: 8.5pt;
+        }
+
+        .section-title {
+            background-color: #f0fdfa;
+            color: #0f766e;
+            font-weight: bold;
+            font-size: 10pt;
+            padding: 3px 8px;
+            border-left: 3px solid #0f766e;
+            margin-top: 10px;
+            margin-bottom: 6px;
+            page-break-after: avoid;
+        }
+
+        /* ใช้ Table จัด Layout */
+        .layout-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 4px;
+        }
+
+        .layout-table td {
+            padding: 2px 4px;
+            vertical-align: top;
+        }
+
+        .label {
+            color: #475569;
+            width: 25%;
+            font-size: 9pt;
+        }
+
+        .value {
+            font-weight: bold;
+            color: #0f172a;
+        }
+
+        .text-box-label {
+            color: #475569;
+            font-size: 9pt;
+            margin-top: 4px;
+            margin-bottom: 2px;
+            font-weight: 600;
+        }
+
+        .text-box {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 6px 8px;
+            min-height: 35px;
+            margin-bottom: 4px;
+            font-weight: bold;
+            font-size: 9pt;
+        }
+
+        .photo-table {
+            width: 100%;
+            margin-top: 4px;
+            table-layout: fixed;
+        }
+
+        .photo-table td {
+            padding: 2px;
+            text-align: center;
+        }
+
+        .photo-img {
+            width: 100%;
+            height: 110px;
+            object-fit: cover;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .signature-table {
+            width: 100%;
+            margin-top: 15px;
+            text-align: center;
+            font-size: 9pt;
+            page-break-inside: avoid;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <img src="logopngPDF.png" alt="School Logo" style="height: 50px; margin-bottom: 2px; display: inline-block;">
+        <div style="font-size: 11pt; font-weight: bold; color: #0f766e; margin-bottom: 2px;">โรงเรียนไชยฉิมพลีวิทยาคม</div>
+        <h1>รายงานข้อมูลการเยี่ยมบ้านนักเรียน</h1>
+        <p>ภาคเรียนที่ <b>{{semester}}</b> ปีการศึกษา <b>{{academic_year}}</b> | รหัสการเยี่ยม: {{visit_id}}</p>
+    </div>
+
+    <table class="layout-table">
+        <tr>
+            <td class="label" style="width:15%">ชื่อ-สกุล นักเรียน:</td>
+            <td class="value" style="width:35%">{{student_name}}</td>
+            <td class="label" style="width:15%">รหัสนักเรียน:</td>
+            <td class="value" style="width:35%">{{student_id}}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">1. ข้อมูลผู้ปกครอง</div>
+    <table class="layout-table">
+        <tr>
+            <td class="label">ชื่อ-สกุล ผู้ปกครอง:</td>
+            <td class="value">{{guardian_name}}</td>
+            <td class="label">ความสัมพันธ์:</td>
+            <td class="value">{{guardian_relationship}}</td>
+        </tr>
+        <tr>
+            <td class="label">เบอร์โทรศัพท์:</td>
+            <td class="value">{{guardian_phone}}</td>
+            <td class="label">สถานะทางเศรษฐกิจ:</td>
+            <td class="value">{{economic_status}}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">2. สภาพแวดล้อมและการเดินทาง</div>
+    <table class="layout-table">
+        <tr>
+            <td class="label">ลักษณะที่อยู่อาศัย:</td>
+            <td class="value">☑ {{housing_type}}</td>
+            <td class="label">สภาพความปลอดภัย:</td>
+            <td class="value">☑ {{environment_safety}}</td>
+        </tr>
+        <tr>
+            <td class="label">การเดินทางมาโรงเรียน:</td>
+            <td class="value" colspan="3">☑ {{commute_method}}</td>
+        </tr>
+    </table>
+
+    <div class="section-title">3. พฤติกรรมและข้อเสนอแนะ</div>
+    <div class="text-box-label">พฤติกรรมขณะอยู่บ้าน:</div>
+    <div class="text-box">{{home_behavior}}</div>
+
+    <div class="text-box-label">ข้อสังเกต / ปัญหาที่ต้องเฝ้าระวัง (Watchlist):</div>
+    <div class="text-box" style="color: #b91c1c;">{{watchlist_issues}}</div>
+
+    <div class="text-box-label">ข้อเสนอแนะจากผู้ปกครอง:</div>
+    <div class="text-box">{{guardian_suggestions}}</div>
+
+    <div class="section-title">4. หลักฐานและพิกัดที่อยู่อาศัย</div>
+    <p class="label" style="margin-bottom: 2px; margin-top: 0;"><b>พิกัด GPS:</b> {{latitude}}, {{longitude}}</p>
+    
+    <table class="photo-table">
+        <tr>
+            <td>
+                <img src="{{photo_1_url}}" class="photo-img" alt="รูปภาพที่ 1">
+                <p class="label" style="font-size: 8pt; margin: 2px 0 0 0; width: 100%;">รูปภาพสภาพบ้าน / แวดล้อม</p>
+            </td>
+            <td>
+                <img src="{{photo_2_url}}" class="photo-img" alt="รูปภาพที่ 2">
+                <p class="label" style="font-size: 8pt; margin: 2px 0 0 0; width: 100%;">รูปภาพขณะพูดคุย</p>
+            </td>
+            <td>
+                <img src="{{photo_3_url}}" class="photo-img" alt="รูปภาพที่ 3">
+                <p class="label" style="font-size: 8pt; margin: 2px 0 0 0; width: 100%;">รูปภาพเพิ่มเติม</p>
+            </td>
+        </tr>
+    </table>
+
+    <table class="signature-table">
+        <tr>
+            <td style="width: 50%;">
+                <br>
+                ลงชื่อ..........................................................<br>
+                ( <b>{{guardian_name}}</b> )<br>
+                ผู้ปกครอง<br>
+                วันที่ {{visit_date}}
+            </td>
+            <td style="width: 50%;">
+                <br>
+                ลงชื่อ..........................................................<br>
+                ( <b>{{updated_by}}</b> )<br>
+                ครูผู้เยี่ยมบ้าน / ผู้บันทึกข้อมูล<br>
+                บันทึกเมื่อ: {{timestamp}}
+            </td>
+        </tr>
+    </table>
+
+</body>
+</html>

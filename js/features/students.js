@@ -186,47 +186,85 @@ export async function saveMyProfile(e) {
     customConfirm('ยืนยันการบันทึกข้อมูล', 'คุณตรวจสอบข้อมูลครบถ้วนและต้องการบันทึกการแก้ไขใช่หรือไม่?', async () => {
         const s = AppState.currentUser.data;
         const citizenId = document.getElementById('sp-citizenid').value.toString().replace(/\s+/g, '');
-        const phone = document.getElementById('sp-phone').value;
-        const pPhone = document.getElementById('sp-p-phone').value;
-        const fPhone = document.getElementById('sp-f-phone').value;
-        const mPhone = document.getElementById('sp-m-phone').value;
+        const nickname = document.getElementById('sp-nickname').value.trim();
+        const dob = document.getElementById('sp-dob').value;
+        const phone = document.getElementById('sp-phone').value.trim();
+        const email = document.getElementById('sp-email').value.trim();
+        const address = document.getElementById('sp-address').value.trim();
+        
+        const pTitle = document.getElementById('sp-p-title').value;
+        const pFname = document.getElementById('sp-p-fname').value.trim();
+        const pLname = document.getElementById('sp-p-lname').value.trim();
+        const pRel = document.getElementById('sp-p-rel').value;
+        const pPhone = document.getElementById('sp-p-phone').value.trim();
+        
+        const fFname = document.getElementById('sp-f-fname').value.trim();
+        const fLname = document.getElementById('sp-f-lname').value.trim();
+        const fAge = document.getElementById('sp-f-age').value.trim();
+        const fJob = document.getElementById('sp-f-job').value.trim();
+        const fPhone = document.getElementById('sp-f-phone').value.trim();
+        
+        const mFname = document.getElementById('sp-m-fname').value.trim();
+        const mLname = document.getElementById('sp-m-lname').value.trim();
+        const mAge = document.getElementById('sp-m-age').value.trim();
+        const mJob = document.getElementById('sp-m-job').value.trim();
+        const mPhone = document.getElementById('sp-m-phone').value.trim();
 
-        if(!validateThaiCitizenId(citizenId)) return customAlert('เลขประจำตัวประชาชน 13 หลัก ไม่ถูกต้อง');
-        if(!validatePhoneNumber(phone)) return customAlert('เบอร์โทรศัพท์ของนักเรียนไม่ถูกต้อง');
-        if(!validatePhoneNumber(pPhone)) return customAlert('เบอร์โทรศัพท์ของผู้ปกครองไม่ถูกต้อง');
-        if(!validatePhoneNumber(fPhone)) return customAlert('เบอร์โทรศัพท์บิดาไม่ถูกต้อง');
-        if(!validatePhoneNumber(mPhone)) return customAlert('เบอร์โทรศัพท์มารดาไม่ถูกต้อง');
+        const homeLat = document.getElementById('sp-home-lat').value.trim();
+        const homeLng = document.getElementById('sp-home-lng').value.trim();
+        const homeDirections = document.getElementById('sp-home-directions').value.trim();
+
+        // 1. บังคับห้ามว่างเฉพาะ ชั้นเรียน และ เลขที่
+        const stuClass = document.getElementById('sp-class').value;
+        const stuNumber = document.getElementById('sp-number').value;
+        if (!stuClass || !stuNumber) {
+            return customAlert('เกิดข้อผิดพลาด: ชั้นเรียนและเลขที่ห้ามว่าง');
+        }
+
+        // 2. ถ้ามีการกรอก Citizen ID หรือเบอร์โทรศัพท์ ให้ทำการตรวจสอบรูปแบบความถูกต้อง (หากเว้นว่างไว้ให้ผ่านได้)
+        if (citizenId && !validateThaiCitizenId(citizenId)) return customAlert('เลขประจำตัวประชาชน 13 หลัก ไม่ถูกต้อง');
+        if (phone && !validatePhoneNumber(phone)) return customAlert('เบอร์โทรศัพท์ของนักเรียนไม่ถูกต้อง');
+        if (pPhone && !validatePhoneNumber(pPhone)) return customAlert('เบอร์โทรศัพท์ของผู้ปกครองไม่ถูกต้อง');
+        if (fPhone && !validatePhoneNumber(fPhone)) return customAlert('เบอร์โทรศัพท์บิดาไม่ถูกต้อง');
+        if (mPhone && !validatePhoneNumber(mPhone)) return customAlert('เบอร์โทรศัพท์มารดาไม่ถูกต้อง');
 
         s.citizenId = citizenId;
-        s.nickname = document.getElementById('sp-nickname').value.trim();
-        s.dob = document.getElementById('sp-dob').value;
+        s.nickname = nickname;
+        s.dob = dob;
         s.phone = phone;
-        s.email = document.getElementById('sp-email').value;
-        s.address = document.getElementById('sp-address').value;
-        s.parentTitle = document.getElementById('sp-p-title').value;
-        s.parentFirstName = document.getElementById('sp-p-fname').value;
-        s.parentLastName = document.getElementById('sp-p-lname').value;
-        s.parentRelation = document.getElementById('sp-p-rel').value;
+        s.email = email;
+        s.address = address;
+        s.parentTitle = pTitle;
+        s.parentFirstName = pFname;
+        s.parentLastName = pLname;
+        s.parentRelation = pRel;
         s.parentPhone = pPhone;
-        s.fatherFirstName = document.getElementById('sp-f-fname').value.trim();
-        s.fatherLastName = document.getElementById('sp-f-lname').value.trim();
-        s.fatherAge = document.getElementById('sp-f-age').value;
-        s.fatherJob = document.getElementById('sp-f-job').value.trim();
-        s.fatherPhone = fPhone.trim();
-        s.motherFirstName = document.getElementById('sp-m-fname').value.trim();
-        s.motherLastName = document.getElementById('sp-m-lname').value.trim();
-        s.motherAge = document.getElementById('sp-m-age').value;
-        s.motherJob = document.getElementById('sp-m-job').value.trim();
-        s.motherPhone = mPhone.trim();
+        s.fatherFirstName = fFname;
+        s.fatherLastName = fLname;
+        s.fatherAge = fAge;
+        s.fatherJob = fJob;
+        s.fatherPhone = fPhone;
+        s.motherFirstName = mFname;
+        s.motherLastName = mLname;
+        s.motherAge = mAge;
+        s.motherJob = mJob;
+        s.motherPhone = mPhone;
 
         // New Home Info
-        s.home_latitude = document.getElementById('sp-home-lat').value;
-        s.home_longitude = document.getElementById('sp-home-lng').value;
-        s.home_directions = document.getElementById('sp-home-directions').value;
+        s.home_latitude = homeLat;
+        s.home_longitude = homeLng;
+        s.home_directions = homeDirections;
 
         s.updatedAt = getISOTimestamp();
         s.updatedBy = getCurrentUserId();
-        s.isProfileComplete = 'true'; 
+        
+        // 3. ตรวจสอบข้อมูลส่วนตัว, ข้อมูลบิดา, และข้อมูลมารดา ว่ากรอกครบหรือไม่เพื่อตั้งสถานะประวัติสมบูรณ์
+        const isComplete = 
+            citizenId && nickname && dob && phone && email && address && 
+            fFname && fLname && fAge && fJob && fPhone && 
+            mFname && mLname && mAge && mJob && mPhone;
+            
+        s.isProfileComplete = isComplete ? 'true' : 'false'; 
 
         const idx = AppState.allStudents.findIndex(x => x.id === s.id);
         if(idx > -1) AppState.allStudents[idx] = s;

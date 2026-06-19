@@ -5,6 +5,10 @@ import { getStudentFullName, showLoading, hideLoading, showToast, customAlert, g
 
 let currentHvStep = 1;
 let currentStudentFamilyData = null;
+let isDrawingSig = false;
+let sigCanvas = null;
+let sigCtx = null;
+let hasSigned = false;
 
 // ฟังก์ชันแปลงลิงก์ Google Drive เป็นลิงก์ที่แสดงภาพได้โดยตรง
 function getDirectImageUrl(url) {
@@ -89,6 +93,12 @@ export function renderHomeVisitList() {
     const status = document.getElementById('hv-status').value;
     const tbody = document.getElementById('tbody-home-visit');
 
+    const selectAllBox = document.getElementById('hv-select-all');
+    if (selectAllBox) selectAllBox.checked = false;
+
+    const bulkPrintBtn = document.getElementById('hv-btn-bulk-print');
+    if (bulkPrintBtn) bulkPrintBtn.classList.add('hidden');
+
     if (!clsName) {
         tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-500">กรุณาเลือกชั้นเรียนที่ท่านเป็นที่ปรึกษา</td></tr>';
         return;
@@ -143,6 +153,9 @@ export function renderHomeVisitList() {
 
         return `
         <tr class="hover:bg-gray-50 cursor-pointer transition-colors" onclick="openHomeVisitModal('${s.id}')">
+            <td class="px-4 py-3 text-center" data-label="เลือก" onclick="event.stopPropagation();">
+                <input type="checkbox" class="hv-student-checkbox" value="${s.id}" data-status="${hv}" ${hv !== 'สำเร็จ' ? 'disabled title="กรุณาบันทึกข้อมูลเยี่ยมบ้านสำเร็จก่อน"' : 'onchange="updateBulkPrintButtonVisibility()"'} >
+            </td>
             <td class="hidden md:table-cell px-4 py-3 text-sm" data-label="เลขที่">${s.number || '-'}</td>
             <td class="hidden md:table-cell px-4 py-3 text-sm font-mono text-gray-500" data-label="รหัสนักเรียน">${s.studentId || '-'}</td>
             <td class="px-4 py-3 td-name" data-label="ชื่อ - นามสกุล">
@@ -169,8 +182,11 @@ export function renderHomeVisitList() {
             <td class="px-4 py-3 text-center" data-label="สถานะการเยี่ยมบ้าน" onclick="event.stopPropagation();">
                 ${statusSelect}
             </td>
-            <td class="px-4 py-3 text-center td-actions" data-label="จัดการ">
-                <button class="w-full md:w-auto bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded text-sm md:text-xs font-bold transition whitespace-nowrap"><i class="fas fa-edit mr-1"></i> บันทึกข้อมูล</button>
+            <td class="px-4 py-3 text-center td-actions" data-label="จัดการ" onclick="event.stopPropagation();">
+                <div class="flex justify-center items-center gap-1">
+                    <button onclick="openHomeVisitModal('${s.id}')" class="w-full md:w-auto bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded text-sm md:text-xs font-bold transition whitespace-nowrap"><i class="fas fa-edit mr-1"></i> บันทึก</button>
+                    ${hv === 'สำเร็จ' ? `<button onclick="printHomeVisitReport('${s.id}')" class="w-full md:w-auto bg-green-50 border border-green-200 hover:bg-green-100 text-green-600 px-3 py-1.5 rounded text-sm md:text-xs font-bold transition whitespace-nowrap"><i class="fas fa-file-pdf mr-1"></i> รายงาน</button>` : ''}
+                </div>
             </td>
         </tr>`;
     }).join('');
@@ -264,6 +280,15 @@ export async function openHomeVisitModal(studentId) {
     document.querySelectorAll('button[id^="hv-remove"]').forEach(el => { el.classList.add('hidden'); el.classList.remove('flex'); });
     updateMapLink(null, null);
     
+    clearSignature();
+    const savedSigContainer = document.getElementById('hv-saved-sig-container');
+    const savedSigPreview = document.getElementById('hv-sig-preview');
+    if (savedSigContainer) savedSigContainer.classList.add('hidden');
+    if (savedSigPreview) savedSigPreview.src = '';
+    
+    const printBtn = document.getElementById('hv-btn-print');
+    if (printBtn) printBtn.classList.add('hidden');
+    
     ['hv-guardian-rel-other', 'hv-housing-other', 'hv-commute-other'].forEach(id => {
         const el = document.getElementById(id);
         if(el) { el.classList.add('hidden'); el.value = ''; }
@@ -346,6 +371,13 @@ export async function openHomeVisitModal(studentId) {
                 document.getElementById('hv-preview3').classList.remove('hidden'); 
                 document.getElementById('hv-remove3').classList.remove('hidden'); document.getElementById('hv-remove3').classList.add('flex');
             }
+            if (data.signature_url) {
+                const savedSigContainer = document.getElementById('hv-saved-sig-container');
+                const savedSigPreview = document.getElementById('hv-sig-preview');
+                if (savedSigPreview) savedSigPreview.src = getDirectImageUrl(data.signature_url);
+                if (savedSigContainer) savedSigContainer.classList.remove('hidden');
+            }
+            if (printBtn) printBtn.classList.remove('hidden');
         }
     } catch (e) {
         console.error(e);
@@ -360,7 +392,7 @@ export async function openHomeVisitModal(studentId) {
 export function changeHvStep(direction) {
     currentHvStep += direction;
     if (currentHvStep < 1) currentHvStep = 1;
-    if (currentHvStep > 4) currentHvStep = 4;
+    if (currentHvStep > 5) currentHvStep = 5;
     updateHvUI();
 }
 
@@ -370,20 +402,122 @@ function updateHvUI() {
         el.classList.toggle('block', index + 1 === currentHvStep);
     });
 
-    for(let i=1; i<=4; i++) {
+    for(let i=1; i<=5; i++) {
         const tab = document.getElementById(`hv-step-${i}-tab`);
-        if(i === currentHvStep) {
-            tab.classList.remove('text-gray-400', 'font-medium');
-            tab.classList.add('text-blue-600', 'font-bold');
-        } else {
-            tab.classList.remove('text-blue-600', 'font-bold');
-            tab.classList.add('text-gray-400', 'font-medium');
+        if(tab) {
+            if(i === currentHvStep) {
+                tab.classList.remove('text-gray-400', 'font-medium');
+                tab.classList.add('text-blue-600', 'font-bold');
+            } else {
+                tab.classList.remove('text-blue-600', 'font-bold');
+                tab.classList.add('text-gray-400', 'font-medium');
+            }
         }
     }
 
     document.getElementById('hv-btn-prev').classList.toggle('hidden', currentHvStep === 1);
-    document.getElementById('hv-btn-next').classList.toggle('hidden', currentHvStep === 4);
-    document.getElementById('hv-btn-save').classList.toggle('hidden', currentHvStep !== 4);
+    document.getElementById('hv-btn-next').classList.toggle('hidden', currentHvStep === 5);
+    document.getElementById('hv-btn-save').classList.toggle('hidden', currentHvStep !== 5);
+
+    if (currentHvStep === 5) {
+        setTimeout(initSignaturePad, 50);
+    }
+}
+
+export function initSignaturePad() {
+    sigCanvas = document.getElementById('hv-sig-canvas');
+    if (!sigCanvas) return;
+    sigCtx = sigCanvas.getContext('2d');
+    
+    resizeSigCanvas();
+    
+    sigCanvas.removeEventListener('mousedown', startDrawing);
+    sigCanvas.removeEventListener('mousemove', draw);
+    sigCanvas.removeEventListener('mouseup', stopDrawing);
+    sigCanvas.removeEventListener('mouseleave', stopDrawing);
+    
+    sigCanvas.addEventListener('mousedown', startDrawing);
+    sigCanvas.addEventListener('mousemove', draw);
+    sigCanvas.addEventListener('mouseup', stopDrawing);
+    sigCanvas.addEventListener('mouseleave', stopDrawing);
+    
+    sigCanvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    sigCanvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    sigCanvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+}
+
+function resizeSigCanvas() {
+    if (!sigCanvas || !sigCtx) return;
+    const rect = sigCanvas.getBoundingClientRect();
+    sigCanvas.width = rect.width;
+    sigCanvas.height = rect.height;
+    
+    sigCtx.strokeStyle = '#000000';
+    sigCtx.lineWidth = 3;
+    sigCtx.lineCap = 'round';
+    sigCtx.lineJoin = 'round';
+    
+    hasSigned = false;
+    const placeholder = document.getElementById('hv-sig-placeholder');
+    if (placeholder) placeholder.classList.remove('hidden');
+}
+
+function startDrawing(e) {
+    isDrawingSig = true;
+    const rect = sigCanvas.getBoundingClientRect();
+    sigCtx.beginPath();
+    sigCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    const placeholder = document.getElementById('hv-sig-placeholder');
+    if (placeholder) placeholder.classList.add('hidden');
+}
+
+function draw(e) {
+    if (!isDrawingSig) return;
+    const rect = sigCanvas.getBoundingClientRect();
+    sigCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    sigCtx.stroke();
+    hasSigned = true;
+}
+
+function stopDrawing() {
+    isDrawingSig = false;
+}
+
+function handleTouchStart(e) {
+    if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const rect = sigCanvas.getBoundingClientRect();
+        isDrawingSig = true;
+        sigCtx.beginPath();
+        sigCtx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+        const placeholder = document.getElementById('hv-sig-placeholder');
+        if (placeholder) placeholder.classList.add('hidden');
+        e.preventDefault();
+    }
+}
+
+function handleTouchMove(e) {
+    if (isDrawingSig && e.touches.length === 1) {
+        const touch = e.touches[0];
+        const rect = sigCanvas.getBoundingClientRect();
+        sigCtx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+        sigCtx.stroke();
+        hasSigned = true;
+        e.preventDefault();
+    }
+}
+
+function handleTouchEnd(e) {
+    isDrawingSig = false;
+    e.preventDefault();
+}
+
+export function clearSignature() {
+    if (!sigCanvas || !sigCtx) return;
+    sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+    hasSigned = false;
+    const placeholder = document.getElementById('hv-sig-placeholder');
+    if (placeholder) placeholder.classList.remove('hidden');
 }
 
 export function getGPSLocation() {
@@ -507,6 +641,7 @@ export async function submitHomeVisit() {
     const p1Preview = document.getElementById('hv-preview1');
     const p2Preview = document.getElementById('hv-preview2');
     const p3Preview = document.getElementById('hv-preview3');
+    const sigPreview = document.getElementById('hv-sig-preview');
 
     const payload = {
         student_id: studentId,
@@ -528,6 +663,7 @@ export async function submitHomeVisit() {
         photo_1_url: (p1Preview && !p1Preview.classList.contains('hidden') && p1Preview.src) ? p1Preview.src : '',
         photo_2_url: (p2Preview && !p2Preview.classList.contains('hidden') && p2Preview.src) ? p2Preview.src : '',
         photo_3_url: (p3Preview && !p3Preview.classList.contains('hidden') && p3Preview.src) ? p3Preview.src : '',
+        signature_url: (sigPreview && sigPreview.src) ? sigPreview.src : '',
         updated_by: AppState.currentUser ? AppState.currentUser.data.id : 'unknown'
     };
 
@@ -540,6 +676,11 @@ export async function submitHomeVisit() {
         if (f1) { payload.photo_1_base64 = await compressImage(f1); payload.photo_1_mime = 'image/jpeg'; payload.photo_1_name = f1.name; }
         if (f2) { payload.photo_2_base64 = await compressImage(f2); payload.photo_2_mime = 'image/jpeg'; payload.photo_2_name = f2.name; }
         if (f3) { payload.photo_3_base64 = await compressImage(f3); payload.photo_3_mime = 'image/jpeg'; payload.photo_3_name = f3.name; }
+        if (hasSigned && sigCanvas) {
+            payload.signature_base64 = sigCanvas.toDataURL('image/png').split(',')[1];
+            payload.signature_mime = 'image/png';
+            payload.signature_name = 'guardian_signature.png';
+        }
 
         const response = await fetch(AppState.googleSheetUrl, {
             method: 'POST',
@@ -629,3 +770,344 @@ window.toggleHvOther = toggleHvOther;
 window.updateMapLink = updateMapLink;
 window.openStudentHomeInfoModal = openStudentHomeInfoModal;
 window.autofillHvGuardian = autofillHvGuardian;
+window.clearSignature = clearSignature;
+window.initSignaturePad = initSignaturePad;
+
+export async function printHomeVisitReport(studentId) {
+    const student = AppState.allStudents.find(s => s.id === studentId);
+    if (!student) return customAlert('ไม่พบข้อมูลนักเรียน');
+
+    const yr = document.getElementById('hv-year').value;
+    const sem = document.getElementById('hv-semester').value;
+
+    showLoading('กำลังดึงข้อมูลสำหรับพิมพ์รายงาน...');
+    try {
+        const response = await fetch(AppState.googleSheetUrl, {
+            method: 'POST',
+            redirect: 'follow',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: 'getHomeVisitData', studentId: student.id, academicYear: yr, semester: sem })
+        });
+        const result = await response.json();
+        hideLoading();
+
+        if (!result.success || !result.data) {
+            return customAlert('ไม่พบข้อมูลการเยี่ยมบ้านของนักเรียนคนนี้ในระบบ (กรุณาบันทึกข้อมูลก่อนพิมพ์รายงาน)');
+        }
+
+        const data = result.data;
+
+        // ดึงชื่อครูผู้บันทึก
+        let teacherName = data.updated_by || '';
+        if (AppState.allTeachers) {
+            const t = AppState.allTeachers.find(x => x.id === data.updated_by);
+            if (t) teacherName = `${t.firstName} ${t.lastName}`;
+        }
+
+        // โหลดไฟล์เทมเพลต HTML
+        const templateResponse = await fetch('homevisit_report.html');
+        let html = await templateResponse.text();
+
+        // จัดการ Watchlist
+        let watchlistStr = data.watchlist_issues || 'ไม่มีประเด็นน่าเป็นห่วง';
+
+        // จัดการจัดแสดงรูปภาพ (ถ้าไม่มีให้ใช้ placeholder)
+        const placeholderImg = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="180" viewBox="0 0 300 180"><rect width="300" height="180" fill="%23f1f5f9"/><text x="50%" y="50%" font-family="sans-serif" font-size="14" fill="%2394a3b8" text-anchor="middle" dominant-baseline="middle">ไม่มีรูปภาพประกอบ</text></svg>';
+        
+        const photo1 = data.photo_1_url ? getDirectImageUrl(data.photo_1_url) : placeholderImg;
+        const photo2 = data.photo_2_url ? getDirectImageUrl(data.photo_2_url) : placeholderImg;
+        const photo3 = data.photo_3_url ? getDirectImageUrl(data.photo_3_url) : placeholderImg;
+
+        // ลายเซ็นผู้ปกครอง
+        let signatureHtml = '';
+        if (data.signature_url) {
+            signatureHtml = `<img src="${getDirectImageUrl(data.signature_url)}" style="max-height: 50px; object-fit: contain;" alt="ลายเซ็นผู้ปกครอง">`;
+        } else {
+            signatureHtml = '<span style="color:#94a3b8; font-size:10pt; font-style:italic;">(ไม่ได้ลงชื่ออิเล็กทรอนิกส์)</span>';
+        }
+
+        // จัดฟอร์แมตวันที่บันทึก
+        let timestampStr = '-';
+        if (data.timestamp) {
+            try {
+                timestampStr = new Date(data.timestamp).toLocaleString('th-TH');
+            } catch(e) {
+                timestampStr = data.timestamp;
+            }
+        }
+        
+        let visitDateStr = '-';
+        if (data.visit_date) {
+            try {
+                const d = new Date(data.visit_date);
+                visitDateStr = d.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+            } catch(e) {
+                visitDateStr = data.visit_date;
+            }
+        }
+
+        // จับคู่แทนที่ตัวแปรใน HTML Template
+        const replacements = {
+            '{{semester}}': sem,
+            '{{academic_year}}': yr,
+            '{{visit_id}}': `HV-${yr}-${sem}-${student.studentId || student.id}`,
+            '{{student_name}}': getStudentFullName(student),
+            '{{student_id}}': student.studentId || '-',
+            '{{guardian_name}}': data.guardian_name || '-',
+            '{{guardian_relationship}}': data.guardian_relationship || '-',
+            '{{guardian_phone}}': data.guardian_phone || '-',
+            '{{economic_status}}': data.economic_status || '-',
+            '{{housing_type}}': data.housing_type || '-',
+            '{{environment_safety}}': data.environment_safety || '-',
+            '{{commute_method}}': data.commute_method || '-',
+            '{{home_behavior}}': data.home_behavior || '-',
+            '{{watchlist_issues}}': watchlistStr,
+            '{{guardian_suggestions}}': data.guardian_suggestions || '-',
+            '{{latitude}}': data.latitude || '-',
+            '{{longitude}}': data.longitude || '-',
+            '{{photo_1_url}}': photo1,
+            '{{photo_2_url}}': photo2,
+            '{{photo_3_url}}': photo3,
+            '{{visit_date}}': visitDateStr,
+            '{{updated_by}}': teacherName,
+            '{{timestamp}}': timestampStr
+        };
+
+        for (const [key, val] of Object.entries(replacements)) {
+            html = html.replaceAll(key, val);
+        }
+
+        // สำหรับหน้าต่างการพิมพ์ ลายเซ็นถ้ามี ให้แทรกลงในช่องลงชื่อ
+        if (data.signature_url) {
+            html = html.replace(
+                'ลงชื่อ..........................................................<br>\n                ( <b>' + (data.guardian_name || '-') + '</b> )',
+                `ลงชื่อ &nbsp; ${signatureHtml} &nbsp;<br>\n                ( <b>${data.guardian_name || '-'}</b> )`
+            );
+        }
+
+        // เปิดหน้าพิมพ์รายงาน
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(html);
+        printWindow.document.close();
+        
+        // รอรูปภาพโหลดเสร็จแล้วค่อยสั่งพิมพ์
+        printWindow.onload = function() {
+            setTimeout(() => {
+                printWindow.print();
+            }, 300);
+        };
+
+    } catch (e) {
+        console.error(e);
+        hideLoading();
+        customAlert('ไม่สามารถดึงข้อมูลรายงานได้');
+    }
+}
+
+export function printHomeVisitReportFromModal() {
+    const studentId = document.getElementById('hv-student-id').value;
+    if (studentId) {
+        printHomeVisitReport(studentId);
+    }
+}
+
+window.printHomeVisitReport = printHomeVisitReport;
+window.printHomeVisitReportFromModal = printHomeVisitReportFromModal;
+
+export function toggleAllHomeVisitCheckboxes(masterCheckbox) {
+    const checkboxes = document.querySelectorAll('.hv-student-checkbox:not([disabled])');
+    checkboxes.forEach(cb => {
+        cb.checked = masterCheckbox.checked;
+    });
+    updateBulkPrintButtonVisibility();
+}
+
+export function updateBulkPrintButtonVisibility() {
+    const checkedBoxes = document.querySelectorAll('.hv-student-checkbox:checked');
+    const bulkPrintBtn = document.getElementById('hv-btn-bulk-print');
+    if (bulkPrintBtn) {
+        if (checkedBoxes.length > 0) {
+            bulkPrintBtn.classList.remove('hidden');
+        } else {
+            bulkPrintBtn.classList.add('hidden');
+        }
+    }
+}
+
+export async function printSelectedHomeVisits() {
+    const checkedBoxes = document.querySelectorAll('.hv-student-checkbox:checked');
+    const completedIds = Array.from(checkedBoxes)
+        .filter(cb => cb.getAttribute('data-status') === 'สำเร็จ')
+        .map(cb => cb.value);
+
+    if (completedIds.length === 0) {
+        return customAlert('กรุณาเลือกนักเรียนที่มีสถานะเยี่ยมบ้าน "สำเร็จ" อย่างน้อย 1 คนเพื่อออกรายงาน');
+    }
+
+    const yr = document.getElementById('hv-year').value;
+    const sem = document.getElementById('hv-semester').value;
+
+    showLoading(`กำลังดึงข้อมูลรายงาน ${completedIds.length} รายการ...`);
+    try {
+        // ดึงไฟล์เทมเพลต HTML
+        const templateResponse = await fetch('homevisit_report.html');
+        const templateHtml = await templateResponse.text();
+
+        // ดึงสไตล์และเนื้อหาภายใน Body จากเทมเพลต
+        const headMatch = templateHtml.match(/<head>([\s\S]*?)<\/head>/);
+        const bodyMatch = templateHtml.match(/<body>([\s\S]*?)<\/body>/);
+        
+        let styles = headMatch ? headMatch[1] : '';
+        let bodyTemplate = bodyMatch ? bodyMatch[1] : '';
+
+        // เพิ่มคลาสสำหรับแบ่งหน้าในสไตล์
+        styles += `
+            <style>
+                .report-page {
+                    page-break-after: always;
+                    page-break-inside: avoid;
+                    margin-bottom: 20px;
+                }
+                @media print {
+                    .report-page {
+                        page-break-after: always;
+                        page-break-inside: avoid;
+                        margin-bottom: 0;
+                    }
+                    .report-page:last-child {
+                        page-break-after: avoid;
+                    }
+                }
+            </style>
+        `;
+
+        let combinedBodyHtml = '';
+
+        for (const studentId of completedIds) {
+            const student = AppState.allStudents.find(s => s.id === studentId);
+            if (!student) continue;
+
+            const response = await fetch(AppState.googleSheetUrl, {
+                method: 'POST',
+                redirect: 'follow',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'getHomeVisitData', studentId: student.id, academicYear: yr, semester: sem })
+            });
+            const result = await response.json();
+
+            if (result.success && result.data) {
+                const data = result.data;
+
+                let teacherName = data.updated_by || '';
+                if (AppState.allTeachers) {
+                    const t = AppState.allTeachers.find(x => x.id === data.updated_by);
+                    if (t) teacherName = `${t.firstName} ${t.lastName}`;
+                }
+
+                let watchlistStr = data.watchlist_issues || 'ไม่มีประเด็นน่าเป็นห่วง';
+                const placeholderImg = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="180" viewBox="0 0 300 180"><rect width="300" height="180" fill="%23f1f5f9"/><text x="50%" y="50%" font-family="sans-serif" font-size="14" fill="%2394a3b8" text-anchor="middle" dominant-baseline="middle">ไม่มีรูปภาพประกอบ</text></svg>';
+                
+                const photo1 = data.photo_1_url ? getDirectImageUrl(data.photo_1_url) : placeholderImg;
+                const photo2 = data.photo_2_url ? getDirectImageUrl(data.photo_2_url) : placeholderImg;
+                const photo3 = data.photo_3_url ? getDirectImageUrl(data.photo_3_url) : placeholderImg;
+
+                let signatureHtml = '';
+                if (data.signature_url) {
+                    signatureHtml = `<img src="${getDirectImageUrl(data.signature_url)}" style="max-height: 50px; object-fit: contain;" alt="ลายเซ็นผู้ปกครอง">`;
+                } else {
+                    signatureHtml = '<span style="color:#94a3b8; font-size:10pt; font-style:italic;">(ไม่ได้ลงชื่ออิเล็กทรอนิกส์)</span>';
+                }
+
+                let timestampStr = '-';
+                if (data.timestamp) {
+                    try { timestampStr = new Date(data.timestamp).toLocaleString('th-TH'); } catch(e) { timestampStr = data.timestamp; }
+                }
+                
+                let visitDateStr = '-';
+                if (data.visit_date) {
+                    try {
+                        const d = new Date(data.visit_date);
+                        visitDateStr = d.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+                    } catch(e) { visitDateStr = data.visit_date; }
+                }
+
+                const replacements = {
+                    '{{semester}}': sem,
+                    '{{academic_year}}': yr,
+                    '{{visit_id}}': `HV-${yr}-${sem}-${student.studentId || student.id}`,
+                    '{{student_name}}': getStudentFullName(student),
+                    '{{student_id}}': student.studentId || '-',
+                    '{{guardian_name}}': data.guardian_name || '-',
+                    '{{guardian_relationship}}': data.guardian_relationship || '-',
+                    '{{guardian_phone}}': data.guardian_phone || '-',
+                    '{{economic_status}}': data.economic_status || '-',
+                    '{{housing_type}}': data.housing_type || '-',
+                    '{{environment_safety}}': data.environment_safety || '-',
+                    '{{commute_method}}': data.commute_method || '-',
+                    '{{home_behavior}}': data.home_behavior || '-',
+                    '{{watchlist_issues}}': watchlistStr,
+                    '{{guardian_suggestions}}': data.guardian_suggestions || '-',
+                    '{{latitude}}': data.latitude || '-',
+                    '{{longitude}}': data.longitude || '-',
+                    '{{photo_1_url}}': photo1,
+                    '{{photo_2_url}}': photo2,
+                    '{{photo_3_url}}': photo3,
+                    '{{visit_date}}': visitDateStr,
+                    '{{updated_by}}': teacherName,
+                    '{{timestamp}}': timestampStr
+                };
+
+                let studentReport = bodyTemplate;
+                for (const [key, val] of Object.entries(replacements)) {
+                    studentReport = studentReport.replaceAll(key, val);
+                }
+
+                if (data.signature_url) {
+                    studentReport = studentReport.replace(
+                        'ลงชื่อ..........................................................<br>\n                ( <b>' + (data.guardian_name || '-') + '</b> )',
+                        `ลงชื่อ &nbsp; ${signatureHtml} &nbsp;<br>\n                ( <b>${data.guardian_name || '-'}</b> )`
+                    );
+                }
+
+                combinedBodyHtml += `<div class="report-page">${studentReport}</div>`;
+            }
+        }
+
+        hideLoading();
+
+        if (combinedBodyHtml === '') {
+            return customAlert('ไม่พบข้อมูลการเยี่ยมบ้านที่สามารถออกรายงานได้');
+        }
+
+        const finalHtml = `
+            <!DOCTYPE html>
+            <html lang="th">
+            <head>
+                ${styles}
+            </head>
+            <body>
+                ${combinedBodyHtml}
+            </body>
+            </html>
+        `;
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(finalHtml);
+        printWindow.document.close();
+        
+        printWindow.onload = function() {
+            setTimeout(() => {
+                printWindow.print();
+            }, 500);
+        };
+
+    } catch (e) {
+        console.error(e);
+        hideLoading();
+        customAlert('เกิดข้อผิดพลาดในการสร้างรายงานรวม');
+    }
+}
+
+window.toggleAllHomeVisitCheckboxes = toggleAllHomeVisitCheckboxes;
+window.printSelectedHomeVisits = printSelectedHomeVisits;
+window.updateBulkPrintButtonVisibility = updateBulkPrintButtonVisibility;

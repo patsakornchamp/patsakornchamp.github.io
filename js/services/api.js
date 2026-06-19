@@ -20,10 +20,10 @@ export function loadFromLocalStorage() {
 export async function syncDataFromServer(silent = false) {
     if (!AppState.googleSheetUrl) {
         loadFromLocalStorage();
-        if (!silent) hideLoading(); // Ensure loading is hidden even if no URL
+        hideLoading(); // Ensure loading is hidden even if no URL
         return false;
     }
-    if (!silent) showLoading('กำลังซิงค์ข้อมูลล่าสุด...');
+    showLoading('กำลังดึงข้อมูลจากฐานข้อมูล...');
 
     // อ่านข้อมูล session ที่มีอยู่จาก localStorage ก่อน
     AppState.currentUser = JSON.parse(localStorage.getItem(DB_KEYS.SESSION));
