@@ -488,41 +488,27 @@
                 </div>
 
                 <form id="student-self-form" onsubmit="saveMyProfile(event)">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div>
-                            <h4 class="font-bold text-lg text-green-700 mb-4 border-b pb-2"><i class="fas fa-info-circle mr-2"></i>ข้อมูลส่วนตัว</h4>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                    <!-- ข้อมูลส่วนตัว (จัด Layout เต็มแถว) -->
+                    <div class="mb-6">
+                        <h4 class="font-bold text-lg text-green-700 mb-4 border-b pb-2"><i class="fas fa-info-circle mr-2"></i>ข้อมูลส่วนตัว</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div><label class="text-sm font-medium text-gray-700">เลข ปชช. (13 หลัก) *</label><input type="text" id="sp-citizenid" maxlength="13" required class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
                                 <div><label class="text-sm font-medium text-gray-700">ชื่อเล่น</label><input type="text" id="sp-nickname" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                                 <div><label class="text-sm font-medium text-gray-500">ชั้นเรียน</label><input type="text" id="sp-class" readonly class="w-full px-3 py-2 border rounded bg-gray-100 text-gray-500"></div>
                                 <div><label class="text-sm font-medium text-gray-500">เลขที่</label><input type="text" id="sp-number" readonly class="w-full px-3 py-2 border rounded bg-gray-100 text-gray-500"></div>
+                                <div><label class="text-sm font-medium text-gray-700">วันเกิด *</label><input type="date" id="sp-dob" required class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                                <div><label class="text-sm font-medium text-gray-700">เบอร์โทรศัพท์ส่วนตัว *</label><input type="text" id="sp-phone" required placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                                <div class="sm:col-span-2"><label class="text-sm font-medium text-gray-700">อีเมลส่วนตัว</label><input type="email" id="sp-email" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
                             </div>
-                            <div class="mb-3"><label class="text-sm font-medium text-gray-700">วันเกิด *</label><input type="date" id="sp-dob" required class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
-                            <div class="mb-3"><label class="text-sm font-medium text-gray-700">เบอร์โทรศัพท์ส่วนตัว *</label><input type="text" id="sp-phone" required placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
-                            <div class="mb-3"><label class="text-sm font-medium text-gray-700">อีเมลส่วนตัว</label><input type="email" id="sp-email" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
-                            <div class="mb-3"><label class="text-sm font-medium text-gray-700">ที่อยู่ปัจจุบัน *</label><textarea id="sp-address" required rows="2" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></textarea></div>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-lg text-blue-700 mb-4 border-b pb-2"><i class="fas fa-user-shield mr-2"></i>ข้อมูลผู้ปกครอง</h4>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-                                <div class="sm:col-span-1"><label class="text-sm font-medium text-gray-700">คำนำหน้า *</label>
-                                    <select id="sp-p-title" class="w-full px-3 py-2 border rounded"><option value="นาย">นาย</option><option value="นาง">นาง</option><option value="นางสาว">นางสาว</option></select>
-                                </div>
-                                <div class="sm:col-span-2"><label class="text-sm font-medium text-gray-700">ชื่อผู้ปกครอง *</label><input type="text" id="sp-p-fname" required class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                            <div class="md:col-span-1">
+                                <label class="text-sm font-medium text-gray-700">ที่อยู่ปัจจุบัน *</label>
+                                <textarea id="sp-address" required rows="7" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500 h-[calc(100%-24px)]"></textarea>
                             </div>
-                            <div class="mb-3"><label class="text-sm font-medium text-gray-700">นามสกุลผู้ปกครอง *</label><input type="text" id="sp-p-lname" required class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
-                            <div class="mb-3"><label class="text-sm font-medium text-gray-700">ความสัมพันธ์ *</label>
-                                <select id="sp-p-rel" class="w-full px-3 py-2 border rounded focus:ring-green-500">
-                                    <option value="บิดา">บิดา</option><option value="มารดา">มารดา</option><option value="ปู่/ย่า/ตา/ยาย">ปู่/ย่า/ตา/ยาย</option><option value="ลุง/ป้า/น้า/อา">ลุง/ป้า/น้า/อา</option><option value="พี่/น้อง">พี่/น้อง</option><option value="อื่นๆ">อื่นๆ</option>
-                                </select>
-                            </div>
-                            <div class="mb-3"><label class="text-sm font-medium text-gray-700">เบอร์โทรศัพท์ผู้ปกครอง *</label><input type="text" id="sp-p-phone" required placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
                         </div>
                     </div>
                     
-                    <!-- ข้อมูลบิดาและมารดา (เพิ่มเติม) -->
+                    <!-- ข้อมูลครอบครัว (บิดา -> มารดา -> ผู้ปกครอง) -->
                     <div class="mt-8 border-t pt-6">
                         <h4 class="font-bold text-lg text-blue-700 mb-4 border-b pb-2"><i class="fas fa-male mr-2"></i>ข้อมูลบิดา</h4>
                         <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
@@ -540,6 +526,38 @@
                             <div><label class="text-sm font-medium text-gray-700">อายุ (ปี)</label><input type="number" id="sp-m-age" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
                             <div><label class="text-sm font-medium text-gray-700">อาชีพ</label><input type="text" id="sp-m-job" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
                             <div><label class="text-sm font-medium text-gray-700">เบอร์โทรศัพท์</label><input type="text" id="sp-m-phone" placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                        </div>
+
+                        <!-- ข้อมูลผู้ปกครอง (ย้ายมาไว้หลัง บิดา-มารดา) -->
+                        <div class="mt-6 pt-4 border-t">
+                            <div class="flex flex-wrap items-center justify-between mb-4 border-b pb-2 gap-2">
+                                <h4 class="font-bold text-lg text-indigo-700"><i class="fas fa-user-shield mr-2"></i>ข้อมูลผู้ปกครอง</h4>
+                                <div class="flex items-center gap-4 text-sm font-medium text-gray-600 bg-gray-50 px-3 py-1.5 rounded-xl border shadow-sm">
+                                    <span class="text-xs text-gray-500 font-bold">ใช้ข้อมูลเดียวกันกับ:</span>
+                                    <label class="flex items-center space-x-1.5 cursor-pointer">
+                                        <input type="radio" name="sp-copy-parent" value="father" onclick="copyParentInfoToGuardian('father')" class="text-indigo-600 focus:ring-indigo-500">
+                                        <span>บิดา</span>
+                                    </label>
+                                    <label class="flex items-center space-x-1.5 cursor-pointer">
+                                        <input type="radio" name="sp-copy-parent" value="mother" onclick="copyParentInfoToGuardian('mother')" class="text-indigo-600 focus:ring-indigo-500">
+                                        <span>มารดา</span>
+                                    </label>
+                                    <button type="button" onclick="clearCopiedGuardianInfo()" id="sp-btn-clear-copy" class="hidden text-xs text-red-500 hover:text-red-700 font-bold ml-1"><i class="fas fa-times-circle"></i> ยกเลิกเลือก</button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                                <div><label class="text-sm font-medium text-gray-700">คำนำหน้า *</label>
+                                    <select id="sp-p-title" class="w-full px-3 py-2 border rounded focus:ring-green-500"><option value="นาย">นาย</option><option value="นาง">นาง</option><option value="นางสาว">นางสาว</option></select>
+                                </div>
+                                <div><label class="text-sm font-medium text-gray-700">ชื่อผู้ปกครอง *</label><input type="text" id="sp-p-fname" required class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                                <div><label class="text-sm font-medium text-gray-700">นามสกุลผู้ปกครอง *</label><input type="text" id="sp-p-lname" required class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                                <div><label class="text-sm font-medium text-gray-700">ความสัมพันธ์ *</label>
+                                    <select id="sp-p-rel" class="w-full px-3 py-2 border rounded focus:ring-green-500">
+                                        <option value="บิดา">บิดา</option><option value="มารดา">มารดา</option><option value="ปู่/ย่า/ตา/ยาย">ปู่/ย่า/ตา/ยาย</option><option value="ลุง/ป้า/น้า/อา">ลุง/ป้า/น้า/อา</option><option value="พี่/น้อง">พี่/น้อง</option><option value="อื่นๆ">อื่นๆ</option>
+                                    </select>
+                                </div>
+                                <div class="sm:col-span-4"><label class="text-sm font-medium text-gray-700">เบอร์โทรศัพท์ผู้ปกครอง *</label><input type="text" id="sp-p-phone" required placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                            </div>
                         </div>
                     </div>
 
@@ -1064,6 +1082,7 @@
                     <button onclick="switchMasterSubTab('classes')" id="msub-classes" class="px-4 py-2 border-b-2 font-medium focus:outline-none border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap"><i class="fas fa-door-open mr-2"></i>ชั้นเรียน</button>
                 <button onclick="switchMasterSubTab('students')" id="msub-students" class="px-4 py-2 border-b-2 font-medium focus:outline-none border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap"><i class="fas fa-user-graduate mr-2"></i>นักเรียน</button>
                 <button onclick="switchMasterSubTab('club-manage')" id="msub-club-manage" class="px-4 py-2 border-b-2 font-medium focus:outline-none border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap"><i class="fas fa-users-cog mr-2"></i>ชุมนุม</button>
+                <button onclick="switchMasterSubTab('pr-news')" id="msub-pr-news" class="px-4 py-2 border-b-2 font-medium focus:outline-none border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap"><i class="fas fa-bullhorn mr-2"></i>ประชาสัมพันธ์</button>
                 </div>
 
                 <!-- Subjects -->
@@ -1098,6 +1117,37 @@
                     <div class="flex flex-col sm:flex-row justify-between items-center mt-4 px-2 gap-3 w-full">
                         <div class="text-sm text-gray-600 font-medium" id="page-info-clubs"></div>
                         <div class="flex gap-1 flex-wrap justify-center" id="pagination-clubs"></div>
+                    </div>
+                </div>
+
+                <!-- PR News -->
+                <div id="master-pr-news" class="master-section hidden w-full">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
+                        <div class="flex items-center gap-3 w-full sm:w-auto">
+                            <h4 class="text-lg font-bold text-gray-700 hidden lg:block">ข่าวประชาสัมพันธ์</h4>
+                            <div class="relative w-full sm:w-64">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"><i class="fas fa-search"></i></span>
+                                <input type="text" id="search-pr-news" placeholder="ค้นหาชื่อกิจกรรม..." class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-green-500 focus:border-green-500" onkeyup="renderPRNewsData()">
+                            </div>
+                        </div>
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <button onclick="searchMasterData()" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm whitespace-nowrap"><i class="fas fa-sync-alt mr-1"></i> รีเฟรช</button>
+                            <button onclick="openPRNewsModal()" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm whitespace-nowrap"><i class="fas fa-plus mr-1"></i> เพิ่มประชาสัมพันธ์</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto bg-white/40 border border-white/50 backdrop-blur-md rounded-xl shadow-sm w-full">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-white/50">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">รูปภาพ</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชื่อกิจกรรม / รายละเอียด</th>
+                                    <th class="hidden md:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ช่วงเวลาแสดงผล</th>
+                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 whitespace-nowrap">สถานะ</th>
+                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 whitespace-nowrap">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-pr-news" class="divide-y divide-gray-200"></tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -1604,6 +1654,17 @@
                         </div>
                     </div>
                     <div><label class="text-sm font-medium">สภาพแวดล้อมและความปลอดภัย (เอื้อต่อการเรียนหรือไม่?)</label><textarea id="hv-environment" rows="3" class="w-full px-3 py-2 border rounded"></textarea></div>
+                    
+                    <!-- สมาชิกในบ้าน (Household Members) -->
+                    <div class="mt-6 border-t pt-4">
+                        <div class="flex justify-between items-center mb-3">
+                            <h5 class="font-bold text-gray-800"><i class="fas fa-users mr-1"></i> สมาชิกในบ้าน</h5>
+                            <button type="button" onclick="addHvMemberRow()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm"><i class="fas fa-plus mr-1"></i> เพิ่มสมาชิก</button>
+                        </div>
+                        <div id="hv-members-list" class="space-y-3 max-h-[35vh] overflow-y-auto pr-1">
+                            <!-- Rows added dynamically -->
+                        </div>
+                    </div>
                 </div>
 
                 <!-- STEP 3 -->
@@ -1696,11 +1757,10 @@
             </div>
             
             <div class="px-6 py-4 border-t border-white/30 flex justify-between items-center">
-                <button id="hv-btn-prev" onclick="changeHvStep(-1)" class="px-4 py-2 border rounded text-sm hover:bg-gray-100 hidden">ย้อนกลับ</button>
+                <button id="hv-btn-prev" onclick="changeHvStep(-1)" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm hidden">ย้อนกลับ</button>
                 <div class="flex-1"></div>
                 <button id="hv-btn-next" onclick="changeHvStep(1)" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">ถัดไป</button>
                 <button id="hv-btn-save" onclick="submitHomeVisit()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm hidden"><i class="fas fa-save mr-1"></i> บันทึกการเยี่ยมบ้าน</button>
-                <button id="hv-btn-print" onclick="printHomeVisitReportFromModal()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm hidden ml-2"><i class="fas fa-file-pdf mr-1"></i> พิมพ์รายงาน PDF</button>
             </div>
         </div>
     </div>
@@ -1829,6 +1889,64 @@
             <button onclick="closeModal('pr-announcement-modal')" class="px-8 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg w-full transition-all">
                 ปิดหน้าต่าง
             </button>
+        </div>
+    </div>
+
+    <!-- PR NEWS EDIT/ADD FORM MODAL -->
+    <div id="pr-news-modal" class="modal">
+        <div class="glass-modal rounded-3xl w-full max-w-lg mx-4 flex flex-col max-h-[85vh]">
+            <div class="px-6 py-4 border-b border-white/30 flex justify-between items-center">
+                <h3 class="font-bold text-green-800" id="pr-modal-title"><i class="fas fa-bullhorn mr-2"></i>จัดการข่าวประชาสัมพันธ์</h3>
+                <button onclick="closeModal('pr-news-modal')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-grow space-y-4 text-left">
+                <input type="hidden" id="pr-id">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อกิจกรรม *</label>
+                    <input type="text" id="pr-activity-name" class="w-full px-3 py-2 border rounded-lg focus:ring-green-500 focus:border-green-500 text-sm" placeholder="ระบุชื่อกิจกรรมหรือชื่อเรื่อง...">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">รายละเอียด</label>
+                    <textarea id="pr-details" rows="3" class="w-full px-3 py-2 border rounded-lg focus:ring-green-500 focus:border-green-500 text-sm" placeholder="รายละเอียดข่าวสารประชาสัมพันธ์..."></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">วันเริ่มต้นแสดงผล *</label>
+                        <input type="date" id="pr-start-date" class="w-full px-3 py-2 border rounded-lg focus:ring-green-500 focus:border-green-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">วันสิ้นสุดแสดงผล *</label>
+                        <input type="date" id="pr-end-date" class="w-full px-3 py-2 border rounded-lg focus:ring-green-500 focus:border-green-500 text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">รูปภาพสำหรับแสดงผล (อัปโหลดหรือระบุ URL)</label>
+                    <div class="flex flex-col sm:flex-row gap-2 items-center">
+                        <label for="pr-image-file" class="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 px-4 rounded-lg border border-blue-200 text-sm whitespace-nowrap"><i class="fas fa-upload mr-2"></i> อัปโหลดรูปภาพ</label>
+                        <input type="file" id="pr-image-file" accept="image/*" class="hidden" onchange="previewPRImage(event)">
+                        <input type="text" id="pr-image-url" class="w-full px-3 py-2 border rounded-lg focus:ring-green-500 focus:border-green-500 text-sm" placeholder="หรือกรอก URL รูปภาพ...">
+                    </div>
+                    <div class="relative mt-2 flex justify-center hidden" id="pr-image-preview-container">
+                        <img id="pr-image-preview" class="max-h-48 rounded border shadow-sm">
+                        <button type="button" onclick="clearPRImagePreview()" class="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white w-6 h-6 rounded-full shadow-md flex items-center justify-center"><i class="fas fa-times text-xs"></i></button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">สถานะเปิดแสดงผล *</label>
+                    <select id="pr-status-active" class="w-full px-3 py-2 border rounded-lg focus:ring-green-500 focus:border-green-500 text-sm">
+                        <option value="true">แสดงผล (Active)</option>
+                        <option value="false">ปิดกั้น (Inactive)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">หมายเหตุ</label>
+                    <input type="text" id="pr-note" class="w-full px-3 py-2 border rounded-lg focus:ring-green-500 focus:border-green-500 text-sm" placeholder="หมายเหตุภายในระบบ...">
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-white/30 flex justify-end gap-2">
+                <button onclick="closeModal('pr-news-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-100 font-medium">ยกเลิก</button>
+                <button onclick="savePRNewsItem()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-bold shadow-md hover:shadow-lg transition-all"><i class="fas fa-save mr-1"></i> บันทึกข้อมูล</button>
+            </div>
         </div>
     </div>
 
@@ -1989,6 +2107,12 @@
                     <div class="mb-4">
                         <span class="text-gray-500 block mb-1 text-sm">คำสั่ง / รายละเอียดจากครู:</span>
                         <div class="bg-gray-50 p-3 rounded border text-sm text-gray-700 whitespace-pre-line" id="stu-asm-detail-desc">-</div>
+                    </div>
+
+                    <!-- ไฟล์แนบจากครู -->
+                    <div id="stu-asm-teacher-files-section" class="hidden mb-4">
+                        <span class="text-gray-500 block mb-2 text-sm font-bold"><i class="fas fa-paperclip mr-1 text-indigo-500"></i>ไฟล์แนบจากครู:</span>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" id="stu-asm-teacher-files-container"></div>
                     </div>
 
                     <div id="stu-asm-teacher-comment-box" class="hidden mb-2">

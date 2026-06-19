@@ -81,6 +81,7 @@ function previewImageForProfile(event, previewId, removeBtnId) {
 
 // --- Student Self Service ---
 export function renderStudentProfile() {
+    clearCopiedGuardianInfo();
     const s = AppState.currentUser.data;
     const defaultPic = 'https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg';
     document.getElementById('profile-fullname').innerText = getStudentFullName(s);
@@ -1181,6 +1182,51 @@ export function openStudentAssignmentModal(asmId) {
     document.getElementById('stu-asm-detail-loc').innerText = asm.submitLocation || 'ไม่ระบุ';
     document.getElementById('stu-asm-detail-desc').innerText = asm.description || 'ไม่มีคำอธิบายเพิ่มเติม';
 
+    // Teacher Attached Files (ไฟล์ที่ครูแนบมาพร้อมกับงาน)
+    const teacherFilesSection = document.getElementById('stu-asm-teacher-files-section');
+    const teacherFilesContainer = document.getElementById('stu-asm-teacher-files-container');
+    let teacherFiles = [];
+    try {
+        teacherFiles = typeof asm.files === 'string' ? JSON.parse(asm.files) : (Array.isArray(asm.files) ? asm.files : []);
+    } catch(e) { teacherFiles = []; }
+
+    if (Array.isArray(teacherFiles) && teacherFiles.length > 0) {
+        teacherFilesSection.classList.remove('hidden');
+        teacherFilesContainer.innerHTML = teacherFiles.map(file => {
+            const fileName = file.name || file.n || 'ไฟล์แนบ';
+            const fileUrl = file.url || file.u || '';
+            const isImg = fileName.match(/\.(jpeg|jpg|gif|png|webp)$/i);
+            const isValidUrl = fileUrl && (fileUrl.startsWith('http://') || fileUrl.startsWith('https://'));
+
+            let previewInner = '';
+            if (isImg && isValidUrl) {
+                previewInner = `<img src="${getDirectImageUrl(fileUrl)}" class="w-full h-16 object-cover rounded border mb-1 cursor-pointer" onclick="viewLargeImage(this.src)" title="คลิกเพื่อดูรูปใหญ่">`;
+            } else {
+                let faIcon = 'fa-file-alt text-indigo-500';
+                if (fileName.match(/\.pdf$/i)) faIcon = 'fa-file-pdf text-red-500';
+                else if (fileName.match(/\.(doc|docx)$/i)) faIcon = 'fa-file-word text-blue-600';
+                else if (fileName.match(/\.(xls|xlsx|csv)$/i)) faIcon = 'fa-file-excel text-green-600';
+                else if (fileName.match(/\.(ppt|pptx)$/i)) faIcon = 'fa-file-powerpoint text-orange-500';
+                else if (fileName.match(/\.(zip|rar)$/i)) faIcon = 'fa-file-archive text-gray-700';
+                previewInner = `<div class="flex flex-col items-center justify-center h-16 mb-1"><i class="fas ${faIcon} text-3xl"></i></div>`;
+            }
+
+            const linkHtml = isValidUrl
+                ? `<a href="${fileUrl}" target="_blank" class="text-[10px] text-indigo-600 hover:underline mt-1 font-bold block"><i class="fas fa-download mr-1"></i>ดาวน์โหลด/เปิด</a>`
+                : `<span class="text-[10px] text-gray-400 mt-1 italic block">ไม่มีลิงก์</span>`;
+
+            return `
+            <div class="border border-indigo-200 rounded-lg p-2 text-center bg-indigo-50/30 flex flex-col justify-center shadow-sm hover:shadow-md transition-shadow">
+                ${previewInner}
+                <p class="text-[10px] text-gray-700 truncate w-full px-1 font-medium" title="${fileName}">${fileName}</p>
+                ${linkHtml}
+            </div>`;
+        }).join('');
+    } else {
+        teacherFilesSection.classList.add('hidden');
+        teacherFilesContainer.innerHTML = '';
+    }
+
     // Teacher Comment
     const tCommentBox = document.getElementById('stu-asm-teacher-comment-box');
     if (rec && rec.teacherComment) {
@@ -1478,7 +1524,117 @@ export async function submitStudentAssignment() {
     }
 }
 
+export function copyParentInfoToGuardian(parentRole) {
+    let title = 'นาย';
+    let fname = '';
+    let lname = '';
+    let relation = 'อื่นๆ';
+    let phone = '';
+    
+    if (parentRole === 'father') {
+        title = 'นาย';
+        fname = (document.getElementById('sp-f-fname').value || '').trim();
+        lname = (document.getElementById('sp-f-lname').value || '').trim();
+        relation = 'บิดา';
+        phone = (document.getElementById('sp-f-phone').value || '').trim();
+    } else if (parentRole === 'mother') {
+        title = 'นาง';
+        fname = (document.getElementById('sp-m-fname').value || '').trim();
+        lname = (document.getElementById('sp-m-lname').value || '').trim();
+        relation = 'มารดา';
+        phone = (document.getElementById('sp-m-phone').value || '').trim();
+    }
+    
+    const titleSelect = document.getElementById('sp-p-title');
+    const fnameInput = document.getElementById('sp-p-fname');
+    const lnameInput = document.getElementById('sp-p-lname');
+    const relSelect = document.getElementById('sp-p-rel');
+    const phoneInput = document.getElementById('sp-p-phone');
+    
+    if (titleSelect) {
+        titleSelect.value = title;
+        titleSelect.disabled = true;
+        titleSelect.classList.add('bg-gray-100');
+    }
+    if (fnameInput) {
+        fnameInput.value = fname;
+        fnameInput.readOnly = true;
+        fnameInput.classList.add('bg-gray-100');
+        // trigger validation styling reset
+        fnameInput.classList.remove('border-red-500', 'bg-red-50');
+    }
+    if (lnameInput) {
+        lnameInput.value = lname;
+        lnameInput.readOnly = true;
+        lnameInput.classList.add('bg-gray-100');
+        lnameInput.classList.remove('border-red-500', 'bg-red-50');
+    }
+    if (relSelect) {
+        relSelect.value = relation;
+        relSelect.disabled = true;
+        relSelect.classList.add('bg-gray-100');
+    }
+    if (phoneInput) {
+        phoneInput.value = phone;
+        phoneInput.readOnly = true;
+        phoneInput.classList.add('bg-gray-100');
+        phoneInput.classList.remove('border-red-500', 'bg-red-50');
+    }
+    
+    const clearBtn = document.getElementById('sp-btn-clear-copy');
+    if (clearBtn) {
+        clearBtn.classList.remove('hidden');
+    }
+}
+
+export function clearCopiedGuardianInfo() {
+    const radios = document.getElementsByName('sp-copy-parent');
+    radios.forEach(r => r.checked = false);
+    
+    const fnameInput = document.getElementById('sp-p-fname');
+    const lnameInput = document.getElementById('sp-p-lname');
+    const phoneInput = document.getElementById('sp-p-phone');
+    
+    if (fnameInput) {
+        fnameInput.value = '';
+        fnameInput.readOnly = false;
+        fnameInput.classList.remove('bg-gray-100');
+        fnameInput.classList.remove('border-red-500', 'bg-red-50');
+    }
+    if (lnameInput) {
+        lnameInput.value = '';
+        lnameInput.readOnly = false;
+        lnameInput.classList.remove('bg-gray-100');
+        lnameInput.classList.remove('border-red-500', 'bg-red-50');
+    }
+    if (phoneInput) {
+        phoneInput.value = '';
+        phoneInput.readOnly = false;
+        phoneInput.classList.remove('bg-gray-100');
+        phoneInput.classList.remove('border-red-500', 'bg-red-50');
+    }
+    
+    const titleSelect = document.getElementById('sp-p-title');
+    const relSelect = document.getElementById('sp-p-rel');
+    
+    if (titleSelect) {
+        titleSelect.disabled = false;
+        titleSelect.classList.remove('bg-gray-100');
+    }
+    if (relSelect) {
+        relSelect.disabled = false;
+        relSelect.classList.remove('bg-gray-100');
+    }
+    
+    const clearBtn = document.getElementById('sp-btn-clear-copy');
+    if (clearBtn) {
+        clearBtn.classList.add('hidden');
+    }
+}
+
 // ผูกฟังก์ชันเข้า Window
+window.copyParentInfoToGuardian = copyParentInfoToGuardian;
+window.clearCopiedGuardianInfo = clearCopiedGuardianInfo;
 window.renderStudentProfile = renderStudentProfile;
 window.toggleProfileEditMode = toggleProfileEditMode;
 window.saveMyProfile = saveMyProfile;

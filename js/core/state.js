@@ -14,6 +14,7 @@ export const AppState = {
     allClubRecords: [],
     allAssignments: [],
     allStudentAssignments: [],
+    allPrNews: [],
 
     // Temporary States
     currentCheckinStudents: [],

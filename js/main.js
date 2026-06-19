@@ -13,6 +13,7 @@ import './features/stats.js';
 import './features/history.js';
 import './features/homevisit.js';
 import './features/assignments.js';
+import './features/pr.js';
 
 // 🌟 ฟังก์ชันจัดการ Select HTML ให้รองรับ Tom Select (ค้นหาได้)
 export function safeSetSelectHtml(id, html) {
@@ -171,7 +172,7 @@ function switchTab(tabId) {
         const btn = document.getElementById('btn-export-stats'); if (btn) btn.classList.add('hidden');
         if (window.onStatsTypeChange) window.onStatsTypeChange(true); 
     } else if (tabId === 'master') {
-        ['search-subject', 'search-teacher', 'search-class', 'manage-search', 'manage-filter-class', 'enroll-search', 'enroll-filter-class'].forEach(id => {
+        ['search-subject', 'search-teacher', 'search-class', 'manage-search', 'manage-filter-class', 'enroll-search', 'enroll-filter-class', 'search-pr-news'].forEach(id => {
             clearInputValue(id);
         });
         const st = document.getElementById('enroll-filter-status'); if (st) st.value = 'all';

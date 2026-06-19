@@ -106,8 +106,9 @@
 
         .photo-img {
             width: 100%;
-            height: 110px;
-            object-fit: cover;
+            height: 150px;
+            object-fit: contain;
+            background-color: #f1f5f9;
             border: 1px solid #cbd5e1;
             border-radius: 4px;
         }
@@ -190,6 +191,23 @@
             <td class="label">การเดินทางมาโรงเรียน:</td>
             <td class="value" colspan="3">☑ {{commute_method}}</td>
         </tr>
+    </table>
+
+    <div class="section-title">สมาชิกในครอบครัวที่อาศัยอยู่ร่วมกัน</div>
+    <table class="layout-table" style="border: 1px solid #cbd5e1; font-size: 8pt; margin-bottom: 8px;">
+        <thead>
+            <tr style="background-color: #f1f5f9; border-bottom: 1px solid #cbd5e1; font-weight: bold;">
+                <td style="padding: 4px; border-right: 1px solid #cbd5e1; width: 30%;">คำนำหน้า ชื่อ-นามสกุล</td>
+                <td style="padding: 4px; border-right: 1px solid #cbd5e1; text-align: center; width: 10%;">อายุ (ปี)</td>
+                <td style="padding: 4px; border-right: 1px solid #cbd5e1; width: 20%;">อาชีพ</td>
+                <td style="padding: 4px; border-right: 1px solid #cbd5e1; width: 15%;">ความสัมพันธ์</td>
+                <td style="padding: 4px; border-right: 1px solid #cbd5e1; width: 15%;">เบอร์โทรศัพท์</td>
+                <td style="padding: 4px; width: 10%;">หมายเหตุ</td>
+            </tr>
+        </thead>
+        <tbody>
+            {{members_rows}}
+        </tbody>
     </table>
 
     <div class="section-title">พฤติกรรมและข้อเสนอแนะ</div>

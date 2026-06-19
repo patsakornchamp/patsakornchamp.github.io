@@ -337,6 +337,26 @@ export function setHomeVisitFieldsDisabled(disabled) {
             saveBtn.classList.remove('opacity-50', 'pointer-events-none');
         }
     }
+
+    // Disable member delete buttons
+    const memberDeleteBtns = container.querySelectorAll('.hv-member-item button');
+    memberDeleteBtns.forEach(btn => {
+        if (disabled) {
+            btn.classList.add('hidden');
+        } else {
+            btn.classList.remove('hidden');
+        }
+    });
+
+    // Disable add member button
+    const addMemberBtn = container.querySelector('button[onclick="addHvMemberRow()"]');
+    if (addMemberBtn) {
+        if (disabled) {
+            addMemberBtn.classList.add('opacity-50', 'pointer-events-none');
+        } else {
+            addMemberBtn.classList.remove('opacity-50', 'pointer-events-none');
+        }
+    }
 }
 
 export function enableHomeVisitEditing() {
@@ -395,6 +415,9 @@ export async function openHomeVisitModal(studentId) {
     document.querySelectorAll('img[id^="hv-preview"]').forEach(el => { el.src = ''; el.classList.add('hidden'); });
     document.querySelectorAll('button[id^="hv-remove"]').forEach(el => { el.classList.add('hidden'); el.classList.remove('flex'); });
     updateMapLink(null, null);
+    
+    const membersList = document.getElementById('hv-members-list');
+    if (membersList) membersList.innerHTML = '';
     
     clearSignature();
     const savedSigContainer = document.getElementById('hv-saved-sig-container');
@@ -491,6 +514,12 @@ export async function openHomeVisitModal(studentId) {
                 if (savedSigContainer) savedSigContainer.classList.remove('hidden');
             }
             if (printBtn) printBtn.classList.remove('hidden');
+
+            if (membersList && data.members && Array.isArray(data.members)) {
+                data.members.forEach(member => {
+                    addHvMemberRow(member);
+                });
+            }
 
             // Lock fields for editing if a record exists
             window.hvIsReadOnly = true;
@@ -780,6 +809,25 @@ export async function submitHomeVisit() {
     const p3Preview = document.getElementById('hv-preview3');
     const sigPreview = document.getElementById('hv-sig-preview');
 
+    // ดึงข้อมูลสมาชิกในบ้าน
+    const memberItems = document.querySelectorAll('.hv-member-item');
+    const members = [];
+    memberItems.forEach(item => {
+        const title = item.querySelector('.hv-member-title').value;
+        const first_name = item.querySelector('.hv-member-fname').value.trim();
+        const last_name = item.querySelector('.hv-member-lname').value.trim();
+        const age = item.querySelector('.hv-member-age').value.trim();
+        const occupation = item.querySelector('.hv-member-job').value;
+        const relationship = item.querySelector('.hv-member-rel').value.trim();
+        const phone = item.querySelector('.hv-member-phone').value.trim();
+        const note = item.querySelector('.hv-member-note').value.trim();
+        
+        // ถ้ามีการระบุชื่อ หรือความสัมพันธ์ ค่อยบันทึก
+        if (first_name || relationship) {
+            members.push({ title, first_name, last_name, age, occupation, relationship, phone, note });
+        }
+    });
+
     const payload = {
         student_id: studentId,
         academic_year: document.getElementById('hv-year').value,
@@ -801,7 +849,8 @@ export async function submitHomeVisit() {
         photo_2_url: (p2Preview && !p2Preview.classList.contains('hidden') && p2Preview.src) ? p2Preview.src : '',
         photo_3_url: (p3Preview && !p3Preview.classList.contains('hidden') && p3Preview.src) ? p3Preview.src : '',
         signature_url: (sigPreview && sigPreview.src) ? sigPreview.src : '',
-        updated_by: AppState.currentUser ? AppState.currentUser.data.id : 'unknown'
+        updated_by: AppState.currentUser ? AppState.currentUser.data.id : 'unknown',
+        members: JSON.stringify(members)
     };
 
     showLoading('กำลังอัปโหลดข้อมูลและรูปภาพ...');
@@ -892,6 +941,75 @@ export function autofillHvGuardian(role) {
     }
 }
 
+export function addHvMemberRow(member = {}) {
+    const list = document.getElementById('hv-members-list');
+    if (!list) return;
+
+    const div = document.createElement('div');
+    div.className = 'hv-member-item bg-gray-50 border border-gray-200 rounded-xl p-3 relative shadow-sm transition-all duration-200 hover:border-blue-300';
+    
+    const isDisabled = window.hvIsReadOnly;
+    const disabledAttr = isDisabled ? 'disabled' : '';
+    const disabledClass = isDisabled ? 'bg-gray-100' : '';
+    const deleteBtnClass = isDisabled ? 'hidden' : '';
+
+    div.innerHTML = `
+        <button type="button" onclick="this.closest('.hv-member-item').remove()" class="absolute top-2 right-2 text-red-500 hover:text-red-700 ${deleteBtnClass}"><i class="fas fa-trash"></i></button>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+            <div>
+                <label class="block text-gray-500 font-medium mb-1">คำนำหน้า</label>
+                <select class="hv-member-title w-full px-2 py-1.5 border rounded" ${disabledAttr}>
+                    <option value="นาย" ${member.title === 'นาย' ? 'selected' : ''}>นาย</option>
+                    <option value="นาง" ${member.title === 'นาง' ? 'selected' : ''}>นาง</option>
+                    <option value="น.ส." ${member.title === 'น.ส.' ? 'selected' : ''}>น.ส.</option>
+                    <option value="ด.ช." ${member.title === 'ด.ช.' ? 'selected' : ''}>ด.ช.</option>
+                    <option value="ด.ญ." ${member.title === 'ด.ญ.' ? 'selected' : ''}>ด.ญ.</option>
+                    <option value="อื่นๆ" ${['นาย', 'นาง', 'น.ส.', 'ด.ช.', 'ด.ญ.'].indexOf(member.title) === -1 && member.title ? 'selected' : ''}>อื่นๆ</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-gray-500 font-medium mb-1">ชื่อ</label>
+                <input type="text" class="hv-member-fname w-full px-2 py-1.5 border rounded ${disabledClass}" placeholder="ชื่อ" value="${member.first_name || ''}" ${disabledAttr}>
+            </div>
+            <div>
+                <label class="block text-gray-500 font-medium mb-1">นามสกุล</label>
+                <input type="text" class="hv-member-lname w-full px-2 py-1.5 border rounded ${disabledClass}" placeholder="นามสกุล" value="${member.last_name || ''}" ${disabledAttr}>
+            </div>
+            <div>
+                <label class="block text-gray-500 font-medium mb-1">อายุ (ปี)</label>
+                <input type="number" class="hv-member-age w-full px-2 py-1.5 border rounded ${disabledClass}" placeholder="อายุ" value="${member.age || ''}" ${disabledAttr}>
+            </div>
+            <div>
+                <label class="block text-gray-500 font-medium mb-1">อาชีพ</label>
+                <select class="hv-member-job w-full px-2 py-1.5 border rounded" ${disabledAttr}>
+                    <option value="รับจ้างทั่วไป" ${member.occupation === 'รับจ้างทั่วไป' ? 'selected' : ''}>รับจ้างทั่วไป</option>
+                    <option value="ค้าขาย/ธุรกิจส่วนตัว" ${member.occupation === 'ค้าขาย/ธุรกิจส่วนตัว' ? 'selected' : ''}>ค้าขาย/ธุรกิจส่วนตัว</option>
+                    <option value="เกษตรกร" ${member.occupation === 'เกษตรกร' ? 'selected' : ''}>เกษตรกร</option>
+                    <option value="พนักงานเอกชน" ${member.occupation === 'พนักงานเอกชน' ? 'selected' : ''}>พนักงานเอกชน</option>
+                    <option value="ข้าราชการ/พนักงานรัฐวิสาหกิจ" ${member.occupation === 'ข้าราชการ/พนักงานรัฐวิสาหกิจ' ? 'selected' : ''}>ข้าราชการ/พนักงานรัฐวิสาหกิจ</option>
+                    <option value="นักเรียน/นักศึกษา" ${member.occupation === 'นักเรียน/นักศึกษา' ? 'selected' : ''}>นักเรียน/นักศึกษา</option>
+                    <option value="ไม่ได้ประกอบอาชีพ" ${member.occupation === 'ไม่ได้ประกอบอาชีพ' ? 'selected' : ''}>ไม่ได้ประกอบอาชีพ</option>
+                    <option value="อื่นๆ" ${member.occupation === 'อื่นๆ' ? 'selected' : ''}>อื่นๆ</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-gray-500 font-medium mb-1">ความสัมพันธ์</label>
+                <input type="text" class="hv-member-rel w-full px-2 py-1.5 border rounded ${disabledClass}" placeholder="ความสัมพันธ์" value="${member.relationship || ''}" ${disabledAttr}>
+            </div>
+            <div>
+                <label class="block text-gray-500 font-medium mb-1">เบอร์โทรศัพท์</label>
+                <input type="tel" class="hv-member-phone w-full px-2 py-1.5 border rounded ${disabledClass}" placeholder="เบอร์โทร" value="${member.phone || ''}" ${disabledAttr}>
+            </div>
+            <div>
+                <label class="block text-gray-500 font-medium mb-1">หมายเหตุ</label>
+                <input type="text" class="hv-member-note w-full px-2 py-1.5 border rounded ${disabledClass}" placeholder="หมายเหตุ" value="${member.note || ''}" ${disabledAttr}>
+            </div>
+        </div>
+    `;
+    list.appendChild(div);
+}
+
+window.addHvMemberRow = addHvMemberRow;
 window.initHomeVisitTab = initHomeVisitTab;
 window.renderHomeVisitList = renderHomeVisitList;
 window.searchHomeVisit = searchHomeVisit;
@@ -985,6 +1103,30 @@ export async function printHomeVisitReport(studentId) {
             }
         }
 
+        // จัดการตารางสมาชิกในบ้าน
+        let membersRowsHtml = '';
+        if (data.members && Array.isArray(data.members) && data.members.length > 0) {
+            membersRowsHtml = data.members.map(m => {
+                const fullName = `${m.title || ''}${m.first_name || ''} ${m.last_name || ''}`.trim() || '-';
+                return `
+                    <tr style="border-bottom: 1px solid #cbd5e1;">
+                        <td style="padding: 4px; border-right: 1px solid #cbd5e1; font-weight: bold;">${fullName}</td>
+                        <td style="padding: 4px; border-right: 1px solid #cbd5e1; text-align: center;">${m.age ? m.age + ' ปี' : '-'}</td>
+                        <td style="padding: 4px; border-right: 1px solid #cbd5e1;">${m.occupation || '-'}</td>
+                        <td style="padding: 4px; border-right: 1px solid #cbd5e1;">${m.relationship || '-'}</td>
+                        <td style="padding: 4px; border-right: 1px solid #cbd5e1;">${m.phone || '-'}</td>
+                        <td style="padding: 4px;">${m.note || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        } else {
+            membersRowsHtml = `
+                <tr>
+                    <td colspan="6" style="padding: 6px; text-align: center; color: #64748b; font-style: italic;">(ไม่มีการระบุข้อมูลสมาชิกเพิ่มเติม)</td>
+                </tr>
+            `;
+        }
+
         // จับคู่แทนที่ตัวแปรใน HTML Template
         const replacements = {
             '{{semester}}': sem,
@@ -1017,7 +1159,8 @@ export async function printHomeVisitReport(studentId) {
             '{{photo_3_url}}': photo3,
             '{{visit_date}}': visitDateStr,
             '{{updated_by}}': teacherName,
-            '{{timestamp}}': timestampStr
+            '{{timestamp}}': timestampStr,
+            '{{members_rows}}': membersRowsHtml
         };
 
         for (const [key, val] of Object.entries(replacements)) {
@@ -1178,6 +1321,30 @@ export async function printSelectedHomeVisits() {
                     } catch(e) { visitDateStr = data.visit_date; }
                 }
 
+                // จัดการตารางสมาชิกในบ้าน
+                let membersRowsHtml = '';
+                if (data.members && Array.isArray(data.members) && data.members.length > 0) {
+                    membersRowsHtml = data.members.map(m => {
+                        const fullName = `${m.title || ''}${m.first_name || ''} ${m.last_name || ''}`.trim() || '-';
+                        return `
+                            <tr style="border-bottom: 1px solid #cbd5e1;">
+                                <td style="padding: 4px; border-right: 1px solid #cbd5e1; font-weight: bold;">${fullName}</td>
+                                <td style="padding: 4px; border-right: 1px solid #cbd5e1; text-align: center;">${m.age ? m.age + ' ปี' : '-'}</td>
+                                <td style="padding: 4px; border-right: 1px solid #cbd5e1;">${m.occupation || '-'}</td>
+                                <td style="padding: 4px; border-right: 1px solid #cbd5e1;">${m.relationship || '-'}</td>
+                                <td style="padding: 4px; border-right: 1px solid #cbd5e1;">${m.phone || '-'}</td>
+                                <td style="padding: 4px;">${m.note || '-'}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    membersRowsHtml = `
+                        <tr>
+                            <td colspan="6" style="padding: 6px; text-align: center; color: #64748b; font-style: italic;">(ไม่มีการระบุข้อมูลสมาชิกเพิ่มเติม)</td>
+                        </tr>
+                    `;
+                }
+
                 const replacements = {
                     '{{semester}}': sem,
                     '{{academic_year}}': yr,
@@ -1209,7 +1376,8 @@ export async function printSelectedHomeVisits() {
                     '{{photo_3_url}}': photo3,
                     '{{visit_date}}': visitDateStr,
                     '{{updated_by}}': teacherName,
-                    '{{timestamp}}': timestampStr
+                    '{{timestamp}}': timestampStr,
+                    '{{members_rows}}': membersRowsHtml
                 };
 
                 let studentReport = bodyTemplate;

@@ -436,7 +436,7 @@ export function switchMasterSubTab(tabId) {
     document.querySelectorAll('.master-section').forEach(el => el.classList.add('hidden'));
     
     // รีเซ็ตสีปุ่มทั้งหมด
-    ['subjects', 'teachers', 'classes', 'students', 'club-manage'].forEach(id => {
+    ['subjects', 'teachers', 'classes', 'students', 'club-manage', 'pr-news'].forEach(id => {
         const btn = document.getElementById(`msub-${id}`);
         if (btn) {
             btn.classList.remove('border-green-600', 'text-green-700');
@@ -459,6 +459,8 @@ export function switchMasterSubTab(tabId) {
         if (window.renderManageStudents) window.renderManageStudents();
     } else if (tabId === 'club-manage') {
         if (window.switchClubSubTab) window.switchClubSubTab('list');
+    } else if (tabId === 'pr-news') {
+        if (window.renderPRNewsData) window.renderPRNewsData();
     } else {
         renderMasterData();
     }

@@ -8,7 +8,8 @@ export const DB_KEYS = {
     SESSION: 'school_active_session',
     CLUBS: 'school_clubs',
     CLUB_ENROLLMENTS: 'school_club_enrollments',
-    CLUB_RECORDS: 'school_club_records'
+    CLUB_RECORDS: 'school_club_records',
+    PR_NEWS: 'school_pr_news'
 };
 
 export const DEFAULT_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz2FOJJkWTgGDy7hnNCnuMtBXQdSFXBPX6Kw-BieV91U-8lDh-JnKSWja26LXwyVwwcQA/exec";
