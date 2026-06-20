@@ -64,6 +64,10 @@ export function showToast(msg, type = 'success') {
 export function closeModal(id) {
     const modal = document.getElementById(id);
     if (modal) modal.classList.remove('show');
+    
+    if (id === 'pr-announcement-modal' && typeof window.stopPRAutoplay === 'function') {
+        window.stopPRAutoplay();
+    }
 }
 
 export function customAlert(msg) {

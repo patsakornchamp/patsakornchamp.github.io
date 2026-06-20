@@ -248,6 +248,27 @@ export function deletePRNewsItem(id) {
     });
 }
 
+let prAutoplayTimer = null;
+
+export function startPRAutoplay() {
+    stopPRAutoplay();
+    if (window.totalPRSlidesCount > 1) {
+        prAutoplayTimer = setInterval(() => {
+            changePRSlide(1);
+        }, 3000);
+    }
+}
+
+export function stopPRAutoplay() {
+    if (prAutoplayTimer) {
+        clearInterval(prAutoplayTimer);
+        prAutoplayTimer = null;
+    }
+}
+
+window.startPRAutoplay = startPRAutoplay;
+window.stopPRAutoplay = stopPRAutoplay;
+
 export function showPRAnnouncementIfActive() {
     const today = new Date().toISOString().split('T')[0];
     const activePRs = (AppState.allPrNews || []).filter(pr => {
@@ -288,9 +309,9 @@ export function showPRAnnouncementIfActive() {
                 if (activePRs.length > 1) {
                     navHtml = `
                         <div class="flex justify-between items-center w-full px-2 mb-4">
-                            <button type="button" onclick="changePRSlide(-1)" class="bg-white/90 hover:bg-white text-gray-800 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm"><i class="fas fa-chevron-left mr-1"></i> ก่อนหน้า</button>
+                            <button type="button" onclick="changePRSlide(-1, true)" class="bg-white/90 hover:bg-white text-gray-800 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm"><i class="fas fa-chevron-left mr-1"></i> ก่อนหน้า</button>
                             <span class="text-xs font-bold text-white bg-black/40 px-2 py-1 rounded-full"><span id="pr-current-slide-num">1</span>/${activePRs.length}</span>
-                            <button type="button" onclick="changePRSlide(1)" class="bg-white/90 hover:bg-white text-gray-800 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm">ถัดไป <i class="fas fa-chevron-right mr-1"></i></button>
+                            <button type="button" onclick="changePRSlide(1, true)" class="bg-white/90 hover:bg-white text-gray-800 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm">ถัดไป <i class="fas fa-chevron-right mr-1"></i></button>
                         </div>
                     `;
                 }
@@ -299,7 +320,12 @@ export function showPRAnnouncementIfActive() {
                     <button onclick="closeModal('pr-announcement-modal')" class="absolute -top-12 right-0 bg-white/90 hover:bg-white text-gray-800 w-10 h-10 rounded-full flex items-center justify-center transition shadow-md border border-gray-200/50 focus:outline-none z-50">
                         <i class="fas fa-times text-lg"></i>
                     </button>
-                    <div class="w-full pr-slides-container">
+                    <div class="w-full pr-slides-container cursor-pointer select-none" 
+                         onmousedown="stopPRAutoplay()" 
+                         onmouseup="startPRAutoplay()" 
+                         onmouseleave="startPRAutoplay()" 
+                         ontouchstart="stopPRAutoplay()" 
+                         ontouchend="startPRAutoplay()">
                         ${slidesHtml}
                     </div>
                     ${navHtml}
@@ -312,11 +338,12 @@ export function showPRAnnouncementIfActive() {
                 window.totalPRSlidesCount = activePRs.length;
             }
             prModal.classList.add('show');
+            startPRAutoplay();
         }
     }
 }
 
-export function changePRSlide(direction) {
+export function changePRSlide(direction, isManual = false) {
     if (typeof window.currentPRSlideIdx === 'undefined' || !window.totalPRSlidesCount) return;
     
     const slides = document.querySelectorAll('.pr-slide');
@@ -332,6 +359,10 @@ export function changePRSlide(direction) {
     
     const numEl = document.getElementById('pr-current-slide-num');
     if (numEl) numEl.innerText = window.currentPRSlideIdx + 1;
+
+    if (isManual) {
+        startPRAutoplay();
+    }
 }
 
 // Bind to window
