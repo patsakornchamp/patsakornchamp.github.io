@@ -1307,12 +1307,12 @@ export async function exportAssignmentsExcel() {
         if (hasAnyScore && totalMaxScore > 0) {
             const pct = (totalScore / totalMaxScore) * 100;
             if (pct >= 80) grade = '4';
-            else if (pct >= 70) grade = '3.5';
-            else if (pct >= 65) grade = '3';
-            else if (pct >= 60) grade = '2.5';
-            else if (pct >= 55) grade = '2';
-            else if (pct >= 50) grade = '1.5';
-            else if (pct >= 40) grade = '1';
+            else if (pct >= 75) grade = '3.5';
+            else if (pct >= 70) grade = '3';
+            else if (pct >= 65) grade = '2.5';
+            else if (pct >= 60) grade = '2';
+            else if (pct >= 55) grade = '1.5';
+            else if (pct >= 50) grade = '1';
             else grade = '0';
         }
         rowData.push(grade);
