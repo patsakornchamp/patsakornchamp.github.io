@@ -50,6 +50,31 @@ function getDirectImageUrl(url) {
     return url;
 }
 
+export function onAsmTypeChange() {
+    const type = document.getElementById('asm-type').value;
+    const normalFields = document.querySelectorAll('.asm-normal-only-field');
+    const isExam = type === 'exam';
+    normalFields.forEach(f => {
+        if (isExam) {
+            f.classList.add('hidden');
+        } else {
+            f.classList.remove('hidden');
+        }
+    });
+
+    const fields = ['asm-assign-date', 'asm-assign-time', 'asm-due-date', 'asm-due-time'];
+    fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (isExam) {
+                el.removeAttribute('required');
+            } else {
+                el.setAttribute('required', 'required');
+            }
+        }
+    });
+}
+
 export function initAssignmentsTab() {
     // เตรียม State จำลอง หากยังไม่มีข้อมูล (เพราะ backend อาจจะยังไม่พร้อมรับ action แบบอัตโนมัติ)
     if (!AppState.allAssignments) AppState.allAssignments = [];
@@ -227,7 +252,7 @@ export function renderAssignmentsList() {
 
         let isOverdue = false;
         // ยกเลิกการเตือนหากความคืบหน้าส่งงานครบแล้ว (submitCount >= stuCount)
-        if (a.dueDate && a.dueTime && submitCount < stuCount) {
+        if (a.submitLocation !== 'สอบ' && a.dueDate && a.dueTime && submitCount < stuCount) {
             // คำนวณเวลาเลยกำหนดส่งโดยอิงตามเวลาประเทศไทย (+07:00)
             const dueDateTime = new Date(`${a.dueDate}T${a.dueTime}:00+07:00`);
             if (new Date() > dueDateTime) isOverdue = true;
@@ -245,8 +270,8 @@ export function renderAssignmentsList() {
             </td>
             <td class="hidden md:table-cell px-4 py-3 text-sm text-gray-600">${cls ? cls.className : '-'}</td>
             <td class="hidden md:table-cell px-4 py-3 text-sm text-gray-600">${sub ? sub.name : '-'}</td>
-            <td class="px-4 py-3 text-center text-sm font-medium text-gray-600">${getBangkokDate(a.assignDate)} ${a.assignTime || ''}</td>
-            <td class="px-4 py-3 text-center text-sm font-medium text-red-600">${getBangkokDate(a.dueDate)} ${a.dueTime}</td>
+            <td class="px-4 py-3 text-center text-sm font-medium text-gray-600">${a.submitLocation === 'สอบ' ? '-' : `${getBangkokDate(a.assignDate)} ${a.assignTime || ''}`}</td>
+            <td class="px-4 py-3 text-center text-sm font-medium text-red-600">${a.submitLocation === 'สอบ' ? '<span class="text-gray-400 font-normal italic">สอบ (ไม่ต้องส่ง)</span>' : `${getBangkokDate(a.dueDate)} ${a.dueTime}`}</td>
             <td class="px-4 py-3 text-center">
                 <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold">${submitCount} / ${stuCount}</span>
             </td>
@@ -294,6 +319,8 @@ export function openAssignmentModal() {
 
     document.getElementById('asm-id').value = '';
     document.getElementById('asm-title').value = '';
+    document.getElementById('asm-type').value = 'normal';
+    onAsmTypeChange();
     document.getElementById('asm-subject').innerHTML = '<option value="">-- กรุณาเลือกชั้นเรียนก่อน --</option>';
     document.getElementById('asm-assign-date').value = getBangkokDate(new Date());
     document.getElementById('asm-assign-time').value = getBangkokCurrentTime().substring(0, 5);
@@ -384,16 +411,25 @@ export function editAssignment(id) {
     document.getElementById('asm-due-time').value = asm.dueTime || '';
     
     const loc = asm.submitLocation || 'ส่ง Online';
-    const standardLocs = ['ส่ง Online', 'ส่งในคาบเรียน', 'ส่งที่โต๊ะทำงานครู'];
-    if (standardLocs.includes(loc)) {
-        document.getElementById('asm-location').value = loc;
+    if (loc === 'สอบ') {
+        document.getElementById('asm-type').value = 'exam';
+        document.getElementById('asm-location').value = 'ส่ง Online';
         document.getElementById('asm-loc-other').classList.add('hidden');
         document.getElementById('asm-loc-other').value = '';
     } else {
-        document.getElementById('asm-location').value = 'อื่นๆ';
-        document.getElementById('asm-loc-other').classList.remove('hidden');
-        document.getElementById('asm-loc-other').value = loc;
+        document.getElementById('asm-type').value = 'normal';
+        const standardLocs = ['ส่ง Online', 'ส่งในคาบเรียน', 'ส่งที่โต๊ะทำงานครู'];
+        if (standardLocs.includes(loc)) {
+            document.getElementById('asm-location').value = loc;
+            document.getElementById('asm-loc-other').classList.add('hidden');
+            document.getElementById('asm-loc-other').value = '';
+        } else {
+            document.getElementById('asm-location').value = 'อื่นๆ';
+            document.getElementById('asm-loc-other').classList.remove('hidden');
+            document.getElementById('asm-loc-other').value = loc;
+        }
     }
+    onAsmTypeChange();
     document.getElementById('asm-score').value = asm.maxScore || '10';
     document.getElementById('asm-desc').value = asm.description || '';
 
@@ -449,11 +485,27 @@ export async function saveAssignment() {
     const title = document.getElementById('asm-title').value.trim();
     const classId = document.getElementById('asm-class').value;
     const subjectId = document.getElementById('asm-subject').value;
-    const assignDate = document.getElementById('asm-assign-date').value;
-    const assignTime = document.getElementById('asm-assign-time').value;
-    const dueDate = document.getElementById('asm-due-date').value;
-    const dueTime = document.getElementById('asm-due-time').value;
     const maxScore = document.getElementById('asm-score').value;
+    
+    const type = document.getElementById('asm-type').value;
+    let assignDate, assignTime, dueDate, dueTime, location;
+    
+    if (type === 'exam') {
+        assignDate = getBangkokDate(new Date());
+        assignTime = getBangkokCurrentTime().substring(0, 5);
+        dueDate = getBangkokDate(new Date());
+        dueTime = '23:59';
+        location = 'สอบ';
+    } else {
+        assignDate = document.getElementById('asm-assign-date').value;
+        assignTime = document.getElementById('asm-assign-time').value;
+        dueDate = document.getElementById('asm-due-date').value;
+        dueTime = document.getElementById('asm-due-time').value;
+        location = document.getElementById('asm-location').value;
+        if (location === 'อื่นๆ') {
+            location = document.getElementById('asm-loc-other').value.trim() || 'ไม่ระบุ';
+        }
+    }
     
     if (!title || !classId || !subjectId || !dueDate || !maxScore) {
         return customAlert('กรุณากรอกข้อมูลที่มีเครื่องหมาย (*) ให้ครบถ้วน');
@@ -462,11 +514,6 @@ export async function saveAssignment() {
     const selectedStudentIds = Array.from(document.querySelectorAll('.asm-stu-cb:checked')).map(cb => cb.value);
     if (selectedStudentIds.length === 0) {
         return customAlert('กรุณาเลือกนักเรียนอย่างน้อย 1 คน');
-    }
-
-    let location = document.getElementById('asm-location').value;
-    if (location === 'อื่นๆ') {
-        location = document.getElementById('asm-loc-other').value.trim() || 'ไม่ระบุ';
     }
     
     showLoading('กำลังบันทึกและประมวลผลไฟล์...');
@@ -1102,6 +1149,7 @@ export function removeAsmFile(index) {
 }
 
 window.initAssignmentsTab = initAssignmentsTab;
+window.onAsmTypeChange = onAsmTypeChange;
 window.onAsmFilterClassChange = onAsmFilterClassChange;
 window.onAsmFormClassChange = onAsmFormClassChange;
 window.renderAssignmentsList = renderAssignmentsList;
