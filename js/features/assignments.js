@@ -205,6 +205,16 @@ export function renderAssignmentsList() {
     const filterSub = document.getElementById('asm-filter-subject').value;
     const filterProgress = document.getElementById('asm-filter-progress') ? document.getElementById('asm-filter-progress').value : '';
     const tbody = document.getElementById('tbody-assignments');
+
+    // Show export button only when class AND subject are selected
+    const exportBtn = document.getElementById('asm-export-btn-container');
+    if (exportBtn) {
+        if (filterClass && filterSub) {
+            exportBtn.classList.remove('hidden');
+        } else {
+            exportBtn.classList.add('hidden');
+        }
+    }
     
     let list = AppState.allAssignments.filter(a => a.deleted_flg !== 'Y');
     
@@ -1173,3 +1183,186 @@ window.previewAsmFile = previewAsmFile;
 window.removeAsmFile = removeAsmFile;
 window.searchAssignments = searchAssignments;
 window.viewStudentSubmission = viewStudentSubmission;
+// ========== EXPORT ASSIGNMENTS EXCEL ==========
+function getColLetterAsm(colIndex) {
+    let letter = '';
+    while (colIndex > 0) {
+        let temp = (colIndex - 1) % 26;
+        letter = String.fromCharCode(temp + 65) + letter;
+        colIndex = (colIndex - temp - 1) / 26;
+    }
+    return letter;
+}
+
+export async function exportAssignmentsExcel() {
+    const filterClass = document.getElementById('asm-filter-class').value;
+    const filterSub = document.getElementById('asm-filter-subject').value;
+
+    if (!filterClass || !filterSub) {
+        if (window.customAlert) customAlert('กรุณาเลือกชั้นเรียนและวิชาก่อนส่งออก');
+        return;
+    }
+    if (!window.ExcelJS) {
+        if (window.customAlert) customAlert('ไม่สามารถโหลดไลบรารี Excel ได้ โปรดรีเฟรชหน้าเว็บแล้วลองใหม่');
+        return;
+    }
+
+    const clsObj = AppState.allClasses.find(c => c.id === filterClass);
+    const className = clsObj ? clsObj.className : filterClass;
+    const subObj = AppState.allSubjects.find(s => s.id === filterSub);
+    const subName = subObj ? subObj.name : filterSub;
+
+    // ดึงงานทั้งหมดของชั้น+วิชานี้ เรียงจากเก่าไปใหม่
+    let assignments = AppState.allAssignments.filter(a =>
+        a.deleted_flg !== 'Y' && a.classId === filterClass && a.subjectId === filterSub
+    );
+    if (AppState.currentUser && AppState.currentUser.role === 'teacher') {
+        assignments = assignments.filter(a => a.teacherId === AppState.currentUser.data.id);
+    }
+    assignments.sort((a, b) => new Date(a.assignDate) - new Date(b.assignDate));
+
+    if (assignments.length === 0) {
+        if (window.customAlert) customAlert('ไม่พบงานในชั้นเรียนและวิชานี้');
+        return;
+    }
+
+    // ดึงนักเรียนในชั้นเรียน เรียงตามเลขที่
+    const stus = AppState.allStudents
+        .filter(s => s.class === className && s.status !== 'ลาออก' && s.deleted_flg !== 'Y')
+        .sort((a, b) => a.number - b.number);
+
+    // ดึง studentAssignments ทั้งหมด
+    const allSA = AppState.allStudentAssignments ? AppState.allStudentAssignments.filter(sa => sa.deleted_flg !== 'Y') : [];
+
+    // สร้าง lookup: assignmentId -> Set of studentId ที่ครูสั่ง
+    const assignedStudentMap = {};
+    assignments.forEach(a => {
+        const sas = allSA.filter(sa =>
+            sa.assignmentId === a.id ||
+            (sa.assignmentId && a.id && (sa.assignmentId.startsWith(a.id) || a.id.startsWith(sa.assignmentId)))
+        );
+        assignedStudentMap[a.id] = new Set(sas.map(sa => String(sa.studentId)));
+    });
+
+    // คะแนนเต็มรวม
+    const totalMaxScore = assignments.reduce((acc, a) => acc + (parseFloat(a.maxScore) || 0), 0);
+
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('รายงานคะแนน');
+
+    // หัวตาราง
+    const asmHeaders = assignments.map(a => `${a.title}\n(เต็ม ${a.maxScore || 0})`);
+    const headers = ['เลขที่', 'รหัสนักเรียน', 'ชื่อ-สกุล', ...asmHeaders, `รวมคะแนน\n(เต็ม ${totalMaxScore})`, 'ตัดเกรด'];
+    ws.addRow(headers);
+
+    const totalCols = headers.length;
+    ws.getRow(1).eachCell((cell, colNum) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E40AF' } };
+        cell.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 10 };
+        cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        if (colNum > 3 && colNum < totalCols) {
+            cell.alignment.textRotation = 90;
+        }
+        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+    });
+    ws.getRow(1).height = 130;
+
+    stus.forEach((stu, idx) => {
+        const rowData = [stu.number, stu.studentId || '', getStudentFullName(stu)];
+        let totalScore = 0;
+        let hasAnyScore = false;
+
+        assignments.forEach(a => {
+            const stuIdStr = String(stu.id);
+            const stuStudentIdStr = String(stu.studentId || '');
+            const assigned = assignedStudentMap[a.id];
+            const isAssigned = assigned && (assigned.has(stuIdStr) || assigned.has(stuStudentIdStr));
+
+            if (!isAssigned) {
+                rowData.push('-');
+                return;
+            }
+
+            // หา SA record
+            const sa = allSA.find(s => {
+                const asmMatch = s.assignmentId === a.id ||
+                    (s.assignmentId && a.id && (s.assignmentId.startsWith(a.id) || a.id.startsWith(s.assignmentId)));
+                const stuMatch = String(s.studentId) === stuIdStr || String(s.studentId) === stuStudentIdStr;
+                return asmMatch && stuMatch;
+            });
+
+            if (!sa || sa.score === null || sa.score === undefined || sa.score === '') {
+                rowData.push('');
+            } else {
+                const sc = parseFloat(sa.score);
+                rowData.push(sc);
+                totalScore += sc;
+                hasAnyScore = true;
+            }
+        });
+
+        rowData.push(hasAnyScore ? totalScore : '');
+
+        let grade = '';
+        if (hasAnyScore && totalMaxScore > 0) {
+            const pct = (totalScore / totalMaxScore) * 100;
+            if (pct >= 80) grade = '4';
+            else if (pct >= 70) grade = '3.5';
+            else if (pct >= 65) grade = '3';
+            else if (pct >= 60) grade = '2.5';
+            else if (pct >= 55) grade = '2';
+            else if (pct >= 50) grade = '1.5';
+            else if (pct >= 40) grade = '1';
+            else grade = '0';
+        }
+        rowData.push(grade);
+
+        const row = ws.addRow(rowData);
+        const isEven = idx % 2 === 0;
+
+        row.eachCell((cell, colNum) => {
+            if (isEven) {
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F4F6' } };
+            }
+            cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+            if (colNum !== 3) {
+                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            } else {
+                cell.alignment = { vertical: 'middle', horizontal: 'left' };
+            }
+            if (colNum === totalCols) {
+                const g = parseFloat(cell.value);
+                if (!isNaN(g)) {
+                    let color;
+                    if (g >= 3.5) color = 'FF166534';
+                    else if (g >= 2.5) color = 'FF1D4ED8';
+                    else if (g >= 1.5) color = 'FF92400E';
+                    else color = 'FFB91C1C';
+                    cell.font = { bold: true, color: { argb: color } };
+                }
+            }
+            if (colNum === totalCols - 1 && cell.value !== '') {
+                cell.font = { bold: true };
+            }
+        });
+    });
+
+    ws.getColumn(1).width = 8;
+    ws.getColumn(2).width = 16;
+    ws.getColumn(3).width = 28;
+    for (let i = 1; i <= assignments.length; i++) ws.getColumn(3 + i).width = 7;
+    ws.getColumn(3 + assignments.length + 1).width = 14;
+    ws.getColumn(3 + assignments.length + 2).width = 10;
+
+    const fileName = `คะแนน_${className}_${subName}.xlsx`;
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    link.click();
+
+    if (window.showToast) showToast(`ส่งออกรายงานคะแนน ${className} - ${subName} เรียบร้อย`);
+}
+
+window.exportAssignmentsExcel = exportAssignmentsExcel;

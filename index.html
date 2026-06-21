@@ -1361,6 +1361,13 @@
                     </div>
                 </div>
 
+                <!-- Export Button (แสดงเฉพาะเมื่อเลือกชั้นเรียน+วิชาแล้ว) -->
+                <div id="asm-export-btn-container" class="hidden mb-4 flex justify-end">
+                    <button onclick="exportAssignmentsExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg font-bold shadow-md transition-colors flex items-center gap-2">
+                        <i class="fas fa-file-excel text-lg"></i> ส่งออกรายงานคะแนน (Excel)
+                    </button>
+                </div>
+
                 <div class="overflow-x-auto bg-white/40 border border-white/50 backdrop-blur-md rounded-xl shadow-sm w-full">
                     <table class="min-w-full divide-y divide-gray-200 mobile-card-table">
                         <thead class="bg-white/50">
