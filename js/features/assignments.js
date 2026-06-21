@@ -731,7 +731,9 @@ export function renderGradingTable() {
                 <input type="number" class="score-input w-full border rounded px-2 py-1.5 text-sm text-center focus:ring-green-500 focus:border-green-500" max="${asm.maxScore}" value="${sAsm.score !== null && sAsm.score !== '' ? sAsm.score : ''}" onkeydown="handleScoreEnter(event, this)" onkeyup="validateScore(this, ${asm.maxScore}); autoUpdateStatusUI(this)" onchange="validateScore(this, ${asm.maxScore}); autoUpdateStatusUI(this)">
             </td>
             <td class="px-4 py-3 text-center" data-label="ไฟล์งานนักเรียน">
-                <button onclick="viewStudentSubmission('${stu.id}')" class="text-xs bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 px-2 py-1 rounded transition-colors font-bold"><i class="fas fa-eye mr-1"></i> ดูงาน</button>
+                ${['ส่งแล้ว', 'ตรวจแล้ว'].includes(sAsm.status)
+                    ? `<button onclick="viewStudentSubmission('${stu.id}')" class="text-xs bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 px-2 py-1 rounded transition-colors font-bold"><i class="fas fa-eye mr-1"></i> ตรวจงาน</button>`
+                    : `<span class="text-gray-400 text-xs">-</span>`}
             </td>
             <td class="px-4 py-3 text-center" data-label="จัดการ">
                 <button onclick="remindAssignment('${stu.id}')" class="text-xs bg-red-500 text-white px-2 py-1.5 rounded hover:bg-red-600 transition-colors shadow-sm ${['ส่งแล้ว', 'ตรวจแล้ว'].includes(sAsm.status) ? 'hidden' : ''}"><i class="fas fa-bullhorn mr-1"></i>ทวงงาน</button>
@@ -918,9 +920,63 @@ export function remindAssignment(stuId) {
     });
 }
 
-export async function saveGrading(stayOpen = false) {
+export async function saveGrading(stayOpen = false, isConfirmed = false) {
     const tbody = document.getElementById('tbody-grading');
+    if (!tbody) return;
     const rows = tbody.querySelectorAll('.grading-row');
+    
+    // แสดงสรุปผลคะแนนก่อนบันทึกจริง (เมื่อบันทึกจากปุ่มเซฟหลัก และยังไม่ได้กดยืนยัน)
+    if (stayOpen !== true && isConfirmed !== true) {
+        if (rows.length === 0) {
+            return closeModal('grading-modal');
+        }
+
+        const asm = AppState.allAssignments.find(a => a.id === currentGradingAssignmentId);
+        const maxScoreStr = asm ? ` (คะแนนเต็ม ${asm.maxScore})` : '';
+
+        let summaryHtml = `
+            <div class="text-center mb-3">
+                <p class="text-sm text-gray-600 font-bold mb-1">กรุณาตรวจสอบคะแนนสอบของนักเรียนก่อนทำการบันทึกข้อมูล${maxScoreStr}</p>
+            </div>
+            <div style="max-height: 250px; overflow-y: auto;" class="text-left border border-gray-200 rounded-xl p-3 bg-gray-50/70 space-y-1.5 shadow-inner text-xs">
+        `;
+
+        let gradedCount = 0;
+        rows.forEach(row => {
+            const name = row.querySelector('.td-name-content').innerText;
+            const number = row.querySelector('[data-label="เลขที่"]').innerText;
+            const scoreInput = row.querySelector('.score-input');
+            const score = scoreInput ? scoreInput.value.trim() : '';
+            const statusBadge = row.querySelector('.status-badge');
+            const status = statusBadge ? statusBadge.innerText : 'รอส่ง';
+            
+            let scoreText = '';
+            if (score !== '') {
+                scoreText = `<span class="font-bold text-green-600 font-mono text-sm">${score}</span> คะแนน`;
+                gradedCount++;
+            } else {
+                scoreText = `<span class="text-gray-400 italic">${status}</span>`;
+            }
+            
+            summaryHtml += `
+                <div class="flex justify-between items-center py-1.5 border-b border-gray-200 last:border-0">
+                    <span class="text-gray-700 font-medium">เลขที่ ${number} ${name}</span>
+                    <span class="text-right">${scoreText}</span>
+                </div>
+            `;
+        });
+        
+        summaryHtml += '</div>';
+
+        customConfirm(
+            'สรุปการให้คะแนนนักเรียน',
+            summaryHtml,
+            async () => {
+                await saveGrading(stayOpen, true);
+            }
+        );
+        return;
+    }
     
     let updatedCount = 0;
     const now = getISOTimestamp();
