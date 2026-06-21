@@ -1,25 +1,19 @@
-// 🌟 ดึงข้อมูลเวอร์ชัน (v) จาก URL ของ main.js เองโดยอัตโนมัติเพื่อล้างแคช
-const version = new URL(import.meta.url).searchParams.get('v') || 'default';
+import { DB_KEYS, DEFAULT_GOOGLE_SCRIPT_URL, DEPLOY_VERSION } from './core/config.js';
+import { AppState } from './core/state.js';
+import { syncDataFromServer, saveToDB } from './services/api.js';
+import { getBangkokDate, getDefaultAcademicYearAndSemester, showToast, customAlert, customConfirm, getISOTimestamp, getCurrentUserId } from './utils/helpers.js'; // 🌟 นำเข้าฟังก์ชันจัดการวันที่ของไทย
 
-// 🌟 โหลด Core และ Utilities แบบไดนามิกพร้อมส่งผ่านรหัสเวอร์ชัน
-const { DB_KEYS, DEFAULT_GOOGLE_SCRIPT_URL, DEPLOY_VERSION } = await import(`./core/config.js?v=${version}`);
-const { AppState } = await import(`./core/state.js?v=${version}`);
-const { syncDataFromServer, saveToDB } = await import(`./services/api.js?v=${version}`);
-const { getBangkokDate, getDefaultAcademicYearAndSemester, showToast, customAlert, customConfirm, getISOTimestamp, getCurrentUserId } = await import(`./utils/helpers.js?v=${version}`);
-
-// 🌟 โหลด Features ทั้งหมดแบบไดนามิกพร้อมล้างแคชอัตโนมัติ
-await Promise.all([
-    import(`./features/auth.js?v=${version}`),
-    import(`./features/checkin.js?v=${version}`),
-    import(`./features/students.js?v=${version}`),
-    import(`./features/master.js?v=${version}`),
-    import(`./features/club.js?v=${version}`),
-    import(`./features/stats.js?v=${version}`),
-    import(`./features/history.js?v=${version}`),
-    import(`./features/homevisit.js?v=${version}`),
-    import(`./features/assignments.js?v=${version}`),
-    import(`./features/pr.js?v=${version}`)
-]);
+// 🌟 1. นำเข้าไฟล์ Features ทั้งหมดเพื่อให้ฟังก์ชันของมันทำงานและผูกเข้ากับ window
+import * as auth from './features/auth.js';
+import './features/checkin.js'; 
+import './features/students.js';
+import './features/master.js';
+import './features/club.js';
+import './features/stats.js';
+import './features/history.js';
+import './features/homevisit.js';
+import './features/assignments.js';
+import './features/pr.js';
 
 // 🌟 ฟังก์ชันจัดการ Select HTML ให้รองรับ Tom Select (ค้นหาได้)
 export function safeSetSelectHtml(id, html) {
