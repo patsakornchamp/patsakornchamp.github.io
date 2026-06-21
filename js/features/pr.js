@@ -288,19 +288,28 @@ export function showPRAnnouncementIfActive() {
             if (container) {
                 let slidesHtml = '';
                 activePRs.forEach((pr, idx) => {
-                    const title = pr.activity_name || 'ประชาสัมพันธ์';
-                    const details = pr.details || '';
+                    const hasTitle = pr.activity_name && pr.activity_name.trim();
+                    const hasDetails = pr.details && pr.details.trim();
                     const imageUrl = pr.image_url ? getDirectImageUrl(pr.image_url) : 'image/a1.jpg';
+                    
+                    let infoBoxHtml = '';
+                    if (hasTitle || hasDetails) {
+                        const title = pr.activity_name ? pr.activity_name.trim() : 'ประชาสัมพันธ์';
+                        const detailsHtml = hasDetails ? `<p class="text-sm text-gray-700 whitespace-pre-wrap">${pr.details.trim()}</p>` : '';
+                        infoBoxHtml = `
+                            <div class="bg-white/85 backdrop-blur-md p-4 rounded-xl mb-4 text-left border border-white/35 shadow-sm max-h-[20vh] overflow-y-auto">
+                                <h4 class="font-bold text-lg text-green-800 mb-1">${title}</h4>
+                                ${detailsHtml}
+                            </div>
+                        `;
+                    }
                     
                     slidesHtml += `
                         <div class="pr-slide ${idx === 0 ? 'block' : 'hidden'} w-full" data-slide-index="${idx}">
                             <div class="w-full rounded-2xl overflow-hidden shadow-2xl border border-white/20 mb-4 bg-white/10 backdrop-blur-md">
-                                <img src="${imageUrl}" alt="${title}" class="w-full max-h-[60vh] object-contain mx-auto">
+                                <img src="${imageUrl}" alt="PR Image" class="w-full max-h-[60vh] object-contain mx-auto">
                             </div>
-                            <div class="bg-white/85 backdrop-blur-md p-4 rounded-xl mb-4 text-left border border-white/35 shadow-sm max-h-[20vh] overflow-y-auto">
-                                <h4 class="font-bold text-lg text-green-800 mb-1">${title}</h4>
-                                <p class="text-sm text-gray-700 whitespace-pre-wrap">${details}</p>
-                            </div>
+                            ${infoBoxHtml}
                         </div>
                     `;
                 });
