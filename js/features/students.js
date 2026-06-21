@@ -229,7 +229,16 @@ export async function saveMyProfile(e) {
         }
 
         // 2. ถ้ามีการกรอก Citizen ID หรือเบอร์โทรศัพท์ ให้ทำการตรวจสอบรูปแบบความถูกต้อง (หากเว้นว่างไว้ให้ผ่านได้)
-        if (citizenId && !validateThaiCitizenId(citizenId)) return customAlert('เลขประจำตัวประชาชน 13 หลัก ไม่ถูกต้อง');
+        if (citizenId) {
+            if (!validateThaiCitizenId(citizenId)) return customAlert('เลขประจำตัวประชาชน 13 หลัก ไม่ถูกต้อง');
+            
+            // เช็คเลข ปชช ซ้ำกับคนอื่น
+            const duplicate = AppState.allStudents.find(x => x.citizenId === citizenId && x.id !== s.id && x.deleted_flg !== 'Y');
+            if (duplicate) {
+                const fullName = getStudentFullName(duplicate);
+                return customAlert(`เลขประจำตัวประชาชนนี้ถูกใช้งานแล้วในระบบ (ซ้ำกับ: ${fullName})`);
+            }
+        }
         if (phone && !validatePhoneNumber(phone)) return customAlert('เบอร์โทรศัพท์ของนักเรียนไม่ถูกต้อง');
         if (pPhone && !validatePhoneNumber(pPhone)) return customAlert('เบอร์โทรศัพท์ของผู้ปกครองไม่ถูกต้อง');
         if (fPhone && !validatePhoneNumber(fPhone)) return customAlert('เบอร์โทรศัพท์บิดาไม่ถูกต้อง');
@@ -607,8 +616,17 @@ export async function saveStudent() {
     const isAdminOrTeacher = isAdmin || isTeacher;
 
     // Citizen ID validation
-    if (citizenId && !validateThaiCitizenId(citizenId)) {
-        return customAlert('เลขประจำตัวประชาชน 13 หลัก ไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');
+    if (citizenId) {
+        if (!validateThaiCitizenId(citizenId)) {
+            return customAlert('เลขประจำตัวประชาชน 13 หลัก ไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง');
+        }
+        // เช็คเลข ปชช ซ้ำกับคนอื่น
+        const currentModalId = document.getElementById('stu-id').value || '';
+        const duplicate = AppState.allStudents.find(x => x.citizenId === citizenId && x.id !== currentModalId && x.deleted_flg !== 'Y');
+        if (duplicate) {
+            const fullName = getStudentFullName(duplicate);
+            return customAlert(`เลขประจำตัวประชาชนนี้ถูกใช้งานแล้วในระบบ (ซ้ำกับ: ${fullName})`);
+        }
     } else if (!isAdminOrTeacher && !citizenId) {
         return customAlert('กรุณากรอกเลขประจำตัวประชาชน 13 หลัก');
     }
