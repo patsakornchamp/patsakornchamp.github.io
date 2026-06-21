@@ -1264,13 +1264,6 @@ export function openStudentAssignmentModal(asmId) {
     document.getElementById('stu-asm-student-note').value = rec && rec.studentNote ? rec.studentNote : '';
     document.getElementById('stu-asm-submit-loc').value = rec && rec.submitMethod ? rec.submitMethod : (asm.submitLocation === 'อื่นๆ' ? 'ส่งช่องทางอื่น' : asm.submitLocation);
 
-    // Grading State
-    const btnSubmit = document.getElementById('btn-stu-asm-submit');
-    const gradingResult = document.getElementById('stu-asm-grading-result');
-    const gradedFilesSection = document.getElementById('stu-asm-graded-files-section');
-    const gradedFilesContainer = document.getElementById('stu-asm-graded-files-container');
-    const uploadArea = document.getElementById('stu-asm-upload-area');
-    
     const isExam = asm.submitLocation === 'สอบ';
     
     // Toggle visibility based on isExam
