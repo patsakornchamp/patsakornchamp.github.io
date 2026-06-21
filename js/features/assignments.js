@@ -778,12 +778,12 @@ export function renderGradingTable() {
                 <input type="number" class="score-input w-full border rounded px-2 py-1.5 text-sm text-center focus:ring-green-500 focus:border-green-500" max="${asm.maxScore}" value="${sAsm.score !== null && sAsm.score !== '' ? sAsm.score : ''}" onkeydown="handleScoreEnter(event, this)" onkeyup="validateScore(this, ${asm.maxScore}); autoUpdateStatusUI(this)" onchange="validateScore(this, ${asm.maxScore}); autoUpdateStatusUI(this)">
             </td>
             <td class="px-4 py-3 text-center" data-label="ไฟล์งานนักเรียน">
-                ${['ส่งแล้ว', 'ตรวจแล้ว'].includes(sAsm.status)
+                ${asm.submitLocation === 'สอบ' ? `<span class="text-gray-400 text-xs">-</span>` : (['ส่งแล้ว', 'ตรวจแล้ว'].includes(sAsm.status)
                     ? `<button onclick="viewStudentSubmission('${stu.id}')" class="text-xs bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 px-2 py-1 rounded transition-colors font-bold"><i class="fas fa-eye mr-1"></i> ตรวจงาน</button>`
-                    : `<span class="text-gray-400 text-xs">-</span>`}
+                    : `<span class="text-gray-400 text-xs">-</span>`)}
             </td>
             <td class="px-4 py-3 text-center" data-label="จัดการ">
-                <button onclick="remindAssignment('${stu.id}')" class="text-xs bg-red-500 text-white px-2 py-1.5 rounded hover:bg-red-600 transition-colors shadow-sm ${['ส่งแล้ว', 'ตรวจแล้ว'].includes(sAsm.status) ? 'hidden' : ''}"><i class="fas fa-bullhorn mr-1"></i>ทวงงาน</button>
+                ${asm.submitLocation !== 'สอบ' ? `<button onclick="remindAssignment('${stu.id}')" class="text-xs bg-red-500 text-white px-2 py-1.5 rounded hover:bg-red-600 transition-colors shadow-sm ${['ส่งแล้ว', 'ตรวจแล้ว'].includes(sAsm.status) ? 'hidden' : ''}"><i class="fas fa-bullhorn mr-1"></i>ทวงงาน</button>` : `<span class="text-gray-400 text-xs">-</span>`}
             </td>
             <td class="px-4 py-3" data-label="หมายเหตุครู">
                 <input type="text" class="comment-input w-full border rounded px-2 py-1.5 text-sm focus:ring-green-500 focus:border-green-500" value="${sAsm.teacherComment || ''}" placeholder="ระบุหมายเหตุ...">
