@@ -3,6 +3,30 @@ import { DB_KEYS } from '../core/config.js';
 import { generateId, showToast, showLoading, hideLoading, customAlert, customConfirm, closeModal, getISOTimestamp, getCurrentUserId, getDirectImageUrl } from '../utils/helpers.js';
 import { saveToDB } from '../services/api.js';
 
+function escapeHTML(text) {
+    if (!text) return '';
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function linkify(text) {
+    if (!text) return '';
+    
+    // Replace http/https links
+    let replacedText = text.replace(/(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim, 
+        '<a href="$1" target="_blank" class="text-blue-600 hover:text-blue-800 underline break-all font-medium">$1</a>');
+        
+    // Replace www links (that don't have http/https prefix)
+    replacedText = replacedText.replace(/(^|[^\/])(www\.[\S]+(\b|$))/gim, 
+        '$1<a href="http://$2" target="_blank" class="text-blue-600 hover:text-blue-800 underline break-all font-medium">$2</a>');
+        
+    return replacedText;
+}
+
 export function renderPRNewsData() {
     const searchQuery = (document.getElementById('search-pr-news') ? document.getElementById('search-pr-news').value.toLowerCase().trim() : '');
     const tbody = document.getElementById('tbody-pr-news');
@@ -270,14 +294,53 @@ window.startPRAutoplay = startPRAutoplay;
 window.stopPRAutoplay = stopPRAutoplay;
 
 export function showPRAnnouncementIfActive() {
-    const today = new Date().toISOString().split('T')[0];
+    console.log("Checking active PRs...", AppState.allPrNews);
+    
+    // Helper to normalize start/end dates from database to YYYY-MM-DD local Bangkok format
+    function getBkkDateString(dateInput) {
+        if (!dateInput) return '';
+        let str = String(dateInput).trim();
+        if (!str) return '';
+        
+        // Handle DD/MM/YYYY or DD/MM/BE format
+        if (str.includes('/')) {
+            const parts = str.split('/');
+            if (parts.length === 3) {
+                let day = parts[0].padStart(2, '0');
+                let month = parts[1].padStart(2, '0');
+                let year = parseInt(parts[2]);
+                if (year > 2400) year -= 543; // BE to CE
+                return `${year}-${month}-${day}`;
+            }
+        }
+        
+        // Parse with local Bangkok time zone
+        try {
+            const d = new Date(str);
+            if (!isNaN(d.getTime())) {
+                return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+            }
+        } catch(e) {}
+        
+        return str.split('T')[0];
+    }
+
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    
     const activePRs = (AppState.allPrNews || []).filter(pr => {
         if (pr.deleted_flg === 'Y') return false;
-        const isActive = pr.status_active === 'true' || pr.status_active === true || pr.status_active === 'Y';
+        
+        const activeStr = String(pr.status_active).toLowerCase().trim();
+        const isActive = activeStr === 'true' || activeStr === 'y' || activeStr === 'yes' || activeStr === '1' || pr.status_active === true;
         if (!isActive) return false;
         
-        if (pr.start_date && today < pr.start_date.split('T')[0]) return false;
-        if (pr.end_date && today > pr.end_date.split('T')[0]) return false;
+        const start = getBkkDateString(pr.start_date);
+        const end = getBkkDateString(pr.end_date);
+        
+        console.log(`PR: ${pr.activity_name}, active: ${isActive}, range: ${start} to ${end}, today: ${today}`);
+        
+        if (start && today < start) return false;
+        if (end && today > end) return false;
         return true;
     });
     
@@ -294,8 +357,8 @@ export function showPRAnnouncementIfActive() {
                     
                     let infoBoxHtml = '';
                     if (hasTitle || hasDetails) {
-                        const title = pr.activity_name ? pr.activity_name.trim() : 'ประชาสัมพันธ์';
-                        const detailsHtml = hasDetails ? `<p class="text-sm text-gray-700 whitespace-pre-wrap">${pr.details.trim()}</p>` : '';
+                        const title = pr.activity_name ? escapeHTML(pr.activity_name.trim()) : 'ประชาสัมพันธ์';
+                        const detailsHtml = hasDetails ? `<p class="text-sm text-gray-700 whitespace-pre-wrap">${linkify(escapeHTML(pr.details.trim()))}</p>` : '';
                         infoBoxHtml = `
                             <div class="bg-white/85 backdrop-blur-md p-4 rounded-xl mb-4 text-left border border-white/35 shadow-sm max-h-[20vh] overflow-y-auto">
                                 <h4 class="font-bold text-lg text-green-800 mb-1">${title}</h4>

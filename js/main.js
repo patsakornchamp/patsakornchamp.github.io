@@ -550,6 +550,27 @@ export async function migrateOldAttendanceIds() {
     });
 }
 
+// 🌟 ระบบควบคุมการเปิด-ปิด Tooltip (สำหรับ Hover บนคอมฯ และ Click/Tap บนมือถือ/แท็บเล็ต)
+document.addEventListener('click', function(e) {
+    const tooltipContainer = e.target.closest('.tooltip-container');
+    
+    // ปิด Tooltip อื่นๆ ที่เปิดอยู่
+    document.querySelectorAll('.tooltip-container.active').forEach(container => {
+        if (container !== tooltipContainer) {
+            container.classList.remove('active');
+        }
+    });
+    
+    // ถ้าคลิกโดน Tooltip Container
+    if (tooltipContainer) {
+        // เช็คว่าเป็น Mobile/Tablet View (< 1024px) หรืออุปกรณ์สัมผัส
+        const isMobileOrTouch = (window.innerWidth < 1024) || !window.matchMedia('(hover: hover)').matches;
+        if (isMobileOrTouch) {
+            tooltipContainer.classList.toggle('active');
+        }
+    }
+});
+
 // 🌟 ฟังก์ชันสลับการเปิด-ปิด เมนูแฮมเบอร์เกอร์บนมือถือ
 export function toggleMobileMenu() {
     const nav = document.getElementById('app-nav');

@@ -330,8 +330,87 @@
             #tab-checkin:has(#student-list-container.hidden) .glass-panel {
                 padding-bottom: 16rem !important;
             }
-            #tab-club-checkin:has(#club-student-list-container.hidden) .glass-panel {
-                padding-bottom: 16rem !important;
+        }
+
+        /* --- Tooltip System --- */
+        .tooltip-container {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            cursor: help;
+            margin-left: 4px;
+        }
+        .tooltip-text {
+            visibility: hidden;
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%) translateY(4px);
+            width: 250px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(8px);
+            color: #ffffff;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            font-size: 0.75rem;
+            line-height: 1.4;
+            font-weight: normal;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            pointer-events: none;
+            white-space: normal;
+        }
+        .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: rgba(15, 23, 42, 0.95) transparent transparent transparent;
+        }
+
+        /* Show on hover for desktop/hover-capable devices */
+        @media (hover: hover) {
+            .tooltip-container:hover .tooltip-text {
+                visibility: visible;
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        /* Show on active (for mobile/tablet click toggle) */
+        .tooltip-container.active .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Mobile adjustment to prevent cut-off at screen edge */
+        @media (max-width: 768px) {
+            .tooltip-text {
+                left: -10px;
+                transform: translateY(4px);
+                width: 220px;
+            }
+            .tooltip-text::after {
+                left: 14px;
+                margin-left: 0;
+            }
+            .tooltip-container:hover .tooltip-text {
+                visibility: hidden;
+                opacity: 0;
+                transform: translateY(4px);
+            }
+            .tooltip-container.active .tooltip-text {
+                visibility: visible;
+                opacity: 1;
+                transform: translateY(0);
             }
         }
     </style>
@@ -495,13 +574,32 @@
                     <div class="mb-6">
                         <h4 class="font-bold text-lg text-green-700 mb-4 border-b pb-2"><i class="fas fa-info-circle mr-2"></i>ข้อมูลส่วนตัว</h4>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
                             <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div><label class="text-sm font-medium text-gray-700">เลข ปชช. (13 หลัก) *</label><input type="text" id="sp-citizenid" maxlength="13" required class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                                <div>
+                                    <label class="text-sm font-medium text-gray-700 flex items-center gap-1">
+                                        เลข ปชช. (13 หลัก) *
+                                        <span class="tooltip-container text-gray-400 hover:text-green-600">
+                                            <i class="fas fa-info-circle text-xs"></i>
+                                            <span class="tooltip-text">ใช้สำหรับยืนยันตัวตนในระบบ และระบบจะเช็คไม่ให้เลขประจำตัวประชาชนซ้ำกับนักเรียนคนอื่น</span>
+                                        </span>
+                                    </label>
+                                    <input type="text" id="sp-citizenid" maxlength="13" required class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500">
+                                </div>
                                 <div><label class="text-sm font-medium text-gray-700">ชื่อเล่น</label><input type="text" id="sp-nickname" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
                                 <div><label class="text-sm font-medium text-gray-500">ชั้นเรียน</label><input type="text" id="sp-class" readonly class="w-full px-3 py-2 border rounded bg-gray-100 text-gray-500"></div>
                                 <div><label class="text-sm font-medium text-gray-500">เลขที่</label><input type="text" id="sp-number" readonly class="w-full px-3 py-2 border rounded bg-gray-100 text-gray-500"></div>
                                 <div><label class="text-sm font-medium text-gray-700">วันเกิด *</label><input type="date" id="sp-dob" required class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
-                                <div><label class="text-sm font-medium text-gray-700">เบอร์โทรศัพท์ส่วนตัว *</label><input type="text" id="sp-phone" required placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                                <div>
+                                    <label class="text-sm font-medium text-gray-700 flex items-center gap-1">
+                                        เบอร์โทรศัพท์ส่วนตัว *
+                                        <span class="tooltip-container text-gray-400 hover:text-green-600">
+                                            <i class="fas fa-info-circle text-xs"></i>
+                                            <span class="tooltip-text">ระบุเบอร์โทรศัพท์ส่วนตัวของนักเรียน 9-10 หลัก (เฉพาะตัวเลข เช่น 0812345678)</span>
+                                        </span>
+                                    </label>
+                                    <input type="text" id="sp-phone" required placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500">
+                                </div>
                                 <div class="sm:col-span-2"><label class="text-sm font-medium text-gray-700">อีเมลส่วนตัว</label><input type="email" id="sp-email" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
                             </div>
                             <div class="md:col-span-1">
@@ -534,8 +632,13 @@
                         <!-- ข้อมูลผู้ปกครอง (ย้ายมาไว้หลัง บิดา-มารดา) -->
                         <div class="mt-6 pt-4 border-t">
                             <div class="flex flex-wrap items-center justify-between mb-4 border-b pb-2 gap-2">
-                                <h4 class="font-bold text-lg text-indigo-700"><i class="fas fa-user-shield mr-2"></i>ข้อมูลผู้ปกครอง</h4>
-                                <div class="flex items-center gap-4 text-sm font-medium text-gray-600 bg-gray-50 px-3 py-1.5 rounded-xl border shadow-sm">
+                                <h4 class="font-bold text-lg text-indigo-700 flex items-center gap-1">
+                                    <i class="fas fa-user-shield mr-2"></i>ข้อมูลผู้ปกครอง
+                                    <span class="tooltip-container text-gray-400 hover:text-indigo-600">
+                                        <i class="fas fa-info-circle text-xs"></i>
+                                        <span class="tooltip-text">ระบุข้อมูลผู้ปกครองหลักที่สามารถติดต่อได้ ในกรณีที่ใช้ข้อมูลร่วมกับบิดาหรือมารดา สามารถกดคัดลอกได้ทันทีทางด้านขวา</span>
+                                    </span>
+                                </h4>
                                     <span class="text-xs text-gray-500 font-bold">ใช้ข้อมูลเดียวกันกับ:</span>
                                     <label class="flex items-center space-x-1.5 cursor-pointer">
                                         <input type="radio" name="sp-copy-parent" value="father" onclick="copyParentInfoToGuardian('father')" class="text-indigo-600 focus:ring-indigo-500">
@@ -566,11 +669,23 @@
 
                     <!-- Home Information Section -->
                     <div class="mt-8 border-t pt-6">
-                        <h4 class="font-bold text-lg text-green-700 mb-4 border-b pb-2"><i class="fas fa-map-marker-alt mr-2"></i>ข้อมูลที่พักอาศัย</h4>
+                        <h4 class="font-bold text-lg text-green-700 mb-4 border-b pb-2 flex items-center gap-1">
+                            <i class="fas fa-map-marker-alt mr-2"></i>ข้อมูลที่พักอาศัย
+                            <span class="tooltip-container text-gray-400 hover:text-green-600">
+                                <i class="fas fa-info-circle text-xs"></i>
+                                <span class="tooltip-text">ประกอบด้วยพิกัด GPS บ้าน และรูปถ่ายบ้าน 3 มุมมองเพื่อใช้ประกอบการประเมินโครงการเยี่ยมบ้านนักเรียน</span>
+                            </span>
+                        </h4>
                         
                         <div class="border p-4 rounded mb-6 bg-gray-50">
                             <div class="flex justify-between items-center mb-2">
-                                <label class="text-sm font-bold">พิกัด GPS บ้านนักเรียน</label>
+                                <label class="text-sm font-bold flex items-center gap-1">
+                                    พิกัด GPS บ้านนักเรียน
+                                    <span class="tooltip-container text-gray-400 hover:text-green-600">
+                                        <i class="fas fa-info-circle text-xs"></i>
+                                        <span class="tooltip-text">กดปุ่ม 'ดึงพิกัดปัจจุบัน' เพื่อขอละติจูดและลองจิจูดจากอุปกรณ์ของคุณ หรือนำลิงก์พิกัดมาใส่เพื่อใช้นำทาง</span>
+                                    </span>
+                                </label>
                                 <div class="flex gap-2">
                                     <a id="sp-map-link" href="#" target="_blank" class="hidden bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-bold items-center shadow-sm"><i class="fas fa-map-marked-alt mr-1"></i> ดูบนแผนที่</a>
                                     <button type="button" id="sp-gps-btn" onclick="getGPSLocationForProfile()" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs shadow-sm whitespace-nowrap"><i class="fas fa-map-marker-alt"></i> ดึงพิกัดปัจจุบัน</button>
@@ -727,11 +842,23 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">วันที่</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                            วันที่
+                            <span class="tooltip-container text-gray-400 hover:text-green-600">
+                                <i class="fas fa-info-circle text-xs"></i>
+                                <span class="tooltip-text">เลือกวันที่ที่ประสงค์ทำการเช็คชื่อ หรือบันทึกสถานะการเรียนปกติย้อนหลัง</span>
+                            </span>
+                        </label>
                         <input type="date" id="checkin-date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" required onchange="resetCheckinTable()">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">คาบเรียน</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                            คาบเรียน
+                            <span class="tooltip-container text-gray-400 hover:text-green-600">
+                                <i class="fas fa-info-circle text-xs"></i>
+                                <span class="tooltip-text">เลือกคาบเรียนที่สอน ระบบจะคาดเดาคาบเรียนปัจจุบันให้เบื้องต้น</span>
+                            </span>
+                        </label>
                         <select id="checkin-period" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" onchange="resetCheckinTable()">
                             <option value="โฮมรูม">โฮมรูม (08.00-08.30)</option>
                             <option value="1">คาบที่ 1 (08.30-09.20)</option>
@@ -747,15 +874,33 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">ชั้นเรียน</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                            ชั้นเรียน
+                            <span class="tooltip-container text-gray-400 hover:text-green-600">
+                                <i class="fas fa-info-circle text-xs"></i>
+                                <span class="tooltip-text">เลือกห้องเรียนที่ต้องการบันทึกการเช็คชื่อตามปีการศึกษาและภาคเรียนที่กำหนด</span>
+                            </span>
+                        </label>
                         <select id="checkin-class" class="w-full border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" onchange="onCheckinClassChange()"><option value="">-- เลือกชั้นเรียน --</option></select>
                     </div>
-                        <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">ครูผู้สอน</label>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                            ครูผู้สอน
+                            <span class="tooltip-container text-gray-400 hover:text-green-600">
+                                <i class="fas fa-info-circle text-xs"></i>
+                                <span class="tooltip-text">เลือกชื่อครูผู้สอน หากคุณเป็นครูผู้สอนระบบจะเลือกชื่อคุณให้อัตโนมัติ</span>
+                            </span>
+                        </label>
                         <select id="checkin-teacher" class="w-full border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" onchange="onTeacherChange()"><option value="">-- เลือกครูผู้สอน --</option></select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">วิชา</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                            วิชา
+                            <span class="tooltip-container text-gray-400 hover:text-green-600">
+                                <i class="fas fa-info-circle text-xs"></i>
+                                <span class="tooltip-text">เลือกวิชาที่สอน โดยตัวเลือกจะแปรผันตามวิชาที่ครูผู้สอนคนนั้นๆ ได้รับมอบหมาย</span>
+                            </span>
+                        </label>
                         <select id="checkin-subject" class="w-full border border-gray-300 rounded-md focus:ring-green-500 shadow-sm" onchange="resetCheckinTable()"><option value="">-- เลือกวิชา --</option></select>
                     </div>
                 </div>
@@ -831,7 +976,13 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">ชุมนุม</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                            ชุมนุม
+                            <span class="tooltip-container text-gray-400 hover:text-green-600">
+                                <i class="fas fa-info-circle text-xs"></i>
+                                <span class="tooltip-text">เลือกกิจกรรมชุมนุมที่คุณเป็นครูผู้ดูแลเพื่อเข้าเช็คชื่อนักเรียนที่สมัครเรียนชุมนุมนั้นๆ</span>
+                            </span>
+                        </label>
                         <select id="club-checkin-id" class="w-full px-3 py-2 border rounded focus:ring-green-500 shadow-sm" onchange="resetClubCheckinTable()"><option value="">-- เลือกชุมนุม --</option></select>
                     </div>
                 </div>
@@ -2263,7 +2414,13 @@
                         <h4 class="font-bold text-lg text-green-800"><i class="fas fa-user-circle mr-2"></i>ข้อมูลส่วนตัวพื้นฐาน</h4>
                         <div class="w-full md:w-auto flex flex-col sm:flex-row justify-end gap-3">
                             <div class="w-full sm:w-48">
-                                <label class="text-sm font-medium text-blue-800 block mb-1">สถานะเยี่ยมบ้าน</label>
+                                <label class="text-sm font-medium text-blue-800 block mb-1 flex items-center gap-1">
+                                    สถานะเยี่ยมบ้าน
+                                    <span class="tooltip-container text-gray-400 hover:text-blue-600">
+                                        <i class="fas fa-info-circle text-xs"></i>
+                                        <span class="tooltip-text">บันทึกสถานะความคืบหน้าการลงพื้นที่ตรวจเยี่ยมบ้านนักเรียน</span>
+                                    </span>
+                                </label>
                                 <select id="stu-homevisit" class="w-full px-3 py-2 border border-blue-300 bg-blue-50/70 rounded-lg text-sm font-bold">
                                     <option value="">- เลือก -</option>
                                     <option value="สำเร็จ">สำเร็จ</option>
@@ -2275,7 +2432,13 @@
                                 </select>
                             </div>
                             <div class="w-full sm:w-48">
-                                <label class="text-sm font-medium text-red-800 block mb-1">สถานะนักเรียน *</label>
+                                <label class="text-sm font-medium text-red-800 block mb-1 flex items-center gap-1">
+                                    สถานะนักเรียน *
+                                    <span class="tooltip-container text-gray-400 hover:text-red-600">
+                                        <i class="fas fa-info-circle text-xs"></i>
+                                        <span class="tooltip-text">ระบุสถานภาพปัจจุบันของนักเรียน หากพ้นสภาพ (ลาออก) จะไม่สามารถเข้าสู่ระบบเพื่อเช็คชื่อหรือดูคะแนนได้</span>
+                                    </span>
+                                </label>
                                 <select id="stu-status" class="w-full px-3 py-2 border border-red-300 bg-red-50/70 rounded-lg text-sm font-bold">
                                     <option value="ปกติ">ปกติ (กำลังศึกษา)</option>
                                     <option value="ลาออก">ลาออก / พ้นสภาพ</option>
@@ -2287,11 +2450,23 @@
                     <!-- ข้อมูลส่วนตัว (จัด Grid 12 คอลัมน์ให้กว้างขึ้น) -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-4 mb-8">
                         <div class="md:col-span-4">
-                            <label class="text-sm font-medium text-gray-700 mb-1 block">รหัสประจำตัว *</label>
+                            <label class="text-sm font-medium text-gray-700 mb-1 block flex items-center gap-1">
+                                รหัสประจำตัว *
+                                <span class="tooltip-container text-gray-400 hover:text-green-600">
+                                    <i class="fas fa-info-circle text-xs"></i>
+                                    <span class="tooltip-text">รหัสประจำตัวนักเรียน 5 หลัก ใช้สำหรับเข้าสู่ระบบของตัวนักเรียนเอง</span>
+                                </span>
+                            </label>
                             <input type="text" id="stu-studentid" required class="w-full px-3 py-2 border rounded">
                         </div>
                         <div class="md:col-span-4">
-                            <label class="text-sm font-medium text-gray-700 mb-1 block">เลข ปชช. (13 หลัก)</label>
+                            <label class="text-sm font-medium text-gray-700 mb-1 block flex items-center gap-1">
+                                เลข ปชช. (13 หลัก)
+                                <span class="tooltip-container text-gray-400 hover:text-green-600">
+                                    <i class="fas fa-info-circle text-xs"></i>
+                                    <span class="tooltip-text">เลขประจำตัวประชาชน 13 หลักของนักเรียน ระบบจะตรวจสอบไม่ให้ซ้ำกับนักเรียนคนอื่น</span>
+                                </span>
+                            </label>
                             <input type="text" id="stu-citizenid" maxlength="13" placeholder="13 หลัก" class="w-full px-3 py-2 border rounded">
                         </div>
                         <div class="md:col-span-4">
@@ -2443,6 +2618,6 @@
     <div id="teacher-modal" class="modal"><div class="glass-modal rounded-3xl w-full max-w-lg mx-4"><div class="px-6 py-4 border-b border-white/30 flex justify-between items-center"><h3 class="font-bold text-blue-800" id="t-modal-title">ครูผู้สอน</h3><button onclick="closeModal('teacher-modal')"><i class="fas fa-times"></i></button></div><div class="p-6 max-h-[70vh] overflow-y-auto"><input type="hidden" id="t-id"><div class="grid grid-cols-3 gap-3 mb-3"><div class="col-span-1"><label class="text-sm font-medium">คำนำหน้า</label><select id="t-title" class="w-full px-3 py-2 border rounded"><option value="นาย">นาย</option><option value="นาง">นาง</option><option value="นางสาว">นางสาว</option></select></div><div class="col-span-2"><label class="text-sm font-medium">ชื่อ *</label><input type="text" id="t-fname" class="w-full px-3 py-2 border rounded"></div></div><div class="mb-3"><label class="text-sm font-medium">นามสกุล *</label><input type="text" id="t-lname" class="w-full px-3 py-2 border rounded"></div><h4 class="font-bold text-sm text-gray-700 border-b pb-1 mt-4 mb-2">ข้อมูลการเข้าสู่ระบบ & ติดต่อ</h4><div class="grid grid-cols-2 gap-3 mb-3"><div><label class="text-sm font-medium">อีเมล (ใช้เข้าระบบ) *</label><input type="email" id="t-email" required class="w-full px-3 py-2 border rounded border-blue-300 bg-blue-50"></div><div><label class="text-sm font-medium">โทรศัพท์</label><input type="text" id="t-phone" placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded"></div></div><div class="grid grid-cols-2 gap-3 mb-4"><div><label class="text-sm font-medium">รหัสผ่าน *</label><input type="password" id="t-password" class="w-full px-3 py-2 border rounded"></div><div><label class="text-sm font-medium">ยืนยันรหัสผ่าน *</label><input type="password" id="t-conf-password" class="w-full px-3 py-2 border rounded"></div></div><div><label class="text-sm font-medium block mb-2">วิชาที่สอน (เลือกได้มากกว่า 1)</label><input type="text" id="t-subject-search" placeholder="ค้นหารหัส หรือ ชื่อวิชา..." class="w-full px-3 py-2 border border-gray-300 rounded-md mb-2 text-sm focus:ring-green-500" onkeyup="renderTeacherSubjectsList()"><div id="t-subjects-container" class="bg-gray-50 border p-3 rounded h-40 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1"></div></div><div class="flex justify-end gap-2 mt-4"><button onclick="closeModal('teacher-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-100">ยกเลิก</button><button onclick="saveTeacher()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">บันทึก</button></div></div></div></div>
     <div id="class-modal" class="modal"><div class="glass-modal rounded-3xl w-full max-w-lg mx-4 max-h-[90vh] flex flex-col"><div class="px-6 py-4 border-b border-white/30 flex justify-between items-center"><h3 class="text-blue-800 font-bold" id="c-modal-title">ชั้นเรียน</h3><button onclick="closeModal('class-modal')"><i class="fas fa-times"></i></button></div><div class="p-6 overflow-y-auto"><input type="hidden" id="c-id"><div class="grid grid-cols-2 gap-3 mb-3"><div><label class="text-sm font-medium">ปีการศึกษา *</label><input type="number" id="c-year" class="w-full px-3 py-2 border rounded" placeholder="เช่น 2569"></div><div><label class="text-sm font-medium">ภาคเรียน *</label><select id="c-sem" class="w-full px-3 py-2 border rounded"><option value="1">1</option><option value="2">2</option></select></div></div><div class="mb-4"><label class="text-sm font-medium">ชื่อชั้นเรียน *</label><input type="text" id="c-name" class="w-full px-3 py-2 border rounded" placeholder="เช่น ม.1/1"></div><div class="mb-4"><label class="text-sm font-medium block mb-2">ครูที่ปรึกษา (เลือกได้มากกว่า 1)</label><input type="text" id="c-advisor-search" placeholder="ค้นหาชื่อครูที่ปรึกษา..." class="w-full px-3 py-1.5 border border-gray-300 rounded-md mb-2 text-sm focus:ring-green-500" onkeyup="renderClassAdvisorsList()"><div id="c-advisors-container" class="bg-gray-50 border p-3 rounded h-32 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1"></div></div><div><label class="text-sm font-medium block mb-2">วิชาที่เรียน (เลือกได้มากกว่า 1)</label><input type="text" id="c-subject-search" placeholder="ค้นหารหัส หรือ ชื่อวิชา..." class="w-full px-3 py-1.5 border border-gray-300 rounded-md mb-2 text-sm focus:ring-green-500" onkeyup="renderClassSubjectsList()"><div id="c-subjects-container" class="bg-gray-50 border p-3 rounded h-40 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1"></div></div></div><div class="px-6 py-4 border-t border-white/30 flex justify-end gap-2"><button onclick="closeModal('class-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-100">ยกเลิก</button><button onclick="saveClassRoom()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">บันทึก</button></div></div></div>
 
-<script type="module" src="./js/main.js?v=20260621_2520"></script>
+<script type="module" src="./js/main.js?v=20260622_1048"></script>
 </body>
 </html>

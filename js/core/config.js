@@ -15,4 +15,4 @@ export const DB_KEYS = {
 export const DEFAULT_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwiRyzPr1vDN6w39Z8-rJE_wph-gXM8Sd3jXXcR3HkD7Z0TlL_fjpTuRROLOoVeIVswCQ/exec";
 
 // เวอร์ชันการ deploy (เมื่อมีการ deploy ใหม่ ให้เปลี่ยนค่านี้ เช่น วันเวลา หรือเลขเวอร์ชัน เพื่อบังคับให้ครูและแอดมินล็อกอินใหม่)
-export const DEPLOY_VERSION = "20260621_2520";
+export const DEPLOY_VERSION = "20260622_1048";
