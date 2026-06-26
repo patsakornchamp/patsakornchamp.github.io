@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<!-- ไว้อาลัย (ลบคลาส mourning-mode ออกเมื่อต้องการให้สีกลับมาเป็นปกติ) -->
-<html lang="th" class="mourning-mode">
+<!-- ไว้อาลัย (เพิ่มคลาส mourning-mode ที่แท็ก html ด้านล่างเมื่อต้องการเปิดใช้งาน) -->
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -414,6 +414,9 @@
             }
         }
     </style>
+    <!-- QR Code Libraries -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 
 <body class="min-h-screen flex flex-col w-full relative text-gray-800">
@@ -525,6 +528,7 @@
                     <li id="menu-my-club" class="hidden w-full lg:w-auto"><button onclick="switchTab('my-club')" class="nav-btn w-full text-left lg:text-center border-transparent text-green-200 px-4 py-3 lg:py-4 font-medium hover:bg-green-600 border-l-4 lg:border-l-0 lg:border-b-4 hover:text-white focus:outline-none transition-colors duration-200 rounded-r-lg lg:rounded-none mb-1 lg:mb-0" id="nav-my-club"><i class="fas fa-users w-6 text-center"></i> ชุมนุมของฉัน</button></li>
                     <li id="menu-academic" class="hidden w-full lg:w-auto"><button onclick="switchTab('academic')" class="nav-btn w-full text-left lg:text-center border-transparent text-green-200 px-4 py-3 lg:py-4 font-medium hover:bg-green-600 border-l-4 lg:border-l-0 lg:border-b-4 hover:text-white focus:outline-none transition-colors duration-200 rounded-r-lg lg:rounded-none mb-1 lg:mb-0" id="nav-academic"><i class="fas fa-graduation-cap w-6 text-center"></i> ผลการเรียน & เวลาเรียน</button></li>
                     <li id="menu-my-assignments" class="hidden w-full lg:w-auto"><button onclick="switchTab('my-assignments')" class="nav-btn w-full text-left lg:text-center border-transparent text-green-200 px-4 py-3 lg:py-4 font-medium hover:bg-green-600 border-l-4 lg:border-l-0 lg:border-b-4 hover:text-white focus:outline-none transition-colors duration-200 rounded-r-lg lg:rounded-none mb-1 lg:mb-0" id="nav-my-assignments"><i class="fas fa-book-open w-6 text-center"></i> การบ้านและงาน</button></li>
+                    <li id="menu-student-qr" class="hidden w-full lg:w-auto"><button onclick="switchTab('student-qr')" class="nav-btn w-full text-left lg:text-center border-transparent text-green-200 px-4 py-3 lg:py-4 font-medium hover:bg-green-600 border-l-4 lg:border-l-0 lg:border-b-4 hover:text-white focus:outline-none transition-colors duration-200 rounded-r-lg lg:rounded-none mb-1 lg:mb-0" id="nav-student-qr"><i class="fas fa-qrcode w-6 text-center"></i> สแกน QR เช็คชื่อ</button></li>
                     
                     <!-- Teacher & Admin Menu -->
                     <li id="menu-checkin" class="hidden w-full lg:w-auto"><button onclick="switchTab('checkin')" class="nav-btn active w-full text-left lg:text-center px-4 py-3 lg:py-4 font-medium hover:bg-green-600 border-l-4 lg:border-l-0 lg:border-b-4 border-white text-white focus:outline-none transition-colors duration-200 rounded-r-lg lg:rounded-none mb-1 lg:mb-0" id="nav-checkin"><i class="fas fa-user-check w-6 text-center"></i> เช็คชื่อปกติ</button></li>
@@ -543,6 +547,29 @@
     </header>
 
     <main class="flex-grow w-full px-2 sm:px-4 py-6 md:py-8 hidden" id="app-main">
+
+        <!-- STUDENT QR TAB -->
+        <section id="tab-student-qr" class="tab-content">
+            <div class="glass-panel rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center min-h-[60vh] text-center">
+                <h3 class="text-2xl font-bold text-green-800 mb-6"><i class="fas fa-qrcode mr-2"></i>เช็คชื่อเข้าเรียน (QR Code)</h3>
+                
+                <div class="flex flex-col sm:flex-row gap-4 w-full max-w-md">
+                    <button onclick="startStudentQrScanner()" class="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all btn-glass-raised">
+                        <i class="fas fa-camera text-3xl mb-2 block"></i> สแกน QR ห้องเรียน
+                    </button>
+                    <button onclick="showStudentPersonalQr()" class="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all btn-glass-raised">
+                        <i class="fas fa-id-badge text-3xl mb-2 block"></i> แสดง QR ของฉัน
+                    </button>
+                </div>
+
+                <div id="student-qr-scanner-container" class="w-full max-w-md mt-6 hidden">
+                    <div id="student-reader" class="w-full rounded-xl overflow-hidden shadow-lg border-2 border-green-500 bg-black aspect-square"></div>
+                    <button onclick="stopStudentQrScanner()" class="mt-4 w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 rounded-xl btn-glass-raised">
+                        <i class="fas fa-times mr-2"></i> ปิดกล้อง
+                    </button>
+                </div>
+            </div>
+        </section>
 
         <!-- STUDENT PROFILE TAB -->
         <section id="tab-my-profile" class="tab-content">
@@ -785,6 +812,27 @@
             </div>
         </section>
 
+        <!-- TAB: STUDENT QR CHECK-IN -->
+        <section id="tab-student-qr" class="tab-content hidden h-full w-full max-w-2xl mx-auto px-4 py-6 mt-16 sm:mt-24">
+            <div class="flex flex-col items-center justify-center h-full">
+                <div class="bg-white/40 border border-white/50 backdrop-blur-sm p-8 rounded-3xl shadow-xl w-full text-center">
+                    <h2 class="text-3xl font-bold text-green-800 mb-6 drop-shadow-md">ระบบเช็คชื่อ QR Code</h2>
+                    <p class="text-gray-700 mb-8 font-medium">สแกน QR Code ที่ครูแสดง หรือ แสดง QR Code ของคุณให้ครูสแกน</p>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <button onclick="startStudentQrScanner()" class="bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-6 rounded-2xl shadow-lg transition-transform transform hover:scale-105 flex flex-col items-center gap-3">
+                            <i class="fas fa-camera text-4xl"></i>
+                            <span class="text-lg">สแกน QR ห้องเรียน</span>
+                        </button>
+                        <button onclick="showStudentPersonalQr()" class="bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-6 rounded-2xl shadow-lg transition-transform transform hover:scale-105 flex flex-col items-center gap-3">
+                            <i class="fas fa-qrcode text-4xl"></i>
+                            <span class="text-lg">แสดง QR ของฉัน</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- STUDENT ASSIGNMENTS & HOMEWORK TAB -->
         <section id="tab-my-assignments" class="tab-content">
             <div class="glass-panel rounded-2xl p-6 md:p-8">
@@ -906,7 +954,12 @@
                 </div>
 
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3 w-full">
-                    <button id="load-students-btn" onclick="loadCheckinList()" class="w-full sm:w-auto bg-gradient-to-br from-blue-400/40 to-blue-600/30 text-blue-900 px-6 py-2 rounded-xl font-bold focus:outline-none btn-glass-raised"><i class="fas fa-search mr-2"></i> โหลดรายชื่อ</button>
+                    <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                        <button id="load-students-btn" onclick="loadCheckinList()" class="w-full sm:w-auto bg-gradient-to-br from-blue-400/40 to-blue-600/30 text-blue-900 px-6 py-2 rounded-xl font-bold focus:outline-none btn-glass-raised"><i class="fas fa-search mr-2"></i> โหลดรายชื่อ</button>
+                        <button id="pull-qr-btn" onclick="pullStudentCheckIns()" class="hidden w-full sm:w-auto bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white shadow-md px-4 py-2 rounded-xl font-bold focus:outline-none transition-all" title="ดึงข้อมูลเช็คชื่อจากการสแกน QR ของนักเรียน"><i class="fas fa-cloud-download-alt mr-1"></i> ดึงสแกน</button>
+                        <button id="tc-scan-btn" onclick="openTeacherQrScanner()" class="hidden w-full sm:w-auto bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white shadow-md px-4 py-2 rounded-xl font-bold focus:outline-none transition-all" title="เปิดกล้องครูเพื่อสแกน QR นักเรียน"><i class="fas fa-camera mr-1"></i> สแกนเด็ก</button>
+                        <button id="tc-show-qr-btn" onclick="showClassroomQrModal()" class="hidden w-full sm:w-auto bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white shadow-md px-4 py-2 rounded-xl font-bold focus:outline-none transition-all" title="แสดง QR ขึ้นจอเพื่อให้นักเรียนสแกนเช็คชื่อ"><i class="fas fa-qrcode mr-1"></i> โชว์ QR</button>
+                    </div>
                     <div id="bulk-actions" class="hidden items-center w-full sm:w-auto justify-between sm:justify-end flex-wrap gap-2">
                         <span class="text-sm font-medium text-gray-600 whitespace-nowrap">เช็คทั้งหมด:</span>
                         <div class="flex gap-1 sm:gap-2">
@@ -1382,8 +1435,9 @@
             <div id="master-students" class="master-section hidden w-full">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-3 gap-3 w-full">
                     <h4 class="text-xl font-bold text-green-800"><i class="fas fa-users mr-2"></i>ข้อมูลนักเรียนทั้งหมด</h4>
-                    <div class="flex gap-2 w-full sm:w-auto">
+                    <div class="flex gap-2 w-full sm:w-auto flex-wrap">
                         <button onclick="openUploadCsvModal()" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm whitespace-nowrap"><i class="fas fa-file-csv mr-2"></i> อัปโหลด (CSV)</button>
+                        <button onclick="openBulkTransferModal()" class="flex-1 sm:flex-none bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm whitespace-nowrap"><i class="fas fa-random mr-2"></i> เลื่อนชั้น/ย้ายห้องแบบกลุ่ม</button>
                         <button onclick="openStudentModal()" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm whitespace-nowrap"><i class="fas fa-plus mr-2"></i> เพิ่มนักเรียน</button>
                     </div>
                 </div>
@@ -1558,6 +1612,32 @@
                     <button onclick="cleanUpOldAttendanceData()" class="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded-md font-medium"><i class="fas fa-broom mr-2"></i> ล้างข้อมูลเก่าให้ตรงฟอร์แมตใหม่</button>
                     <button onclick="migrateOldAttendanceIds()" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-md font-medium"><i class="fas fa-link mr-2"></i> ผูก ID ข้อมูลเก่า (Migration)</button>
                 </div>
+
+                <!-- Danger Zone: สำรองข้อมูลและปิดปีการศึกษา -->
+                <div class="mt-8 border-t border-red-300 pt-6">
+                    <h4 class="font-bold text-lg text-red-700 mb-4"><i class="fas fa-exclamation-triangle mr-2"></i> Danger Zone (พื้นที่อันตรายสำหรับผู้ดูแลระบบ)</h4>
+                    <div class="bg-red-50/50 border border-red-200 p-4 rounded-xl mb-4">
+                        <p class="text-sm text-red-800 font-bold mb-2">โปรดดำเนินการเรียงลำดับขั้นตอนดังนี้:</p>
+                        <ol class="list-decimal pl-5 text-xs text-gray-700 space-y-1">
+                            <li>กดปุ่ม <strong>"สำรองข้อมูลสเปรดชีตปีการศึกษาปัจจุบัน"</strong> เพื่อเซฟไฟล์ประวัติของปีปัจจุบันเก็บแยกต่างหากไว้ก่อน</li>
+                            <li>หลังจากได้รับลิงก์ดาวน์โหลดและตรวจสอบไฟล์สำรองเรียบร้อยแล้ว จึงค่อยกดปุ่ม <strong>"ล้างประวัติธุรกรรมเพื่อเริ่มปีการศึกษาใหม่"</strong></li>
+                        </ol>
+                    </div>
+                    
+                    <div class="flex gap-4 flex-col sm:flex-row flex-wrap w-full">
+                        <button onclick="createDatabaseBackup()" class="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md font-medium"><i class="fas fa-copy mr-2"></i> สำรองข้อมูลสเปรดชีตปีการศึกษาปัจจุบัน</button>
+                        <button onclick="resetForNewAcademicYear()" class="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-md font-medium"><i class="fas fa-trash-alt mr-2"></i> ล้างประวัติธุรกรรมเพื่อเริ่มปีการศึกษาใหม่</button>
+                    </div>
+
+                    <!-- แสดงลิงก์หลังการสำรองสำเร็จ -->
+                    <div id="backup-url-container" class="hidden mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-bold text-blue-800">สร้างไฟล์สำรองสำเร็จแล้ว!</p>
+                            <p class="text-xs text-gray-600 truncate mt-0.5" id="backup-name-span">-</p>
+                        </div>
+                        <a id="backup-url-link" href="#" target="_blank" class="hidden w-full sm:w-auto text-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors"><i class="fas fa-external-link-alt mr-2"></i> เปิดไฟล์สำรองบน Google Sheets</a>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -1625,9 +1705,34 @@
 
     <!-- IMAGE VIEWER MODAL -->
     <div id="image-viewer-modal" class="modal" style="z-index: 9999;">
-        <div class="relative w-full max-w-4xl mx-4 flex flex-col items-center justify-center">
-            <button onclick="closeModal('image-viewer-modal')" class="absolute -top-10 right-0 md:-right-10 text-white text-3xl hover:text-gray-300 transition-colors"><i class="fas fa-times"></i></button>
-            <img id="large-image-preview" src="" class="max-w-full max-h-[85vh] object-contain rounded shadow-2xl bg-black">
+        <div class="relative w-11/12 md:w-[80vw] flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm p-4 rounded-2xl border border-white/10 shadow-2xl">
+            <button onclick="closeModal('image-viewer-modal')" class="absolute -top-12 right-0 text-white text-3xl hover:text-gray-300 transition-colors" title="ปิด"><i class="fas fa-times"></i></button>
+            
+            <div id="image-zoom-container" class="w-full overflow-hidden flex justify-center items-center max-h-[80vh] cursor-grab select-none rounded bg-black/80 border border-white/5 relative">
+                <img id="large-image-preview" src="" class="max-w-full max-h-[80vh] object-contain rounded origin-center transition-transform duration-100 ease-out">
+            </div>
+
+            <!-- Controls (Zoom In, Zoom Out, Reset, Download) -->
+            <div class="flex items-center gap-4 mt-4 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 shadow-lg">
+                <button id="btn-zoom-out" class="text-white/80 hover:text-white hover:scale-110 active:scale-95 transition-all w-8 h-8 rounded-full flex items-center justify-center bg-white/10" title="ซูมออก">
+                    <i class="fas fa-search-minus text-sm"></i>
+                </button>
+                <span id="zoom-level-text" class="text-white text-xs font-semibold select-none w-12 text-center">100%</span>
+                <button id="btn-zoom-in" class="text-white/80 hover:text-white hover:scale-110 active:scale-95 transition-all w-8 h-8 rounded-full flex items-center justify-center bg-white/10" title="ซูมเข้า">
+                    <i class="fas fa-search-plus text-sm"></i>
+                </button>
+                <button id="btn-zoom-reset" class="text-white/80 hover:text-white hover:scale-110 active:scale-95 transition-all w-8 h-8 rounded-full flex items-center justify-center bg-white/10" title="รีเซ็ต">
+                    <i class="fas fa-redo-alt text-xs"></i>
+                </button>
+                <button id="btn-rotate" class="text-white/80 hover:text-white hover:scale-110 active:scale-95 transition-all w-8 h-8 rounded-full flex items-center justify-center bg-white/10" title="หมุนภาพ">
+                    <i class="fas fa-sync-alt text-sm"></i>
+                </button>
+                <div class="h-6 w-px bg-white/20"></div>
+                <button id="btn-download-image" class="text-white/85 hover:text-white hover:bg-green-600 bg-green-700/80 hover:scale-105 active:scale-95 transition-all px-4 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-medium shadow-sm" title="ดาวน์โหลดรูปภาพ">
+                    <i class="fas fa-download"></i>
+                    <span>ดาวน์โหลด</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1690,6 +1795,26 @@
                     <label class="font-bold text-gray-700 block mb-2">ไฟล์แนบจากนักเรียน (สูงสุด 3 ไฟล์):</label>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3" id="vss-files-container">
                         <!-- Loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- Grading Panel (Visible for Teachers/Admins) -->
+                <div id="vss-grading-section" class="border-t border-dashed border-indigo-200 pt-4 mt-2 space-y-3">
+                    <h4 class="font-bold text-indigo-800 flex items-center gap-1.5"><i class="fas fa-edit"></i> ให้คะแนนและข้อเสนอแนะ</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="font-bold text-gray-700 text-xs block mb-1" for="vss-score-input">คะแนนที่ได้ <span id="vss-max-score-label" class="text-gray-500 font-normal"></span></label>
+                            <input type="number" id="vss-score-input" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500 font-mono text-center font-bold text-indigo-700" placeholder="ระบุคะแนน">
+                        </div>
+                        <div>
+                            <label class="font-bold text-gray-700 text-xs block mb-1" for="vss-comment-input">หมายเหตุครู / ข้อเสนอแนะ</label>
+                            <input type="text" id="vss-comment-input" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500" placeholder="เช่น ทำงานเรียบร้อยดี">
+                        </div>
+                    </div>
+                    <div class="flex justify-end pt-1">
+                        <button onclick="submitSubmissionGrading()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow transition-colors flex items-center gap-1">
+                            <i class="fas fa-save"></i> บันทึกคะแนน
+                        </button>
                     </div>
                 </div>
             </div>
@@ -2113,7 +2238,61 @@
 
 
     <!-- CLASS MODAL & EXTRAS -->
-    <div id="csv-upload-modal" class="modal"><div class="glass-modal rounded-3xl w-full max-w-3xl mx-4 flex flex-col max-h-[90vh]"><div class="px-6 py-4 border-b border-white/30 flex justify-between items-center"><h3 class="text-xl font-bold text-blue-800"><i class="fas fa-upload mr-2"></i>อัปโหลดรายชื่อนักเรียน (CSV)</h3><button onclick="closeModal('csv-upload-modal')"><i class="fas fa-times"></i></button></div><div class="p-6 overflow-y-auto flex-grow"><div class="mb-4 bg-yellow-50 border border-yellow-200 p-4 rounded text-sm text-yellow-800"><p class="font-bold mb-1"><i class="fas fa-info-circle mr-1"></i> รูปแบบไฟล์ที่รองรับ (CSV)</p><p>หัวคอลัมน์ต้องเป็น: <span class="font-mono bg-white px-1">เลขที่, รหัสประจำตัว, คำนำหน้า, ชื่อ, นามสกุล, ชื่อเล่น(ไม่จำเป็น)</span> (ห้ามสลับลำดับ)</p></div><div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"><div><label class="block text-sm font-medium text-gray-700 mb-1">เลือกชั้นเรียนที่ต้องการเพิ่ม *</label><select id="upload-class" class="w-full px-3 py-2 border rounded-md focus:ring-blue-500"><option value="">-- เลือกชั้นเรียน --</option></select></div><div><label class="block text-sm font-medium text-gray-700 mb-1">การอ่านภาษาไทย *</label><select id="upload-encoding" class="w-full px-3 py-2 border rounded-md focus:ring-blue-500" onchange="if(document.getElementById('upload-file').files[0]) previewCSV({target: document.getElementById('upload-file')})"><option value="windows-874">Excel ทั่วไป (Windows-874)</option><option value="UTF-8">Google Sheets (UTF-8)</option></select></div><div><label class="block text-sm font-medium text-gray-700 mb-1">เลือกไฟล์ CSV *</label><input type="file" id="upload-file" accept=".csv" class="w-full px-3 py-1.5 border rounded-md focus:ring-blue-500" onchange="previewCSV(event)"></div></div><div id="upload-preview-container" class="hidden w-full"><h4 class="font-bold text-gray-700 mb-2">พรีวิวข้อมูล (<span id="upload-count">0</span> รายการ)</h4><div class="overflow-x-auto border rounded-lg max-h-64 w-full"><table class="min-w-full divide-y divide-gray-200 text-sm"><thead class="bg-gray-50 sticky top-0"><tr><th class="px-4 py-2 text-left font-medium text-gray-500">เลขที่</th><th class="px-4 py-2 text-left font-medium text-gray-500">รหัสประจำตัว</th><th class="px-4 py-2 text-left font-medium text-gray-500">ชื่อ - สกุล (ชื่อเล่น)</th><th class="px-4 py-2 text-center font-medium text-gray-500">สถานะ</th></tr></thead><tbody id="upload-preview-body" class="bg-white divide-y divide-gray-200"></tbody></table></div></div></div><div class="px-6 py-4 border-t border-white/30 flex justify-end gap-2"><button onclick="closeModal('csv-upload-modal')" class="px-4 py-2 border rounded hover:bg-gray-100 font-medium">ยกเลิก</button><button onclick="saveCsvUpload()" id="btn-save-upload" disabled class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded font-medium transition">บันทึกข้อมูล</button></div></div></div>
+    <div id="csv-upload-modal" class="modal">
+        <div class="glass-modal rounded-3xl w-full max-w-4xl mx-4 flex flex-col max-h-[90vh]">
+            <div class="px-6 py-4 border-b border-white/30 flex justify-between items-center bg-blue-800 text-white rounded-t-3xl">
+                <h3 class="text-xl font-bold"><i class="fas fa-upload mr-2"></i>อัปโหลดรายชื่อนักเรียน (Excel / CSV)</h3>
+                <button onclick="closeModal('csv-upload-modal')" class="text-white hover:text-gray-200"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-grow space-y-4">
+                <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-xl text-sm text-yellow-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                        <p class="font-bold mb-1"><i class="fas fa-info-circle mr-1"></i> รูปแบบไฟล์ที่รองรับ (Excel / CSV)</p>
+                        <p>หัวคอลัมน์ต้องประกอบด้วย: <span class="font-mono bg-white px-1">เลขที่, รหัสประจำตัว, คำนำหน้า, ชื่อ, นามสกุล, ชื่อเล่น(ไม่จำเป็น)</span> (เรียงตามลำดับคอลัมน์)</p>
+                    </div>
+                    <button type="button" onclick="downloadStudentTemplate()" class="w-full sm:w-auto bg-green-700 hover:bg-green-800 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 whitespace-nowrap shadow-sm"><i class="fas fa-download"></i> ดาวน์โหลดเทมเพลต Excel</button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">เลือกชั้นเรียนที่ต้องการเพิ่ม *</label>
+                        <select id="upload-class" class="w-full px-3 py-2 border rounded-md focus:ring-blue-500">
+                            <option value="">-- เลือกชั้นเรียน --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">เลือกไฟล์ Excel / CSV *</label>
+                        <input type="file" id="upload-file" accept=".csv, .xlsx" class="w-full px-3 py-1.5 border rounded-md focus:ring-blue-500" onchange="previewCSV(event)">
+                    </div>
+                    <div id="upload-sheet-container" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">เลือก Sheet ที่ต้องการอ่าน *</label>
+                        <select id="upload-sheet-select" class="w-full px-3 py-2 border border-purple-300 bg-purple-50 rounded-md focus:ring-purple-500 font-bold" onchange="onUploadSheetChange()"></select>
+                    </div>
+                </div>
+                
+                <div id="upload-preview-container" class="hidden w-full">
+                    <h4 class="font-bold text-gray-700 mb-2">พรีวิวข้อมูล (<span id="upload-count">0</span> รายการ)</h4>
+                    <div class="overflow-x-auto border rounded-lg max-h-64 w-full">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-2 text-center font-medium text-gray-500 w-16 md:w-20">เลขที่</th>
+                                    <th class="px-4 py-2 text-left font-medium text-gray-500 w-32">รหัสประจำตัว</th>
+                                    <th class="px-4 py-2 text-left font-medium text-gray-500">ชื่อ - สกุล (ชื่อเล่น)</th>
+                                    <th class="px-4 py-2 text-center font-medium text-gray-500 w-28">สถานะ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="upload-preview-body" class="bg-white divide-y divide-gray-200"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-white/30 flex justify-end gap-2 bg-gray-50 rounded-b-3xl">
+                <button onclick="closeModal('csv-upload-modal')" class="px-4 py-2 border rounded hover:bg-gray-100 font-medium">ยกเลิก</button>
+                <button onclick="saveCsvUpload()" id="btn-save-upload" disabled class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded font-medium transition">บันทึกข้อมูล</button>
+            </div>
+        </div>
+    </div>
     
     <!-- ASSIGNMENT CREATE MODAL -->
     <div id="assignment-modal" class="modal">
@@ -2617,6 +2796,128 @@
     <div id="subject-modal" class="modal"><div class="glass-modal rounded-3xl w-full max-w-md mx-4"><div class="px-6 py-4 border-b border-white/30 flex justify-between items-center"><h3 class="font-bold text-blue-800" id="sub-modal-title">วิชา</h3><button onclick="closeModal('subject-modal')"><i class="fas fa-times"></i></button></div><div class="p-6"><input type="hidden" id="sub-id"><div class="mb-3"><label class="text-sm font-medium">รหัสวิชา *</label><input type="text" id="sub-code" class="w-full px-3 py-2 border rounded"></div><div class="mb-3"><label class="text-sm font-medium">ชื่อวิชา *</label><input type="text" id="sub-name" class="w-full px-3 py-2 border rounded"></div><div id="sub-name-edit-warning" class="text-red-500 text-xs mt-1 hidden"><i class="fas fa-exclamation-circle mr-1"></i> หากต้องการแก้ไขชื่อวิชา กรุณาติดต่อ Admin</div><div class="mb-3 mt-3"><label class="text-sm font-medium">หน่วยกิต</label><input type="number" step="0.5" id="sub-credit" class="w-full px-3 py-2 border rounded"></div><div class="flex justify-end gap-2 mt-4"><button onclick="closeModal('subject-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-100">ยกเลิก</button><button onclick="saveSubject()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">บันทึก</button></div></div></div></div>
     <div id="teacher-modal" class="modal"><div class="glass-modal rounded-3xl w-full max-w-lg mx-4"><div class="px-6 py-4 border-b border-white/30 flex justify-between items-center"><h3 class="font-bold text-blue-800" id="t-modal-title">ครูผู้สอน</h3><button onclick="closeModal('teacher-modal')"><i class="fas fa-times"></i></button></div><div class="p-6 max-h-[70vh] overflow-y-auto"><input type="hidden" id="t-id"><div class="grid grid-cols-3 gap-3 mb-3"><div class="col-span-1"><label class="text-sm font-medium">คำนำหน้า</label><select id="t-title" class="w-full px-3 py-2 border rounded"><option value="นาย">นาย</option><option value="นาง">นาง</option><option value="นางสาว">นางสาว</option></select></div><div class="col-span-2"><label class="text-sm font-medium">ชื่อ *</label><input type="text" id="t-fname" class="w-full px-3 py-2 border rounded"></div></div><div class="mb-3"><label class="text-sm font-medium">นามสกุล *</label><input type="text" id="t-lname" class="w-full px-3 py-2 border rounded"></div><h4 class="font-bold text-sm text-gray-700 border-b pb-1 mt-4 mb-2">ข้อมูลการเข้าสู่ระบบ & ติดต่อ</h4><div class="grid grid-cols-2 gap-3 mb-3"><div><label class="text-sm font-medium">อีเมล (ใช้เข้าระบบ) *</label><input type="email" id="t-email" required class="w-full px-3 py-2 border rounded border-blue-300 bg-blue-50"></div><div><label class="text-sm font-medium">โทรศัพท์</label><input type="text" id="t-phone" placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded"></div></div><div class="grid grid-cols-2 gap-3 mb-4"><div><label class="text-sm font-medium">รหัสผ่าน *</label><input type="password" id="t-password" class="w-full px-3 py-2 border rounded"></div><div><label class="text-sm font-medium">ยืนยันรหัสผ่าน *</label><input type="password" id="t-conf-password" class="w-full px-3 py-2 border rounded"></div></div><div><label class="text-sm font-medium block mb-2">วิชาที่สอน (เลือกได้มากกว่า 1)</label><input type="text" id="t-subject-search" placeholder="ค้นหารหัส หรือ ชื่อวิชา..." class="w-full px-3 py-2 border border-gray-300 rounded-md mb-2 text-sm focus:ring-green-500" onkeyup="renderTeacherSubjectsList()"><div id="t-subjects-container" class="bg-gray-50 border p-3 rounded h-40 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1"></div></div><div class="flex justify-end gap-2 mt-4"><button onclick="closeModal('teacher-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-100">ยกเลิก</button><button onclick="saveTeacher()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">บันทึก</button></div></div></div></div>
     <div id="class-modal" class="modal"><div class="glass-modal rounded-3xl w-full max-w-lg mx-4 max-h-[90vh] flex flex-col"><div class="px-6 py-4 border-b border-white/30 flex justify-between items-center"><h3 class="text-blue-800 font-bold" id="c-modal-title">ชั้นเรียน</h3><button onclick="closeModal('class-modal')"><i class="fas fa-times"></i></button></div><div class="p-6 overflow-y-auto"><input type="hidden" id="c-id"><div class="grid grid-cols-2 gap-3 mb-3"><div><label class="text-sm font-medium">ปีการศึกษา *</label><input type="number" id="c-year" class="w-full px-3 py-2 border rounded" placeholder="เช่น 2569"></div><div><label class="text-sm font-medium">ภาคเรียน *</label><select id="c-sem" class="w-full px-3 py-2 border rounded"><option value="1">1</option><option value="2">2</option></select></div></div><div class="mb-4"><label class="text-sm font-medium">ชื่อชั้นเรียน *</label><input type="text" id="c-name" class="w-full px-3 py-2 border rounded" placeholder="เช่น ม.1/1"></div><div class="mb-4"><label class="text-sm font-medium block mb-2">ครูที่ปรึกษา (เลือกได้มากกว่า 1)</label><input type="text" id="c-advisor-search" placeholder="ค้นหาชื่อครูที่ปรึกษา..." class="w-full px-3 py-1.5 border border-gray-300 rounded-md mb-2 text-sm focus:ring-green-500" onkeyup="renderClassAdvisorsList()"><div id="c-advisors-container" class="bg-gray-50 border p-3 rounded h-32 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1"></div></div><div><label class="text-sm font-medium block mb-2">วิชาที่เรียน (เลือกได้มากกว่า 1)</label><input type="text" id="c-subject-search" placeholder="ค้นหารหัส หรือ ชื่อวิชา..." class="w-full px-3 py-1.5 border border-gray-300 rounded-md mb-2 text-sm focus:ring-green-500" onkeyup="renderClassSubjectsList()"><div id="c-subjects-container" class="bg-gray-50 border p-3 rounded h-40 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-1"></div></div></div><div class="px-6 py-4 border-t border-white/30 flex justify-end gap-2"><button onclick="closeModal('class-modal')" class="px-4 py-2 border rounded text-sm hover:bg-gray-100">ยกเลิก</button><button onclick="saveClassRoom()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">บันทึก</button></div></div></div>
+
+    <!-- BULK TRANSFER STUDENTS MODAL -->
+    <div id="bulk-transfer-modal" class="modal">
+        <div class="glass-modal rounded-3xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
+            <div class="px-6 py-4 border-b border-white/30 flex justify-between items-center bg-purple-700 text-white rounded-t-3xl">
+                <h3 class="font-bold text-lg"><i class="fas fa-random mr-2"></i>เลื่อนชั้น / ย้ายห้องเรียน / ซ้ำชั้น แบบกลุ่ม</h3>
+                <button onclick="closeModal('bulk-transfer-modal')" class="text-white hover:text-gray-200"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-grow space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ชั้นเรียนต้นทาง (ปัจจุบัน)</label>
+                        <select id="bulk-source-class" class="w-full px-3 py-2 border rounded focus:ring-purple-500" onchange="onBulkTransferSourceClassChange()">
+                            <option value="">-- เลือกชั้นเรียนต้นทาง --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ชั้นเรียนปลายทาง (ใหม่)</label>
+                        <select id="bulk-target-class" class="w-full px-3 py-2 border rounded focus:ring-purple-500">
+                            <option value="">-- เลือกชั้นเรียนปลายทาง --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Options -->
+                <div class="bg-purple-50 border border-purple-100 p-4 rounded-xl space-y-2">
+                    <h4 class="font-bold text-purple-950 text-sm"><i class="fas fa-cog mr-1"></i>เงื่อนไขและตัวเลือกการทำงาน</h4>
+                    <label class="checkbox-container text-xs text-purple-900">
+                        จัดเลขที่ใหม่ตามตัวอักษร (ก-ฮ) หลังจากทำการย้ายห้องเรียนสำเร็จ
+                        <input type="checkbox" id="bulk-reset-numbers" checked>
+                        <span class="checkmark"></span>
+                    </label>
+                </div>
+
+                <!-- Student List Section -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-sm font-bold text-gray-700">รายชื่อนักเรียนในห้องต้นทาง (<span id="bulk-student-count">0</span> คน)</label>
+                        <label class="inline-flex items-center text-xs font-semibold text-gray-700 cursor-pointer select-none">
+                            <input type="checkbox" id="bulk-select-all" onchange="toggleAllBulkTransferCheckboxes(this)" class="rounded border-gray-300 text-purple-600 focus:ring-purple-500 mr-1.5 w-4 h-4" checked> เลือกทั้งหมด
+                        </label>
+                    </div>
+                    <div class="border rounded-xl overflow-hidden max-h-[40vh] overflow-y-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-center w-12">เลือก</th>
+                                    <th class="px-4 py-2 text-center w-16">เลขที่</th>
+                                    <th class="px-4 py-2 text-left w-24">รหัสประจำตัว</th>
+                                    <th class="px-4 py-2 text-left">ชื่อ - นามสกุล</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bulk-transfer-table-body" class="divide-y divide-gray-200 bg-white">
+                                <tr>
+                                    <td colspan="4" class="px-4 py-8 text-center text-gray-500 italic">กรุณาเลือกชั้นเรียนต้นทางเพื่อโหลดข้อมูล</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-white/30 flex justify-end gap-2 bg-gray-50 rounded-b-3xl">
+                <button onclick="closeModal('bulk-transfer-modal')" class="px-4 py-2 border rounded hover:bg-gray-100 font-medium text-sm">ยกเลิก</button>
+                <button onclick="executeBulkTransfer()" class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded font-medium shadow-sm text-sm"><i class="fas fa-check mr-1.5"></i>ดำเนินการย้าย / เลื่อนชั้น</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Classroom Modal (Teacher Display) -->
+    <div id="qr-classroom-modal" class="modal">
+        <div class="glass-modal rounded-3xl w-full max-w-sm mx-4 flex flex-col items-center p-8 text-center">
+            <h3 class="font-bold text-2xl text-green-800 mb-2">QR Code ห้องเรียน</h3>
+            <p class="text-sm text-gray-500 mb-6" id="qr-classroom-desc">รายวิชา และ คาบเรียน</p>
+            <div id="qr-classroom-container" class="bg-white p-4 rounded-xl shadow-inner border border-gray-200 mb-6 flex justify-center items-center min-h-[300px] min-w-[300px]"></div>
+            <p class="text-xs text-red-500 mb-6"><i class="fas fa-exclamation-circle mr-1"></i> QR Code นี้จะหมดอายุในอีก <span id="qr-classroom-timer" class="font-bold">5:00</span> นาที</p>
+            <button onclick="closeModal('qr-classroom-modal')" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 rounded-xl transition-all">ปิดหน้าต่าง</button>
+        </div>
+    </div>
+
+    <!-- QR Scan Confirm Modal (Student Scanned) -->
+    <div id="qr-scan-confirm-modal" class="modal">
+        <div class="glass-modal rounded-3xl w-full max-w-sm mx-4 flex flex-col items-center p-8 text-center">
+            <div class="bg-green-100 text-green-600 rounded-full w-20 h-20 flex items-center justify-center mb-4 border-4 border-green-200 shadow-sm"><i class="fas fa-check-circle text-4xl"></i></div>
+            <h3 class="font-bold text-2xl text-green-800 mb-2">พบห้องเรียนแล้ว!</h3>
+            <div class="bg-green-50 p-4 rounded-xl border border-green-100 w-full mb-6 text-left">
+                <p class="text-sm text-gray-600 mb-1"><strong>วิชา:</strong> <span id="qr-confirm-subject"></span></p>
+                <p class="text-sm text-gray-600 mb-1"><strong>ครูผู้สอน:</strong> <span id="qr-confirm-teacher"></span></p>
+                <p class="text-sm text-gray-600 mb-1"><strong>คาบเรียน:</strong> <span id="qr-confirm-period"></span></p>
+                <p class="text-xs text-gray-500 mt-3 pt-3 border-t border-green-200"><i class="fas fa-map-marker-alt text-red-400 mr-1"></i> <strong>ระยะห่างของคุณ:</strong> <span id="qr-confirm-distance">กำลังคำนวณ...</span></p>
+            </div>
+            <div class="flex gap-2 w-full">
+                <button onclick="closeModal('qr-scan-confirm-modal')" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 rounded-xl transition-all text-sm">ยกเลิก</button>
+                <button id="qr-confirm-btn" onclick="submitStudentAttendance()" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition-all shadow-md text-sm disabled:opacity-50 disabled:cursor-not-allowed">ยืนยันการเข้าเรียน</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Scanner Modal (Full Screen for Camera) -->
+    <div id="qr-scanner-modal" class="modal z-[100] bg-black">
+        <div class="w-full h-full flex flex-col relative bg-black">
+            <!-- Header -->
+            <div class="absolute top-0 w-full p-4 flex justify-between items-center z-10 bg-gradient-to-b from-black/80 to-transparent">
+                <h3 class="text-white font-bold text-lg drop-shadow-md"><i class="fas fa-camera mr-2"></i> สแกน QR Code</h3>
+                <button onclick="stopStudentQrScanner()" class="text-white hover:text-red-400 bg-black/50 w-10 h-10 rounded-full flex items-center justify-center transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Scanner Area -->
+            <div class="flex-1 w-full h-full flex items-center justify-center relative bg-black p-4">
+                <div id="student-reader" class="w-full max-w-md mx-auto bg-black rounded-2xl overflow-hidden border-2 border-gray-700 shadow-2xl z-20" style="min-height: 300px;"></div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="absolute bottom-0 w-full p-6 pb-10 z-10 bg-gradient-to-t from-black/90 to-transparent text-center">
+                <p class="text-white/80 text-sm mb-4">จัดให้อยู่ในกรอบเพื่อสแกนอัตโนมัติ</p>
+                <button onclick="stopStudentQrScanner()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-all mx-auto inline-block">
+                    ปิดกล้อง
+                </button>
+            </div>
+        </div>
+    </div>
 
 <script type="module" src="./js/main.js?v=20260622_1048"></script>
 </body>

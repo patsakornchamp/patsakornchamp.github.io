@@ -717,6 +717,7 @@ export function deleteAssignment(id) {
 }
 
 let currentGradingAssignmentId = null;
+let currentGradingStudentId = null;
 
 export function openGradingModal(assignmentId) {
     currentGradingAssignmentId = assignmentId;
@@ -806,6 +807,7 @@ export function renderGradingTable() {
 }
 
 export function viewStudentSubmission(studentId) {
+    currentGradingStudentId = studentId;
     const asm = AppState.allAssignments.find(a => a.id === currentGradingAssignmentId);
     if (!asm) return;
 
@@ -885,7 +887,103 @@ export function viewStudentSubmission(studentId) {
         }).join('');
     }
 
+    // Set grading section values
+    const scoreInput = document.getElementById('vss-score-input');
+    const commentInput = document.getElementById('vss-comment-input');
+    const maxScoreLabel = document.getElementById('vss-max-score-label');
+
+    if (scoreInput && commentInput && maxScoreLabel) {
+        maxScoreLabel.innerText = `(เต็ม ${asm.maxScore})`;
+        scoreInput.value = (sAsm && sAsm.score !== null && sAsm.score !== undefined) ? sAsm.score : '';
+        commentInput.value = (sAsm && sAsm.teacherComment) ? sAsm.teacherComment : '';
+        scoreInput.setAttribute('max', asm.maxScore);
+        
+        const gradingSection = document.getElementById('vss-grading-section');
+        if (gradingSection) {
+            const role = AppState.currentUser ? AppState.currentUser.role : '';
+            if (role === 'teacher' || role === 'admin') {
+                gradingSection.classList.remove('hidden');
+            } else {
+                gradingSection.classList.add('hidden');
+            }
+        }
+    }
+
     document.getElementById('view-student-submission-modal').classList.add('show');
+}
+
+export async function submitSubmissionGrading() {
+    if (!currentGradingAssignmentId || !currentGradingStudentId) return;
+
+    const asm = AppState.allAssignments.find(a => a.id === currentGradingAssignmentId);
+    if (!asm) return;
+
+    const student = AppState.allStudents.find(s => s.id === currentGradingStudentId);
+    if (!student) return;
+
+    const scoreInput = document.getElementById('vss-score-input');
+    const commentInput = document.getElementById('vss-comment-input');
+    if (!scoreInput || !commentInput) return;
+
+    let scoreVal = scoreInput.value.trim();
+    const commentVal = commentInput.value.trim();
+
+    if (scoreVal !== '') {
+        const val = parseFloat(scoreVal);
+        if (val > asm.maxScore) {
+            scoreInput.value = asm.maxScore;
+            scoreVal = asm.maxScore.toString();
+            return customAlert(`คะแนนต้องไม่เกิน ${asm.maxScore}`);
+        } else if (val < 0) {
+            scoreInput.value = 0;
+            scoreVal = '0';
+        }
+    }
+
+    const now = getISOTimestamp();
+    const userId = getCurrentUserId();
+    const stuCode = student.studentId || '';
+
+    let sAsm = AppState.allStudentAssignments.find(x => 
+        (String(x.assignmentId) === String(currentGradingAssignmentId) || (x.assignmentId && currentGradingAssignmentId && (String(x.assignmentId).startsWith(String(currentGradingAssignmentId)) || String(currentGradingAssignmentId).startsWith(String(x.assignmentId))))) && 
+        (String(x.studentId) === String(currentGradingStudentId) || String(x.studentId) === String(stuCode)) && 
+        x.deleted_flg !== 'Y');
+
+    const scoreNum = scoreVal !== '' ? parseFloat(scoreVal) : null;
+    let newStatus = sAsm ? sAsm.status : 'รอส่ง';
+    if (scoreNum !== null) {
+        newStatus = 'ตรวจแล้ว';
+    } else if (sAsm && sAsm.status === 'ตรวจแล้ว' && scoreNum === null) {
+        newStatus = 'ส่งแล้ว';
+    }
+
+    if (sAsm) {
+        sAsm.status = newStatus;
+        sAsm.score = scoreNum;
+        sAsm.teacherComment = commentVal;
+        sAsm.updatedAt = now;
+        sAsm.updatedBy = userId;
+    } else {
+        sAsm = {
+            id: generateId(), assignmentId: currentGradingAssignmentId, studentId: currentGradingStudentId,
+            status: newStatus, score: scoreNum, teacherComment: commentVal, files: '[]',
+            createdAt: now, createdBy: userId, updatedAt: now, updatedBy: userId, deleted_flg: 'N'
+        };
+        AppState.allStudentAssignments.push(sAsm);
+    }
+
+    showLoading('กำลังบันทึกคะแนน...');
+    try {
+        await saveToDB('STUDENT_ASSIGNMENTS', AppState.allStudentAssignments, 'saveStudentAssignments');
+        showToast('บันทึกคะแนนเรียบร้อยแล้ว');
+        closeModal('view-student-submission-modal');
+        renderGradingTable();
+    } catch (e) {
+        console.error(e);
+        customAlert('บันทึกคะแนนล้มเหลว กรุณาลองอีกครั้ง');
+    } finally {
+        hideLoading();
+    }
 }
 
 export function autoUpdateStatusUI(inputEl) {
@@ -1183,6 +1281,7 @@ window.previewAsmFile = previewAsmFile;
 window.removeAsmFile = removeAsmFile;
 window.searchAssignments = searchAssignments;
 window.viewStudentSubmission = viewStudentSubmission;
+window.submitSubmissionGrading = submitSubmissionGrading;
 // ========== EXPORT ASSIGNMENTS EXCEL ==========
 function getColLetterAsm(colIndex) {
     let letter = '';

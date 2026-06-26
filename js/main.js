@@ -14,6 +14,7 @@ import './features/history.js';
 import './features/homevisit.js';
 import './features/assignments.js';
 import './features/pr.js';
+import './features/archive.js';
 
 // 🌟 ฟังก์ชันจัดการ Select HTML ให้รองรับ Tom Select (ค้นหาได้)
 export function safeSetSelectHtml(id, html) {
@@ -111,6 +112,10 @@ function clearInputValue(id) {
 
 // 🌟 3. ฟังก์ชันควบคุมเมนูหลัก (แก้ไขให้เรียก Render ข้อมูลของแต่ละหน้าตาราง)
 function switchTab(tabId) {
+    if (AppState.currentTab === 'student-qr' && tabId !== 'student-qr') {
+        if (window.stopStudentQrScanner) window.stopStudentQrScanner();
+    }
+    
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(el => {
         el.classList.remove('active', 'border-white', 'text-white');

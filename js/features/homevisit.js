@@ -735,11 +735,207 @@ export function removeImage(index) {
     }
 }
 
+let currentZoom = 1;
+let currentRotation = 0;
+let isDragging = false;
+let startX = 0;
+let startY = 0;
+let translateX = 0;
+let translateY = 0;
+let isViewerInitialized = false;
+
+function initImageViewerControls() {
+    if (isViewerInitialized) return;
+    isViewerInitialized = true;
+
+    const modal = document.getElementById('image-viewer-modal');
+    const img = document.getElementById('large-image-preview');
+    const container = document.getElementById('image-zoom-container');
+    const btnZoomIn = document.getElementById('btn-zoom-in');
+    const btnZoomOut = document.getElementById('btn-zoom-out');
+    const btnZoomReset = document.getElementById('btn-zoom-reset');
+    const btnRotate = document.getElementById('btn-rotate');
+    const btnDownload = document.getElementById('btn-download-image');
+
+    if (!modal || !img || !container) return;
+
+    function updateImageTransform() {
+        img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentZoom}) rotate(${currentRotation}deg)`;
+        const zoomText = document.getElementById('zoom-level-text');
+        if (zoomText) {
+            zoomText.textContent = `${Math.round(currentZoom * 100)}%`;
+        }
+        if (currentZoom > 1 || currentRotation !== 0) {
+            container.classList.remove('cursor-grab');
+            container.classList.add('cursor-move');
+        } else {
+            container.classList.remove('cursor-move');
+            container.classList.add('cursor-grab');
+        }
+    }
+
+    function resetZoom() {
+        currentZoom = 1;
+        currentRotation = 0;
+        translateX = 0;
+        translateY = 0;
+        updateImageTransform();
+    }
+
+    btnZoomIn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentZoom = Math.min(5, currentZoom + 0.25);
+        updateImageTransform();
+    });
+
+    btnZoomOut?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentZoom = Math.max(0.5, currentZoom - 0.25);
+        if (currentZoom === 1) {
+            translateX = 0;
+            translateY = 0;
+        }
+        updateImageTransform();
+    });
+
+    btnZoomReset?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        resetZoom();
+    });
+
+    btnRotate?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentRotation = (currentRotation + 90) % 360;
+        updateImageTransform();
+    });
+
+    btnDownload?.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!img.src) return;
+
+        const src = img.src;
+        showToast('กำลังดาวน์โหลดรูปภาพ...', 'info');
+
+        if (src.startsWith('data:')) {
+            const link = document.createElement('a');
+            link.href = src;
+            let ext = 'jpg';
+            const match = src.match(/data:image\/([a-zA-Z+]+);base64/);
+            if (match && match[1]) {
+                ext = match[1] === 'jpeg' ? 'jpg' : match[1];
+            }
+            link.download = `downloaded_image.${ext}`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('ดาวน์โหลดสำเร็จ', 'success');
+        } else {
+            try {
+                const response = await fetch(src);
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = blobUrl;
+
+                let filename = 'downloaded_image.jpg';
+                try {
+                    const urlObj = new URL(src);
+                    const pathParts = urlObj.pathname.split('/');
+                    const lastPart = pathParts[pathParts.length - 1];
+                    if (lastPart && lastPart.includes('.')) {
+                        filename = lastPart;
+                    } else {
+                        const idMatch = src.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+                        if (idMatch && idMatch[1]) {
+                            filename = `drive_image_${idMatch[1]}.jpg`;
+                        }
+                    }
+                } catch (e) {}
+
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(blobUrl);
+                showToast('ดาวน์โหลดสำเร็จ', 'success');
+            } catch (error) {
+                console.error("Fetch download failed, falling back to window.open", error);
+                window.open(src, '_blank');
+                showToast('ดาวน์โหลดสำเร็จ (เปิดในหน้าต่างใหม่)', 'success');
+            }
+        }
+    });
+
+    container.addEventListener('mousedown', (e) => {
+        if (currentZoom <= 1) return;
+        isDragging = true;
+        startX = e.clientX - translateX;
+        startY = e.clientY - translateY;
+        container.style.cursor = 'grabbing';
+        e.preventDefault();
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        translateX = e.clientX - startX;
+        translateY = e.clientY - startY;
+        updateImageTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (isDragging) {
+            isDragging = false;
+            container.style.cursor = currentZoom > 1 ? 'cursor-move' : 'cursor-grab';
+        }
+    });
+
+    container.addEventListener('touchstart', (e) => {
+        if (currentZoom <= 1) return;
+        if (e.touches.length === 1) {
+            isDragging = true;
+            startX = e.touches[0].clientX - translateX;
+            startY = e.touches[0].clientY - translateY;
+        }
+    }, { passive: true });
+
+    container.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        if (e.touches.length === 1) {
+            translateX = e.touches[0].clientX - startX;
+            translateY = e.touches[0].clientY - startY;
+            updateImageTransform();
+        }
+    }, { passive: true });
+
+    container.addEventListener('touchend', () => {
+        isDragging = false;
+    });
+
+    // Close on clicking modal backdrop (outside relative container)
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeModal('image-viewer-modal');
+        }
+    });
+
+    // Override/Hook closeModal globally
+    const originalCloseModal = window.closeModal;
+    window.closeModal = function(modalId) {
+        if (modalId === 'image-viewer-modal') {
+            resetZoom();
+        }
+        if (originalCloseModal) {
+            originalCloseModal(modalId);
+        }
+    };
+}
+
 export function viewLargeImage(src) {
     if (!src) return;
     const modal = document.getElementById('image-viewer-modal');
     const img = document.getElementById('large-image-preview');
     if (modal && img) {
+        initImageViewerControls();
         img.src = src;
         modal.classList.add('show');
     } else {

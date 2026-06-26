@@ -346,18 +346,69 @@ export async function saveMyProfile(e) {
 // --- CSV Upload ---
 export function openUploadCsvModal() {
     document.getElementById('upload-file').value = '';
-    document.getElementById('upload-class').value = '';
-    document.getElementById('upload-encoding').value = 'windows-874';
+    
+    // Populate classes dynamically
+    const uniqueClasses = [...new Set(AppState.allClasses.filter(c => c.deleted_flg !== 'Y').map(c => c.className))].filter(Boolean).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    const uploadClassSelect = document.getElementById('upload-class');
+    if (uploadClassSelect) {
+        uploadClassSelect.innerHTML = '<option value="">-- เลือกชั้นเรียน --</option>' + 
+            uniqueClasses.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
     document.getElementById('upload-preview-container').classList.add('hidden');
+    document.getElementById('upload-sheet-container').classList.add('hidden');
+    document.getElementById('upload-sheet-select').innerHTML = '';
     document.getElementById('btn-save-upload').disabled = true;
     AppState.pendingUploadStudents = [];
     document.getElementById('csv-upload-modal').classList.add('show');
 }
 
+export async function downloadStudentTemplate() {
+    try {
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('รายชื่อนักเรียน');
+        
+        sheet.columns = [
+            { header: 'เลขที่', key: 'number', width: 10 },
+            { header: 'รหัสประจำตัว', key: 'studentId', width: 15 },
+            { header: 'คำนำหน้า', key: 'title', width: 12 },
+            { header: 'ชื่อ', key: 'firstName', width: 20 },
+            { header: 'นามสกุล', key: 'lastName', width: 20 },
+            { header: 'ชื่อเล่น', key: 'nickname', width: 12 }
+        ];
+
+        const headerRow = sheet.getRow(1);
+        headerRow.font = { name: 'Sarabun', bold: true, color: { argb: 'FFFFFF' } };
+        headerRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: '1E3A8A' }
+        };
+        headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+
+        sheet.addRow([1, '10001', 'เด็กชาย', 'สมชาย', 'ใจดี', 'ชาย']);
+        sheet.addRow([2, '10002', 'เด็กหญิง', 'สมศรี', 'รักเรียน', 'ศรี']);
+        
+        sheet.addRow([]);
+        const infoRow = sheet.addRow(['* หมายเหตุ: กรุณาอย่าสลับตำแหน่งคอลัมน์ หรือแก้ไขชื่อหัวตาราง และลบข้อมูลตัวอย่างออกด้วย*']);
+        infoRow.font = { name: 'Sarabun', italic: true, color: { argb: 'EF4444' } };
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'student_upload_template.xlsx';
+        link.click();
+        showToast('ดาวน์โหลดเทมเพลต Excel เรียบร้อยแล้ว');
+    } catch (err) {
+        console.error(err);
+        customAlert('เกิดข้อผิดพลาดในการสร้างไฟล์เทมเพลต: ' + err.message);
+    }
+}
+
 export function previewCSV(event) {
     const actualFile = document.getElementById('upload-file').files[0];
     const cls = document.getElementById('upload-class').value;
-    const encoding = document.getElementById('upload-encoding').value;
     
     if (!cls) {
         customAlert('กรุณาเลือกชั้นเรียนก่อนเลือกไฟล์');
@@ -366,72 +417,212 @@ export function previewCSV(event) {
     }
     if (!actualFile) return;
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const text = e.target.result;
-        const rows = text.split(/\r?\n/);
-        AppState.pendingUploadStudents = [];
-        let previewHtml = '';
-        let errorFound = false;
+    const isExcel = actualFile.name.endsWith('.xlsx');
+    
+    if (isExcel) {
+        document.getElementById('upload-sheet-container').classList.add('hidden');
+        previewExcel(actualFile);
+    } else {
+        document.getElementById('upload-sheet-container').classList.add('hidden');
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const buffer = e.target.result;
+            
+            // Auto detect Thai encoding (UTF-8 vs Windows-874)
+            let decoder = new TextDecoder('utf-8', { fatal: true });
+            let text;
+            try {
+                text = decoder.decode(buffer);
+            } catch (err) {
+                decoder = new TextDecoder('windows-874');
+                text = decoder.decode(buffer);
+            }
+            
+            const hasThai = /[\u0E00-\u0E7F]/.test(text);
+            const uint8 = new Uint8Array(buffer);
+            const hasHighAscii = uint8.some(b => b > 127);
+            if (hasHighAscii && !hasThai) {
+                decoder = new TextDecoder('windows-874');
+                text = decoder.decode(buffer);
+            }
+            
+            const rows = text.split(/\r?\n/);
+            AppState.pendingUploadStudents = [];
+            let previewHtml = '';
+            let errorFound = false;
 
-        for (let i = 1; i < rows.length; i++) {
-            const line = rows[i].trim();
-            if (!line) continue; 
-            
-            const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, '')); 
-            
-            const numberStr = cols[0] || '';
-            const studentId = cols[1] || '';
-            const title = cols[2] || '';
-            const fname = cols[3] || '';
-            const lname = cols[4] || '';
-            const nickname = cols[5] || '';
-            
-            const number = parseInt(numberStr);
-            let rowError = false;
-            let statusHtml = '<span class="text-green-600 font-bold"><i class="fas fa-check-circle"></i> ผ่าน</span>';
-            
-            if (!numberStr || isNaN(number) || !studentId || !title || !fname || !lname) {
-                 statusHtml = `<span class="text-red-600 font-bold"><i class="fas fa-times-circle"></i> ข้อมูลไม่ครบถ้วน</span>`;
-                 rowError = true;
-                 errorFound = true;
-            } 
-            else {
-                const existInSystem = AppState.allStudents.find(s => s.studentId.toString().trim() === studentId.toString().trim() && s.deleted_flg !== 'Y');
-                const existInFile = AppState.pendingUploadStudents.find(s => s.studentId.toString().trim() === studentId.toString().trim());
-                if (existInSystem || existInFile) {
-                    statusHtml = `<span class="text-red-600 font-bold"><i class="fas fa-times-circle"></i> รหัส ${studentId} ซ้ำ</span>`;
-                    rowError = true;
-                    errorFound = true;
+            for (let i = 1; i < rows.length; i++) {
+                const line = rows[i].trim();
+                if (!line) continue; 
+                
+                const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, '')); 
+                
+                const numberStr = cols[0] || '';
+                const studentId = cols[1] || '';
+                const title = cols[2] || '';
+                const fname = cols[3] || '';
+                const lname = cols[4] || '';
+                const nickname = cols[5] || '';
+                
+                // ข้ามแถวว่าง หรือ แถวที่เป็นหมายเหตุ (ไม่มีรหัสนักเรียน และ ไม่มีชื่อกับนามสกุล)
+                if (!studentId && !fname && !lname) {
+                    continue;
                 }
+                
+                const number = parseInt(numberStr);
+                let rowError = false;
+                let statusHtml = '<span class="text-green-600 font-bold"><i class="fas fa-check-circle"></i> ผ่าน</span>';
+                
+                if (!numberStr || isNaN(number) || !studentId || !title || !fname || !lname) {
+                     statusHtml = `<span class="text-red-600 font-bold"><i class="fas fa-times-circle"></i> ข้อมูลไม่ครบถ้วน</span>`;
+                     rowError = true;
+                     errorFound = true;
+                } 
+                else {
+                    const existInSystem = AppState.allStudents.find(s => s.studentId.toString().trim() === studentId.toString().trim() && s.deleted_flg !== 'Y');
+                    const existInFile = AppState.pendingUploadStudents.find(s => s.studentId.toString().trim() === studentId.toString().trim());
+                    if (existInSystem || existInFile) {
+                        statusHtml = `<span class="text-red-600 font-bold"><i class="fas fa-times-circle"></i> รหัส ${studentId} ซ้ำ</span>`;
+                        rowError = true;
+                        errorFound = true;
+                    }
+                }
+
+                if(!rowError) {
+                    AppState.pendingUploadStudents.push({
+                        id: generateId(), class: cls, number: number, studentId: studentId,
+                        title: title, firstName: fname, lastName: lname, nickname: nickname,
+                        status: 'ปกติ', isProfileComplete: 'false',
+                        createdAt: getISOTimestamp(), createdBy: getCurrentUserId(),
+                        updatedAt: getISOTimestamp(), updatedBy: getCurrentUserId(),
+                        deleted_flg: 'N', deletedAt: null, deletedBy: null,
+                    });
+                }
+
+                const displayNick = nickname ? ` (${nickname})` : '';
+                previewHtml += `<tr>
+                    <td class="px-4 py-2 text-center">${numberStr || '-'}</td>
+                    <td class="px-4 py-2">${studentId || '-'}</td>
+                    <td class="px-4 py-2">${title}${fname} ${lname}${displayNick}</td>
+                    <td class="px-4 py-2 text-center">${statusHtml}</td>
+                </tr>`;
             }
 
-            if(!rowError) {
-                AppState.pendingUploadStudents.push({
-                    id: generateId(), class: cls, number: number, studentId: studentId,
-                    title: title, firstName: fname, lastName: lname, nickname: nickname,
-                    status: 'ปกติ', isProfileComplete: 'false',
-                    createdAt: getISOTimestamp(), createdBy: getCurrentUserId(),
-                    updatedAt: getISOTimestamp(), updatedBy: getCurrentUserId(),
-                    deleted_flg: 'N', deletedAt: null, deletedBy: null,
-                });
-            }
+            document.getElementById('upload-preview-body').innerHTML = previewHtml;
+            document.getElementById('upload-count').innerText = AppState.pendingUploadStudents.length;
+            document.getElementById('upload-preview-container').classList.remove('hidden');
+            document.getElementById('btn-save-upload').disabled = errorFound || AppState.pendingUploadStudents.length === 0;
+        };
+        reader.readAsArrayBuffer(actualFile);
+    }
+}
 
-            const displayNick = nickname ? ` (${nickname})` : '';
-            previewHtml += `<tr>
-                <td class="px-4 py-2 text-center">${numberStr || '-'}</td>
-                <td class="px-4 py-2">${studentId || '-'}</td>
-                <td class="px-4 py-2">${title}${fname} ${lname}${displayNick}</td>
-                <td class="px-4 py-2 text-center">${statusHtml}</td>
-            </tr>`;
+export function previewExcel(file, sheetName = null) {
+    const cls = document.getElementById('upload-class').value;
+    const reader = new FileReader();
+    
+    showLoading('กำลังวิเคราะห์ไฟล์ Excel...');
+    reader.onload = async function(e) {
+        try {
+            const buffer = e.target.result;
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.load(buffer);
+            
+            window._currentUploadWorkbook = workbook;
+            
+            const sheets = workbook.worksheets;
+            const sheetContainer = document.getElementById('upload-sheet-container');
+            const sheetSelect = document.getElementById('upload-sheet-select');
+            
+            if (sheets.length > 1) {
+                sheetContainer.classList.remove('hidden');
+                if (sheetSelect.innerHTML === '' || !sheetName) {
+                    sheetSelect.innerHTML = sheets.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+                }
+            } else {
+                sheetContainer.classList.add('hidden');
+            }
+            
+            const activeSheet = sheetName ? workbook.getWorksheet(sheetName) : sheets[0];
+            AppState.pendingUploadStudents = [];
+            let previewHtml = '';
+            let errorFound = false;
+            
+            activeSheet.eachRow({ includeEmpty: false }, function(row, rowNumber) {
+                if (rowNumber === 1) return;
+                
+                const numberStr = (row.getCell(1).value !== null ? row.getCell(1).value.toString().trim() : '');
+                const studentId = (row.getCell(2).value !== null ? row.getCell(2).value.toString().trim() : '');
+                const title = (row.getCell(3).value !== null ? row.getCell(3).value.toString().trim() : '');
+                const fname = (row.getCell(4).value !== null ? row.getCell(4).value.toString().trim() : '');
+                const lname = (row.getCell(5).value !== null ? row.getCell(5).value.toString().trim() : '');
+                const nickname = (row.getCell(6).value !== null ? row.getCell(6).value.toString().trim() : '');
+                
+                // ข้ามแถวว่าง หรือ แถวที่เป็นหมายเหตุ (ไม่มีรหัสนักเรียน และ ไม่มีชื่อกับนามสกุล)
+                if (!studentId && !fname && !lname) {
+                    return;
+                }
+                
+                const number = parseInt(numberStr);
+                let rowError = false;
+                let statusHtml = '<span class="text-green-600 font-bold"><i class="fas fa-check-circle"></i> ผ่าน</span>';
+                
+                if (!numberStr || isNaN(number) || !studentId || !title || !fname || !lname) {
+                     statusHtml = `<span class="text-red-600 font-bold"><i class="fas fa-times-circle"></i> ข้อมูลไม่ครบถ้วน</span>`;
+                     rowError = true;
+                     errorFound = true;
+                } 
+                else {
+                    const existInSystem = AppState.allStudents.find(s => s.studentId.toString().trim() === studentId.toString().trim() && s.deleted_flg !== 'Y');
+                    const existInFile = AppState.pendingUploadStudents.find(s => s.studentId.toString().trim() === studentId.toString().trim());
+                    if (existInSystem || existInFile) {
+                        statusHtml = `<span class="text-red-600 font-bold"><i class="fas fa-times-circle"></i> รหัส ${studentId} ซ้ำ</span>`;
+                        rowError = true;
+                        errorFound = true;
+                    }
+                }
+                
+                if (!rowError) {
+                    AppState.pendingUploadStudents.push({
+                        id: generateId(), class: cls, number: number, studentId: studentId,
+                        title: title, firstName: fname, lastName: lname, nickname: nickname,
+                        status: 'ปกติ', isProfileComplete: 'false',
+                        createdAt: getISOTimestamp(), createdBy: getCurrentUserId(),
+                        updatedAt: getISOTimestamp(), updatedBy: getCurrentUserId(),
+                        deleted_flg: 'N', deletedAt: null, deletedBy: null,
+                    });
+                }
+                
+                const displayNick = nickname ? ` (${nickname})` : '';
+                previewHtml += `<tr>
+                    <td class="px-4 py-2 text-center">${numberStr || '-'}</td>
+                    <td class="px-4 py-2">${studentId || '-'}</td>
+                    <td class="px-4 py-2">${title}${fname} ${lname}${displayNick}</td>
+                    <td class="px-4 py-2 text-center">${statusHtml}</td>
+                </tr>`;
+            });
+            
+            document.getElementById('upload-preview-body').innerHTML = previewHtml;
+            document.getElementById('upload-count').innerText = AppState.pendingUploadStudents.length;
+            document.getElementById('upload-preview-container').classList.remove('hidden');
+            document.getElementById('btn-save-upload').disabled = errorFound || AppState.pendingUploadStudents.length === 0;
+        } catch (err) {
+            console.error(err);
+            customAlert('เกิดข้อผิดพลาดในการวิเคราะห์ไฟล์ Excel: ' + err.message);
+        } finally {
+            hideLoading();
         }
-
-        document.getElementById('upload-preview-body').innerHTML = previewHtml;
-        document.getElementById('upload-count').innerText = AppState.pendingUploadStudents.length;
-        document.getElementById('upload-preview-container').classList.remove('hidden');
-        document.getElementById('btn-save-upload').disabled = errorFound || AppState.pendingUploadStudents.length === 0;
     };
-    reader.readAsText(actualFile, encoding);
+    reader.readAsArrayBuffer(file);
+}
+
+export function onUploadSheetChange() {
+    const selectedSheet = document.getElementById('upload-sheet-select').value;
+    const file = document.getElementById('upload-file').files[0];
+    if (file && window._currentUploadWorkbook) {
+        previewExcel(file, selectedSheet);
+    }
 }
 
 export async function saveCsvUpload() {
@@ -1508,7 +1699,23 @@ export async function submitStudentAssignment() {
     const studentNote = document.getElementById('stu-asm-student-note').value.trim();
     const stuId = AppState.currentUser.data.id;
 
-    showLoading('กำลังส่งงานและอัปโหลดไฟล์...');
+    // บังคับแนบไฟล์อย่างน้อย 1 ไฟล์หากเลือกส่งแบบออนไลน์
+    if (submitMethod === 'ส่ง Online') {
+        let hasFile = false;
+        for (let i = 1; i <= 3; i++) {
+            const slot = document.getElementById(`stu-file-slot-${i}`);
+            const fileInput = document.getElementById(`stu-asm-file-${i}`);
+            if ((fileInput && fileInput.files.length > 0) || (slot && slot.dataset.existing)) {
+                hasFile = true;
+                break;
+            }
+        }
+        if (!hasFile) {
+            return customAlert('สำหรับการส่งงานออนไลน์ คุณต้องแนบไฟล์อย่างน้อย 1 ไฟล์');
+        }
+    }
+
+    showLoading('กำลังเตรียมข้อมูลและบีบอัดไฟล์...');
 
     try {
         const files = [];
@@ -1552,22 +1759,51 @@ export async function submitStudentAssignment() {
             deleted_flg: 'N'
         };
 
-        // การอัปโหลดไฟล์ไป Google Drive เราจะใช้ action สร้างไว้ให้รองรับการแยกไฟล์ หรือใช้ร่วมกับตาราง
-        // หมายเหตุ: ฝั่ง Apps Script จำเป็นต้องมี action "submitStudentAssignment" เพื่อสกัดไฟล์และอัปโหลด
-        const response = await fetch(AppState.googleSheetUrl, {
-            method: 'POST',
-            redirect: 'follow',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: 'submitStudentAssignment', payload: payload })
-        });
-        
-        const text = await response.text();
-        let result = {};
-        try { result = JSON.parse(text); } catch (e) {}
+        // ตั้งค่าตัวเลียนแบบเปอร์เซ็นต์ความคืบหน้า (Simulated Progress)
+        let percent = 0;
+        const progressInterval = setInterval(() => {
+            if (percent < 90) {
+                percent += Math.floor(Math.random() * 12) + 5; // เพิ่มขึ้นทีละ 5-17%
+                if (percent > 90) percent = 90;
+                showLoading(`กำลังส่งไฟล์และข้อมูล... ${percent}%`);
+            } else if (percent < 98) {
+                percent += 1; // เพิ่มช้าลงเมื่อใกล้เสร็จสิ้น
+                showLoading(`กำลังอัปโหลดขึ้น Google Drive... ${percent}%`);
+            }
+        }, 250);
 
-        const isSuccess = response.ok || result.status === 'success' || result.success === true || text.toLowerCase().includes('success') || text.includes('สำเร็จ');
+        let responseText;
+        try {
+            const response = await fetch(AppState.googleSheetUrl, {
+                method: 'POST',
+                redirect: 'follow',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'submitStudentAssignment', payload: payload })
+            });
+
+            clearInterval(progressInterval);
+            
+            if (response.ok) {
+                responseText = await response.text();
+            } else {
+                throw new Error(`HTTP Error: ${response.status}`);
+            }
+        } catch (xhrError) {
+            clearInterval(progressInterval);
+            throw xhrError;
+        }
+
+        showLoading(`กำลังส่งไฟล์และข้อมูล... 100%`);
+
+        let result = {};
+        try { result = JSON.parse(responseText); } catch (e) {}
+
+        // ตรวจสอบความสำเร็จแบบละเอียด (ต้องไม่ใช่ error และต้องมีสถานะสำเร็จจริง)
+        const isSuccess = result.status === 'success' || result.success === true || responseText.toLowerCase().includes('success') || responseText.includes('สำเร็จ');
         
-        if (!isSuccess) throw new Error(result.message || text || 'เกิดข้อผิดพลาดในการส่งข้อมูล');
+        if (!isSuccess || result.status === 'error') {
+            throw new Error(result.message || responseText || 'เกิดข้อผิดพลาดในการอัปโหลดไฟล์ขึ้น Google Drive');
+        }
 
         // แปลงไฟล์ตอบกลับให้อยู่ในโครงสร้างปกติ
         let finalObj = { ...payload };
@@ -1596,9 +1832,10 @@ export async function submitStudentAssignment() {
 
     } catch (err) {
         hideLoading();
-        customAlert('ระบบแจ้งเตือน: ' + err.message + '\n\n(หากเกิดข้อผิดพลาดนี้ กรุณาติดต่อครูเพื่อตรวจสอบสคริปต์หลังบ้าน)');
+        customAlert('การอัปโหลดล้มเหลว: ' + err.message + '\n\nกรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต หรือแนบไฟล์ใหม่อีกครั้ง');
     }
 }
+
 
 export function copyParentInfoToGuardian(parentRole) {
     let title = 'นาย';
@@ -1708,6 +1945,173 @@ export function clearCopiedGuardianInfo() {
     }
 }
 
+// --- Bulk Promotion & Transfer Logic ---
+export function openBulkTransferModal() {
+    const sourceSelect = document.getElementById('bulk-source-class');
+    const targetSelect = document.getElementById('bulk-target-class');
+    
+    if (!sourceSelect || !targetSelect) return;
+
+    // Get unique active classes
+    const activeClasses = AppState.allClasses.filter(c => c.deleted_flg !== 'Y');
+    // Sort classes: e.g. Year/Semester and name
+    activeClasses.sort((a, b) => a.className.localeCompare(b.className, undefined, { numeric: true }) || a.year - b.year);
+
+    const classOptions = '<option value="">-- เลือกชั้นเรียน --</option>' + 
+        activeClasses.map(c => `<option value="${c.id}">${c.className} (ปี ${c.year}/${c.semester})</option>`).join('');
+
+    sourceSelect.innerHTML = classOptions;
+    targetSelect.innerHTML = classOptions;
+
+    // Clear previous student list
+    document.getElementById('bulk-transfer-table-body').innerHTML = `
+        <tr>
+            <td colspan="4" class="px-4 py-8 text-center text-gray-500 italic">กรุณาเลือกชั้นเรียนต้นทางเพื่อโหลดข้อมูล</td>
+        </tr>
+    `;
+    document.getElementById('bulk-student-count').innerText = '0';
+    document.getElementById('bulk-select-all').checked = true;
+
+    document.getElementById('bulk-transfer-modal').classList.add('show');
+}
+
+export function onBulkTransferSourceClassChange() {
+    const classId = document.getElementById('bulk-source-class').value;
+    const tbody = document.getElementById('bulk-transfer-table-body');
+    const countSpan = document.getElementById('bulk-student-count');
+    
+    if (!classId) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" class="px-4 py-8 text-center text-gray-500 italic">กรุณาเลือกชั้นเรียนต้นทางเพื่อโหลดข้อมูล</td>
+            </tr>
+        `;
+        countSpan.innerText = '0';
+        return;
+    }
+
+    const cls = AppState.allClasses.find(c => c.id === classId);
+    if (!cls) return;
+
+    // Filter students belonging to this class name
+    const students = AppState.allStudents
+        .filter(s => s.class === cls.className && s.deleted_flg !== 'Y' && s.status !== 'ลาออก')
+        .sort((a, b) => a.number - b.number);
+
+    if (students.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" class="px-4 py-8 text-center text-gray-500 italic">ไม่พบนักเรียนที่กำลังศึกษาในห้องนี้</td>
+            </tr>
+        `;
+        countSpan.innerText = '0';
+        return;
+    }
+
+    tbody.innerHTML = students.map(s => `
+        <tr class="hover:bg-gray-50">
+            <td class="px-4 py-2 text-center">
+                <input type="checkbox" value="${s.id}" class="bulk-student-cb rounded border-gray-300 text-purple-600 focus:ring-purple-500" checked onchange="updateBulkTransferSelectAllState()">
+            </td>
+            <td class="px-4 py-2 text-center font-mono">${s.number || '-'}</td>
+            <td class="px-4 py-2 font-mono">${s.studentId || '-'}</td>
+            <td class="px-4 py-2 font-semibold text-gray-800">${getStudentFullName(s)}</td>
+        </tr>
+    `).join('');
+
+    countSpan.innerText = students.length;
+    document.getElementById('bulk-select-all').checked = true;
+}
+
+export function toggleAllBulkTransferCheckboxes(sourceCb) {
+    const checkboxes = document.querySelectorAll('.bulk-student-cb');
+    checkboxes.forEach(cb => cb.checked = sourceCb.checked);
+}
+
+export function updateBulkTransferSelectAllState() {
+    const checkboxes = document.querySelectorAll('.bulk-student-cb');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    document.getElementById('bulk-select-all').checked = allChecked;
+}
+
+export async function executeBulkTransfer() {
+    const sourceClassId = document.getElementById('bulk-source-class').value;
+    const targetClassId = document.getElementById('bulk-target-class').value;
+    const resetNumbers = document.getElementById('bulk-reset-numbers').checked;
+
+    if (!sourceClassId || !targetClassId) {
+        return customAlert('กรุณาเลือกชั้นเรียนต้นทางและชั้นเรียนปลายทางให้ครบถ้วน');
+    }
+
+    if (sourceClassId === targetClassId) {
+        return customAlert('ชั้นเรียนต้นทางและชั้นเรียนปลายทางต้องไม่เป็นห้องเรียนเดียวกัน');
+    }
+
+    const targetClassObj = AppState.allClasses.find(c => c.id === targetClassId);
+    if (!targetClassObj) return;
+
+    // Get checked student IDs
+    const checkedCbs = document.querySelectorAll('.bulk-student-cb:checked');
+    if (checkedCbs.length === 0) {
+        return customAlert('กรุณาเลือกนักเรียนอย่างน้อย 1 คนที่ต้องการย้ายหรือเลื่อนชั้น');
+    }
+
+    const studentIds = Array.from(checkedCbs).map(cb => cb.value);
+
+    customConfirm(
+        'ยืนยันการย้าย / เลื่อนชั้นเรียนแบบกลุ่ม',
+        `คุณต้องการย้ายนักเรียนจำนวน ${studentIds.length} คน ไปยังชั้นเรียน ${targetClassObj.className} ใช่หรือไม่?`,
+        async () => {
+            showLoading('กำลังดำเนินการย้ายนักเรียน...');
+            const now = getISOTimestamp();
+            const userId = getCurrentUserId();
+
+            // 1. Update students' class property
+            studentIds.forEach(id => {
+                const sIdx = AppState.allStudents.findIndex(s => s.id === id);
+                if (sIdx > -1) {
+                    AppState.allStudents[sIdx].class = targetClassObj.className;
+                    AppState.allStudents[sIdx].updatedAt = now;
+                    AppState.allStudents[sIdx].updatedBy = userId;
+                }
+            });
+
+            // 2. Reset student numbers if selected
+            if (resetNumbers) {
+                // Find all active students in the target class (including the newly moved ones)
+                const targetStudents = AppState.allStudents
+                    .filter(s => s.class === targetClassObj.className && s.deleted_flg !== 'Y' && s.status !== 'ลาออก');
+                
+                // Sort by first name alphabetically (Thai dictionary style)
+                targetStudents.sort((a, b) => (a.firstName || '').localeCompare(b.firstName || '', 'th'));
+
+                // Assign sequential numbers
+                targetStudents.forEach((student, index) => {
+                    const sIdx = AppState.allStudents.findIndex(s => s.id === student.id);
+                    if (sIdx > -1) {
+                        AppState.allStudents[sIdx].number = index + 1;
+                        AppState.allStudents[sIdx].updatedAt = now;
+                        AppState.allStudents[sIdx].updatedBy = userId;
+                    }
+                });
+            }
+
+            // 3. Save to Google Sheets / DB
+            const saveSuccess = await saveToDB(DB_KEYS.STUDENTS, AppState.allStudents, 'saveStudents');
+            hideLoading();
+
+            if (saveSuccess !== false) {
+                closeModal('bulk-transfer-modal');
+                // Refresh list
+                if (window.renderManageStudents) window.renderManageStudents();
+                showToast(`ดำเนินการเลื่อนชั้น / ย้ายนักเรียน ${studentIds.length} คน สำเร็จเรียบร้อย`);
+            } else {
+                customAlert('ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง');
+            }
+        }
+    );
+}
+
 // ผูกฟังก์ชันเข้า Window
 window.copyParentInfoToGuardian = copyParentInfoToGuardian;
 window.clearCopiedGuardianInfo = clearCopiedGuardianInfo;
@@ -1732,6 +2136,14 @@ window.openStudentAssignmentModal = openStudentAssignmentModal;
 window.previewStudentAsmFile = previewStudentAsmFile;
 window.removeStudentAsmFile = removeStudentAsmFile;
 window.submitStudentAssignment = submitStudentAssignment;
+window.openBulkTransferModal = openBulkTransferModal;
+window.onBulkTransferSourceClassChange = onBulkTransferSourceClassChange;
+window.toggleAllBulkTransferCheckboxes = toggleAllBulkTransferCheckboxes;
+window.updateBulkTransferSelectAllState = updateBulkTransferSelectAllState;
+window.executeBulkTransfer = executeBulkTransfer;
+window.downloadStudentTemplate = downloadStudentTemplate;
+window.previewExcel = previewExcel;
+window.onUploadSheetChange = onUploadSheetChange;
 
 // Event listeners for profile image uploads
 document.getElementById('profile-pic-upload').addEventListener('change', (e) => previewImageForProfile(e, 'profile-pic-preview', null));

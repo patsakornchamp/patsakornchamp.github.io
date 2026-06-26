@@ -50,8 +50,11 @@ export function renderPRNewsData() {
             ? `<img src="${getDirectImageUrl(pr.image_url)}" class="w-12 h-12 object-cover rounded border cursor-pointer hover:scale-105 transition-transform" onclick="window.viewLargeImage('${getDirectImageUrl(pr.image_url)}')">` 
             : `<span class="text-xs text-gray-400">ไม่มีรูป</span>`;
 
-        const startDate = pr.start_date ? pr.start_date.split('T')[0] : '-';
-        const endDate = pr.end_date ? pr.end_date.split('T')[0] : '-';
+        const startStr = pr.start_date ? (pr.start_date instanceof Date ? pr.start_date.toISOString() : String(pr.start_date)) : '';
+        const startDate = startStr ? startStr.split('T')[0] : '-';
+
+        const endStr = pr.end_date ? (pr.end_date instanceof Date ? pr.end_date.toISOString() : String(pr.end_date)) : '';
+        const endDate = endStr ? endStr.split('T')[0] : '-';
 
         return `
             <tr>
@@ -120,8 +123,11 @@ export function editPRNewsItem(id) {
     document.getElementById('pr-id').value = pr.id;
     document.getElementById('pr-activity-name').value = pr.activity_name || '';
     document.getElementById('pr-details').value = pr.details || '';
-    document.getElementById('pr-start-date').value = pr.start_date ? pr.start_date.split('T')[0] : '';
-    document.getElementById('pr-end-date').value = pr.end_date ? pr.end_date.split('T')[0] : '';
+    const startStr = pr.start_date ? (pr.start_date instanceof Date ? pr.start_date.toISOString() : String(pr.start_date)) : '';
+    document.getElementById('pr-start-date').value = startStr ? startStr.split('T')[0] : '';
+
+    const endStr = pr.end_date ? (pr.end_date instanceof Date ? pr.end_date.toISOString() : String(pr.end_date)) : '';
+    document.getElementById('pr-end-date').value = endStr ? endStr.split('T')[0] : '';
     document.getElementById('pr-image-file').value = '';
     document.getElementById('pr-image-url').value = pr.image_url || '';
     document.getElementById('pr-status-active').value = String(pr.status_active);
@@ -279,7 +285,7 @@ export function startPRAutoplay() {
     if (window.totalPRSlidesCount > 1) {
         prAutoplayTimer = setInterval(() => {
             changePRSlide(1);
-        }, 3000);
+        }, 5000);
     }
 }
 
@@ -358,10 +364,10 @@ export function showPRAnnouncementIfActive() {
                     let infoBoxHtml = '';
                     if (hasTitle || hasDetails) {
                         const title = pr.activity_name ? escapeHTML(pr.activity_name.trim()) : 'ประชาสัมพันธ์';
-                        const detailsHtml = hasDetails ? `<p class="text-sm text-gray-700 whitespace-pre-wrap">${linkify(escapeHTML(pr.details.trim()))}</p>` : '';
+                        const detailsHtml = hasDetails ? `<p class="text-[11px] text-gray-600 leading-relaxed whitespace-pre-wrap">${linkify(escapeHTML(pr.details.trim()))}</p>` : '';
                         infoBoxHtml = `
                             <div class="bg-white/85 backdrop-blur-md p-4 rounded-xl mb-4 text-left border border-white/35 shadow-sm max-h-[20vh] overflow-y-auto">
-                                <h4 class="font-bold text-lg text-green-800 mb-1">${title}</h4>
+                                <h4 class="font-bold text-sm text-green-800 mb-1">${title}</h4>
                                 ${detailsHtml}
                             </div>
                         `;

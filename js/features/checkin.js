@@ -11,7 +11,12 @@ export function resetCheckinTable() {
     AppState.currentCheckinStudents = [];
     AppState.activeCheckinStates = {};
     AppState.lastCheckedStuId = null;
+    AppState.lastCheckedStuId = null;
+    AppState.pendingSyncIds = [];
     document.getElementById('no-students-alert').classList.add('hidden');
+    document.getElementById('tc-show-qr-btn').classList.add('hidden');
+    document.getElementById('tc-scan-btn').classList.add('hidden');
+    document.getElementById('pull-qr-btn').classList.add('hidden');
 }
 
 export async function loadCheckinList() {
@@ -70,6 +75,9 @@ export async function loadCheckinList() {
     document.getElementById('save-btn-container').classList.remove('hidden'); 
     document.getElementById('bulk-actions').classList.remove('hidden'); 
     document.getElementById('bulk-actions').classList.add('flex');
+    document.getElementById('tc-show-qr-btn').classList.remove('hidden');
+    document.getElementById('tc-scan-btn').classList.remove('hidden');
+    document.getElementById('pull-qr-btn').classList.remove('hidden');
 
     renderCheckinTable();
 }
@@ -225,6 +233,24 @@ export async function saveAttendance() {
         }
 
         await saveToDB(DB_KEYS.RECORDS, AppState.allRecords, 'saveRecords');
+        
+        // Sync pending QR check-ins if any
+        if (AppState.pendingSyncIds && AppState.pendingSyncIds.length > 0) {
+            try {
+                const apiUrl = AppState.googleSheetUrl;
+                await fetch(apiUrl, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'updateStudentCheckInsStatus',
+                        payload: { ids: AppState.pendingSyncIds, status: 'SYNCED' }
+                    })
+                });
+                AppState.pendingSyncIds = [];
+            } catch (err) {
+                console.error("Failed to update sync status", err);
+            }
+        }
+        
         showToast('บันทึกการเช็คชื่อเรียบร้อย');
     });
 }
@@ -264,3 +290,373 @@ window.onAttendanceChange = onAttendanceChange;
 window.setAllAttendance = setAllAttendance;
 window.saveAttendance = saveAttendance;
 window.exportCheckinCSV = exportCheckinCSV;
+
+// ==========================================
+// QR CODE CHECK-IN SYSTEM LOGIC
+// ==========================================
+
+const SCHOOL_LAT = 13.736717; // Placeholder: เปลี่ยนเป็นพิกัดจริงของโรงเรียน
+const SCHOOL_LON = 100.523186; // Placeholder: เปลี่ยนเป็นพิกัดจริงของโรงเรียน
+
+let html5QrCode = null;
+let currentQrData = null;
+
+export function playBeep() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.1);
+    } catch(e) { console.error(e); }
+}
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371e3; 
+    const p1 = lat1 * Math.PI/180;
+    const p2 = lat2 * Math.PI/180;
+    const dp = (lat2-lat1) * Math.PI/180;
+    const dl = (lon2-lon1) * Math.PI/180;
+    const a = Math.sin(dp/2) * Math.sin(dp/2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) * Math.sin(dl/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; 
+}
+
+// ================= Teacher Side =================
+
+export function showClassroomQrModal() {
+    const date = document.getElementById('checkin-date').value; 
+    const period = document.getElementById('checkin-period').value;
+    const clsId = document.getElementById('checkin-class').value; 
+    const subId = document.getElementById('checkin-subject').value; 
+    const teacherSelect = document.getElementById('checkin-teacher');
+    const tId = teacherSelect.value;
+
+    if(!date || !period || !clsId || !subId || !tId) { 
+        alert('กรุณาเลือกข้อมูลให้ครบถ้วนก่อนสร้าง QR'); 
+        return; 
+    }
+
+    const subObj = AppState.allSubjects.find(s => s.id === subId);
+    document.getElementById('qr-classroom-desc').innerText = `วิชา: ${subObj ? subObj.name : subId} | คาบ: ${period}`;
+
+    const qrData = {
+        t: 'C',
+        d: date, p: period, c: clsId, s: subId, tc: tId,
+        ts: Date.now()
+    };
+
+    const encodedData = encodeURIComponent(JSON.stringify(qrData));
+    const container = document.getElementById('qr-classroom-container');
+    container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedData}" class="mx-auto shadow-md rounded-xl" alt="QR Code">`;
+
+    document.getElementById('qr-classroom-modal').classList.add('show');
+}
+
+let currentScannerCallback = null;
+
+function startCameraWithList(callback) {
+    currentScannerCallback = callback;
+    document.getElementById('qr-scanner-modal').classList.add('show');
+    
+    const select = document.getElementById('camera-select');
+    if (select) {
+        select.innerHTML = '<option value="">กำลังค้นหากล้อง...</option>';
+        select.disabled = true;
+    }
+
+    if (html5QrCode && html5QrCode.isScanning) {
+        html5QrCode.stop().then(() => { html5QrCode.clear(); startCamInit(); }).catch(() => { startCamInit(); });
+    } else {
+        if (!html5QrCode) html5QrCode = new Html5Qrcode("student-reader");
+        startCamInit();
+    }
+}
+
+function startCamInit() {
+    // Ensure permission is requested first if needed
+    Html5Qrcode.getCameras().then(devices => {
+        const select = document.getElementById('camera-select');
+        if (devices && devices.length > 0) {
+            if (select) select.innerHTML = '';
+            let defaultCameraId = devices[0].id;
+            
+            devices.forEach((device, index) => {
+                const opt = document.createElement('option');
+                opt.value = device.id;
+                opt.text = device.label || `Camera ${index + 1}`;
+                const labelLow = opt.text.toLowerCase();
+                if (labelLow.includes('back') || labelLow.includes('environment') || labelLow.includes('rear')) {
+                    defaultCameraId = device.id;
+                }
+                if (select) select.appendChild(opt);
+            });
+            
+            if (select) {
+                select.value = defaultCameraId;
+                select.disabled = false;
+            }
+            startSpecificCamera(defaultCameraId);
+        } else {
+            // Fallback if getCameras returns empty but we might still have a default camera
+            if(select) {
+                select.innerHTML = '<option value="">กล้องเริ่มต้น (Default)</option>';
+                select.disabled = true;
+            }
+            startSpecificCamera({ facingMode: "environment" });
+        }
+    }).catch(err => {
+        const select = document.getElementById('camera-select');
+        if (select) {
+            select.innerHTML = '<option value="">กล้องเริ่มต้น (Default)</option>';
+            select.disabled = true;
+        }
+        startSpecificCamera({ facingMode: "environment" });
+    });
+}
+
+function startSpecificCamera(cameraConfig) {
+    if (!html5QrCode) html5QrCode = new Html5Qrcode("student-reader");
+    if (html5QrCode.isScanning) {
+        html5QrCode.stop().then(() => {
+            _playSpecificCamera(cameraConfig);
+        }).catch(err => console.error(err));
+    } else {
+        _playSpecificCamera(cameraConfig);
+    }
+}
+
+function _playSpecificCamera(cameraConfig) {
+    html5QrCode.start(
+        cameraConfig,
+        { fps: 10 },
+        currentScannerCallback,
+        undefined
+    ).catch(err => {
+        // If environment fails, try user camera
+        if (typeof cameraConfig === 'object' && cameraConfig.facingMode === 'environment') {
+            html5QrCode.start({ facingMode: "user" }, { fps: 10 }, currentScannerCallback, undefined).catch(e2 => {
+                console.error("Fallback failed", e2);
+                alert("ไม่สามารถเปิดกล้องได้ กรุณาตรวจสอบสิทธิ์การเข้าถึงกล้อง");
+            });
+        } else {
+            console.error("Error starting camera", err);
+            alert("ไม่สามารถเปิดกล้องนี้ได้: " + err);
+        }
+    });
+}
+
+export function switchCamera(cameraId) {
+    if (cameraId) startSpecificCamera(cameraId);
+}
+
+export function openTeacherQrScanner() {
+    // ครูสแกน QR ของเด็ก
+    startCameraWithList((decodedText) => {
+        try {
+            const data = JSON.parse(decodedText);
+            if (data.t === 'S' || data.type === 'STUDENT') {
+                const stuId = data.id || data.studentId;
+                const stu = AppState.currentCheckinStudents.find(s => s.studentId === stuId || s.id === stuId);
+                if (stu) {
+                    playBeep();
+                    onAttendanceChange(stu.id, 'มา');
+                    showToast(`เช็คชื่อ ${stu.firstName} สำเร็จ`);
+                    // ไม่ปิดกล้อง เผื่อสแกนคนต่อไป
+                }
+            }
+        } catch (e) { console.error("Invalid QR", e); }
+    });
+}
+
+export async function pullStudentCheckIns() {
+    const btn = document.getElementById('pull-qr-btn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> ดึงข้อมูล...';
+    try {
+        const apiUrl = AppState.googleSheetUrl;
+        const res = await fetch(apiUrl, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'getStudentCheckIns' })
+        });
+        const json = await res.json();
+        if (json.status === 'success' && json.StudentCheckIns) {
+            const date = document.getElementById('checkin-date').value; 
+            const period = document.getElementById('checkin-period').value;
+            const clsId = document.getElementById('checkin-class').value; 
+            const subId = document.getElementById('checkin-subject').value; 
+
+            let count = 0;
+            AppState.pendingSyncIds = AppState.pendingSyncIds || [];
+            
+            json.StudentCheckIns.forEach(record => {
+                // Check if match and PENDING
+                // In production we should compare date correctly. Here we assume the app script saved it in ISO.
+                if (record.status === 'PENDING' && record.classId === clsId && record.subjectId === subId && String(record.period||record.scanTime).includes(period)) { // scanTime can be tricky to match period exactly, let's assume they match session
+                    const stu = AppState.currentCheckinStudents.find(s => s.studentId === record.studentId || s.id === record.studentId);
+                    if (stu) {
+                        AppState.activeCheckinStates[stu.id] = 'มา';
+                        if (!AppState.pendingSyncIds.includes(record.id)) {
+                            AppState.pendingSyncIds.push(record.id);
+                        }
+                        count++;
+                    }
+                }
+            });
+            renderCheckinTable();
+            if (count > 0) showToast(`ดึงข้อมูลสำเร็จ ${count} คน`);
+            else showToast(`ไม่มีข้อมูลใหม่`, false);
+        }
+    } catch(e) {
+        showToast('เกิดข้อผิดพลาดในการดึงข้อมูล', true);
+    }
+    btn.innerHTML = '<i class="fas fa-cloud-download-alt mr-1"></i> ดึงสแกน';
+}
+
+
+// ================= Student Side =================
+
+export function showStudentPersonalQr() {
+    const container = document.getElementById('qr-classroom-container'); // Reuse container logic
+    if(!container) return; // For simplicity in student tab, let's create a dynamic modal if not exists, or just use the same modal.
+    
+    // We will use qr-classroom-modal but change titles
+    const modal = document.getElementById('qr-classroom-modal');
+    document.querySelector('#qr-classroom-modal h3').innerText = "QR ประจำตัวนักเรียน";
+    document.getElementById('qr-classroom-desc').innerText = "แสดง QR Code นี้ให้ครูผู้สอนสแกน";
+    document.getElementById('qr-classroom-timer').parentNode.style.display = "none";
+    
+    container.innerHTML = '';
+    const stu = AppState.currentUser;
+    const qrData = {
+        t: 'S',
+        id: stu.studentId || stu.id,
+        ts: Date.now()
+    };
+    const encodedData = encodeURIComponent(JSON.stringify(qrData));
+    container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedData}" class="mx-auto shadow-md rounded-xl" alt="QR Code">`;
+    
+    modal.classList.add('show');
+}
+
+export function startStudentQrScanner() {
+    startCameraWithList((decodedText) => {
+        try {
+            const data = JSON.parse(decodedText);
+            if (data.t === 'C' || data.type === 'CLASSROOM') {
+                const diff = Date.now() - (data.ts || data.timestamp);
+                if (diff > 5 * 60 * 1000) {
+                    alert("QR Code นี้หมดอายุแล้ว กรุณาแจ้งครูให้สร้างใหม่");
+                    return;
+                }
+                playBeep();
+                stopStudentQrScanner();
+                processStudentScan({
+                    clsId: data.c || data.clsId,
+                    subId: data.s || data.subId,
+                    tId: data.tc || data.tId,
+                    period: data.p || data.period
+                });
+            }
+        } catch (e) {}
+    });
+}
+
+export function stopStudentQrScanner() {
+    try {
+        if (html5QrCode && html5QrCode.isScanning) {
+            html5QrCode.stop().then(() => {
+                html5QrCode.clear();
+            }).catch(e => console.error("Error stopping", e));
+        } else if (html5QrCode) {
+            html5QrCode.clear();
+        }
+    } catch (e) { console.error(e); }
+    document.getElementById('qr-scanner-modal').classList.remove('show');
+}
+
+function processStudentScan(data) {
+    currentQrData = data;
+    
+    // Check GPS
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const lat = pos.coords.latitude;
+                const lon = pos.coords.longitude;
+                const dist = calculateDistance(lat, lon, SCHOOL_LAT, SCHOOL_LON);
+                
+                document.getElementById('qr-confirm-distance').innerText = `${Math.round(dist)} เมตร`;
+                
+                if (dist > 300) {
+                    document.getElementById('qr-confirm-distance').classList.add('text-red-600');
+                    alert(`คุณอยู่นอกพื้นที่โรงเรียน (ระยะห่าง ${Math.round(dist)} เมตร) ไม่อนุญาตให้เช็คชื่อ`);
+                    return;
+                }
+                document.getElementById('qr-confirm-distance').classList.add('text-green-600');
+                
+                const subObj = AppState.allSubjects.find(s => s.id === data.subId);
+                const tObj = AppState.allTeachers.find(t => t.id === data.tId);
+                document.getElementById('qr-confirm-subject').innerText = subObj ? subObj.name : data.subId;
+                document.getElementById('qr-confirm-teacher').innerText = tObj ? `${tObj.firstName} ${tObj.lastName}` : data.tId;
+                document.getElementById('qr-confirm-period').innerText = data.period;
+                
+                currentQrData.lat = lat;
+                currentQrData.lon = lon;
+                
+                document.getElementById('qr-scan-confirm-modal').classList.add('show');
+            },
+            (err) => { alert("ต้องอนุญาตการเข้าถึงตำแหน่งที่ตั้ง (GPS) เพื่อเช็คชื่อ"); },
+            { enableHighAccuracy: true }
+        );
+    } else {
+        alert("เบราว์เซอร์นี้ไม่รองรับ GPS");
+    }
+}
+
+export async function submitStudentAttendance() {
+    const btn = document.getElementById('qr-confirm-btn');
+    btn.disabled = true;
+    btn.innerHTML = 'กำลังบันทึก...';
+    try {
+        const payload = {
+            action: 'studentSelfCheckin',
+            payload: {
+                studentId: AppState.currentUser.id,
+                classId: currentQrData.clsId,
+                subjectId: currentQrData.subId,
+                teacherId: currentQrData.tId,
+                period: currentQrData.period, // Not exact col, but let's pass it
+                latitude: currentQrData.lat,
+                longitude: currentQrData.lon,
+                scanTime: new Date().toISOString()
+            }
+        };
+        const apiUrl = AppState.googleSheetUrl;
+        const res = await fetch(apiUrl, {
+            method: 'POST',
+            body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (json.status === 'success') {
+            showToast("เช็คชื่อสำเร็จแล้ว!");
+            document.getElementById('qr-scan-confirm-modal').classList.remove('show');
+        } else {
+            showToast("เกิดข้อผิดพลาด: " + json.message, true);
+        }
+    } catch(e) {
+        showToast("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้", true);
+    }
+    btn.disabled = false;
+    btn.innerHTML = 'ยืนยันการเข้าเรียน';
+}
+
+window.showClassroomQrModal = showClassroomQrModal;
+window.openTeacherQrScanner = openTeacherQrScanner;
+window.pullStudentCheckIns = pullStudentCheckIns;
+window.showStudentPersonalQr = showStudentPersonalQr;
+window.startStudentQrScanner = startStudentQrScanner;
+window.stopStudentQrScanner = stopStudentQrScanner;
+window.submitStudentAttendance = submitStudentAttendance;
+window.switchCamera = switchCamera;

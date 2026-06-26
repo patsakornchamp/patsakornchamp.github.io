@@ -468,7 +468,22 @@ export function switchMasterSubTab(tabId) {
 
 export async function searchMasterData() {
     await syncDataFromServer();
-    renderMasterData();
+    
+    // ตรวจสอบว่าเมนูย่อยไหนกำลังเปิดใช้งานอยู่ เพื่อสั่งวาดข้อมูลหน้านั้นใหม่ให้ถูกต้อง
+    const activeSubTab = ['subjects', 'teachers', 'classes', 'students', 'club-manage', 'pr-news'].find(id => {
+        const btn = document.getElementById(`msub-${id}`);
+        return btn && btn.classList.contains('border-green-600');
+    }) || 'subjects';
+
+    if (activeSubTab === 'students') {
+        if (window.renderManageStudents) window.renderManageStudents();
+    } else if (activeSubTab === 'club-manage') {
+        if (window.switchClubSubTab) window.switchClubSubTab('list');
+    } else if (activeSubTab === 'pr-news') {
+        if (window.renderPRNewsData) window.renderPRNewsData();
+    } else {
+        renderMasterData();
+    }
 }
 
 // ผูกฟังก์ชันเข้า Window

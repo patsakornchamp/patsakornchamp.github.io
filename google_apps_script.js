@@ -7,6 +7,8 @@ const DRIVE_FOLDER_STUDENT_PROFILES = "1c3wsOu1qQZD5f-jjeKs1egBMb-2A7kbP";  // �
 const DRIVE_FOLDER_HOME_VISIT = "1Wz_XR7S26B_3qukVISIg4X8weOaWMCx8";        // รูปการเยี่ยมบ้าน
 const DRIVE_FOLDER_ASSIGNMENTS = "1U0-PV-CmR_XrvP12DNNAsxoVVAyTJXux";       // งานครู/สื่อการสอน
 const DRIVE_FOLDER_SUBMISSIONS = "1F0w-Hy401CaqZ5YUYDUWMDi_kqnRGM9C";       // งานนักเรียนที่ส่งมา
+const DRIVE_FOLDER_PR_NEWS = "1rL8XvuqeCaV2mxcFjBDq7v4ayo-vu33g";           // รูปประชาสัมพันธ์
+
 
 // ==========================================
 // 1. Core API (doGet & doPost)
@@ -27,6 +29,9 @@ function doGet(e) {
   if (!ss.getSheetByName('PR_News')) {
     ss.insertSheet('PR_News').appendRow(['id', 'activity_name', 'details', 'start_date', 'end_date', 'image_url', 'status_active', 'note', 'deleted_flg', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy', 'deletedAt', 'deletedBy']);
   }
+  if (!ss.getSheetByName('StudentCheckIns')) {
+    ss.insertSheet('StudentCheckIns').appendRow(['id', 'studentId', 'classId', 'subjectId', 'teacherId', 'latitude', 'longitude', 'scanTime', 'status']);
+  }
 
   if (action === 'getData') {
     const result = {
@@ -41,7 +46,8 @@ function doGet(e) {
       ClubRecords: getSheetData(ss, 'ClubRecords'),
       Assignments: getSheetData(ss, 'Assignments'),
       StudentAssignments: getSheetData(ss, 'StudentAssignments'),
-      PRNews: getSheetData(ss, 'PR_News')
+      PRNews: getSheetData(ss, 'PR_News'),
+      StudentCheckIns: getSheetData(ss, 'StudentCheckIns')
     };
     return successResponse(result);
   }
@@ -77,6 +83,21 @@ function doPost(e) {
     }
     if (action === 'submitStudentAssignment') {
       return wrapResponse(submitStudentAssignment(ss, payload));
+    }
+    if (action === 'archiveActiveDatabase') {
+      return wrapResponse(archiveActiveDatabase(payload));
+    }
+    if (action === 'resetTransactionData') {
+      return wrapResponse(resetTransactionData(payload));
+    }
+    if (action === 'studentSelfCheckin') {
+      return wrapResponse(studentSelfCheckin(payload));
+    }
+    if (action === 'updateStudentCheckInsStatus') {
+      return wrapResponse(updateStudentCheckInsStatus(payload));
+    }
+    if (action === 'getStudentCheckIns') {
+      return successResponse({ StudentCheckIns: getSheetData(ss, 'StudentCheckIns') });
     }
 
     // 🌟 3. บันทึกข้อมูลทั้งตาราง (Bulk Save)
@@ -648,7 +669,8 @@ function forceAuthDrive() {
     { id: DRIVE_FOLDER_STUDENT_PROFILES, name: 'Student Profiles' },
     { id: DRIVE_FOLDER_HOME_VISIT, name: 'Home Visits' },
     { id: DRIVE_FOLDER_ASSIGNMENTS, name: 'Assignments' },
-    { id: DRIVE_FOLDER_SUBMISSIONS, name: 'Submissions' }
+    { id: DRIVE_FOLDER_SUBMISSIONS, name: 'Submissions' },
+    { id: DRIVE_FOLDER_PR_NEWS, name: 'PRNEWS' }
   ];
   
   folders.forEach(f => {
@@ -671,7 +693,7 @@ function savePRItem(payload) {
 
     let imageUrl = payload.image_url || '';
     if (payload.image_base64) {
-      imageUrl = uploadImageToDrive(payload.image_base64, payload.image_name, payload.image_mime, DRIVE_FOLDER_HOME_VISIT);
+      imageUrl = uploadImageToDrive(payload.image_base64, payload.image_name, payload.image_mime, DRIVE_FOLDER_PR_NEWS);
     }
 
     let data = getSheetData(ss, 'PR_News');
@@ -710,6 +732,129 @@ function savePRItem(payload) {
 
     saveSheetData(ss, 'PR_News', data);
     return { success: true, message: 'บันทึกข่าวประชาสัมพันธ์เรียบร้อยแล้ว', data: item };
+  } catch (error) {
+    return { success: false, message: error.toString() };
+  }
+}
+
+// 📦 สำรองข้อมูล Google Sheets ทั้งไฟล์เก็บไว้ใน Google Drive
+function archiveActiveDatabase(payload) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const file = DriveApp.getFileById(ss.getId());
+    const parentFolders = file.getParents();
+    let folder = parentFolders.hasNext() ? parentFolders.next() : DriveApp.getRootFolder();
+    
+    const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyyMMdd_HHmmss");
+    const backupName = `[Backup] ${ss.getName()}_${payload.year || '2569'}_เทอม${payload.semester || '1'}_${timestamp}`;
+    
+    const backupFile = file.makeCopy(backupName, folder);
+    backupFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    
+    return {
+      success: true,
+      message: 'สำรองข้อมูลสำเร็จ',
+      backupUrl: backupFile.getUrl(),
+      backupName: backupName
+    };
+  } catch (e) {
+    return { success: false, message: 'การสำรองข้อมูลล้มเหลว: ' + e.toString() };
+  }
+}
+
+// 🧹 ล้างข้อมูลเฉพาะตารางธุรกรรม (Transaction Data) และรีเซ็ตสถานะเยี่ยมบ้านนักเรียน
+function resetTransactionData(payload) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // 1. ล้างข้อมูลชีตธุรกรรม (ล้างตั้งแต่แถวที่ 2 ลงไปเพื่อเก็บ Header ไว้)
+    const sheetsToClear = ['Records', 'ClubRecords', 'Home_Visits', 'Home_Visit_Members', 'Assignments', 'StudentAssignments'];
+    sheetsToClear.forEach(name => {
+      const sheet = ss.getSheetByName(name);
+      if (sheet) {
+        const lastRow = sheet.getLastRow();
+        const lastCol = sheet.getLastColumn();
+        if (lastRow > 1) {
+          sheet.getRange(2, 1, lastRow - 1, lastCol).clearContent();
+        }
+      }
+    });
+    
+    // 2. รีเซ็ตคอลัมน์ homeVisit ในตาราง Students ให้เป็น 'ยังไม่เยี่ยม' ทั้งหมด
+    const studentSheet = ss.getSheetByName('Students');
+    if (studentSheet) {
+      const data = studentSheet.getDataRange().getValues();
+      const headers = data[0].map(String);
+      const homeVisitColIdx = headers.indexOf('homeVisit');
+      
+      if (homeVisitColIdx > -1 && data.length > 1) {
+        for (let i = 1; i < data.length; i++) {
+          studentSheet.getRange(i + 1, homeVisitColIdx + 1).setValue('ยังไม่เยี่ยม');
+        }
+      }
+    }
+    
+    SpreadsheetApp.flush();
+    return { success: true, message: 'ล้างประวัติธุรกรรมเพื่อเตรียมเริ่มปีการศึกษาใหม่สำเร็จเรียบร้อยแล้ว' };
+  } catch (e) {
+    return { success: false, message: 'ล้างข้อมูลล้มเหลว: ' + e.toString() };
+  }
+}
+
+// ==========================================
+// 6. QR Code Check-in System
+// ==========================================
+
+function studentSelfCheckin(payload) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName('StudentCheckIns');
+    if (!sheet) {
+      sheet = ss.insertSheet('StudentCheckIns');
+      sheet.appendRow(['id', 'studentId', 'classId', 'subjectId', 'teacherId', 'latitude', 'longitude', 'scanTime', 'status']);
+    }
+    
+    const id = payload.id || new Date().getTime().toString();
+    const rowData = [
+      id,
+      payload.studentId || '',
+      payload.classId || '',
+      payload.subjectId || '',
+      payload.teacherId || '',
+      payload.latitude || '',
+      payload.longitude || '',
+      payload.scanTime || new Date().toISOString(),
+      'PENDING'
+    ];
+    
+    sheet.appendRow(rowData);
+    return { success: true, message: 'เช็คชื่อสำเร็จแล้ว' };
+  } catch (error) {
+    return { success: false, message: error.toString() };
+  }
+}
+
+function updateStudentCheckInsStatus(payload) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('StudentCheckIns');
+    if (!sheet) return { success: false, message: 'ไม่พบชีต StudentCheckIns' };
+    
+    const data = sheet.getDataRange().getValues();
+    const idsToUpdate = payload.ids || [];
+    const newStatus = payload.status || 'SYNCED';
+    
+    if (idsToUpdate.length === 0) {
+       return { success: true, message: 'ไม่มีรายการให้อัปเดต' };
+    }
+    
+    for (let i = 1; i < data.length; i++) {
+      if (idsToUpdate.includes(String(data[i][0]))) {
+        sheet.getRange(i + 1, 9).setValue(newStatus); // 9th column is status
+      }
+    }
+    
+    return { success: true, message: 'อัปเดตสถานะสำเร็จ' };
   } catch (error) {
     return { success: false, message: error.toString() };
   }

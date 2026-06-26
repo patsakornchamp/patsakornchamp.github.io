@@ -127,7 +127,7 @@ export function logout() {
 }
 
 export function updateMenuVisibility() {
-    ['menu-my-profile', 'menu-my-club', 'menu-academic', 'menu-my-assignments', 'menu-checkin', 'menu-club-checkin', 'menu-history', 'menu-stats', 'menu-master', 'menu-settings', 'menu-home-visit', 'menu-assignments'].forEach(id => {
+    ['menu-my-profile', 'menu-my-club', 'menu-academic', 'menu-my-assignments', 'menu-student-qr', 'menu-checkin', 'menu-club-checkin', 'menu-history', 'menu-stats', 'menu-master', 'menu-settings', 'menu-home-visit', 'menu-assignments'].forEach(id => {
         document.getElementById(id).classList.add('hidden');
     });
 
@@ -156,7 +156,7 @@ export function updateMenuVisibility() {
         if(window.switchTab) window.switchTab('checkin');
     }
     else if (AppState.currentUser.role === 'student') {
-        ['menu-my-profile', 'menu-my-club', 'menu-academic', 'menu-my-assignments'].forEach(id => document.getElementById(id).classList.remove('hidden'));
+        ['menu-my-profile', 'menu-my-club', 'menu-academic', 'menu-my-assignments', 'menu-student-qr'].forEach(id => document.getElementById(id).classList.remove('hidden'));
         if(window.switchTab) window.switchTab('my-profile');
     }
 }
