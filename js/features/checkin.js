@@ -358,6 +358,13 @@ export function showClassroomQrModal() {
 let currentScannerCallback = null;
 
 function startCameraWithList(callback) {
+    if (!window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        alert("⚠️ คำเตือนระบบความปลอดภัยของเบราว์เซอร์:\n" +
+              "คุณกำลังเข้าใช้งานผ่านการเชื่อมต่อที่ไม่ปลอดภัย (HTTP)\n\n" +
+              "กล้องและ GPS จะถูกบล็อกการทำงานโดยอัตโนมัติบนสมาร์ทโฟน/มือถือทุกรุ่น\n" +
+              "กรุณาใช้งานผ่าน HTTPS (เช่น อัปโหลดขึ้น GitHub Pages) เพื่อให้ใช้งานกล้องได้");
+    }
+
     currentScannerCallback = callback;
     document.getElementById('qr-scanner-modal').classList.add('show');
     
@@ -376,7 +383,32 @@ function startCameraWithList(callback) {
 }
 
 function startCamInit() {
-    // Ensure permission is requested first if needed
+    // 1. Force native permission prompt to unlock camera labels and full list
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+            .then(stream => {
+                // Stop the native stream immediately, we just wanted permissions
+                stream.getTracks().forEach(t => t.stop());
+                _loadCameraList();
+            })
+            .catch(err => {
+                // If environment fails, try user
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(stream => {
+                        stream.getTracks().forEach(t => t.stop());
+                        _loadCameraList();
+                    })
+                    .catch(e => {
+                        console.error("Permission denied", e);
+                        _loadCameraList(); // still try to load (will likely be empty)
+                    });
+            });
+    } else {
+        _loadCameraList();
+    }
+}
+
+function _loadCameraList() {
     Html5Qrcode.getCameras().then(devices => {
         const select = document.getElementById('camera-select');
         if (devices && devices.length > 0) {
@@ -400,7 +432,6 @@ function startCamInit() {
             }
             startSpecificCamera(defaultCameraId);
         } else {
-            // Fallback if getCameras returns empty but we might still have a default camera
             if(select) {
                 select.innerHTML = '<option value="">กล้องเริ่มต้น (Default)</option>';
                 select.disabled = true;
