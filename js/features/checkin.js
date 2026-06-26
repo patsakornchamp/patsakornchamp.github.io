@@ -375,10 +375,15 @@ function startCameraWithList(callback) {
     }
 
     if (html5QrCode && html5QrCode.isScanning) {
-        html5QrCode.stop().then(() => { html5QrCode.clear(); startCamInit(); }).catch(() => { startCamInit(); });
+        html5QrCode.stop().then(() => { 
+            html5QrCode.clear(); 
+            setTimeout(() => { startCamInit(); }, 250);
+        }).catch(() => { 
+            setTimeout(() => { startCamInit(); }, 250);
+        });
     } else {
         if (!html5QrCode) html5QrCode = new Html5Qrcode("student-reader");
-        startCamInit();
+        setTimeout(() => { startCamInit(); }, 250);
     }
 }
 
@@ -460,22 +465,40 @@ function startSpecificCamera(cameraConfig) {
 }
 
 function _playSpecificCamera(cameraConfig) {
+    const scanConfig = {
+        fps: 15,
+        qrbox: (width, height) => {
+            const min = Math.min(width, height);
+            const size = Math.floor(min * 0.75);
+            return { width: size, height: size };
+        }
+    };
+
     html5QrCode.start(
         cameraConfig,
-        { fps: 10 },
+        scanConfig,
         currentScannerCallback,
         undefined
     ).catch(err => {
-        // If environment fails, try user camera
-        if (typeof cameraConfig === 'object' && cameraConfig.facingMode === 'environment') {
-            html5QrCode.start({ facingMode: "user" }, { fps: 10 }, currentScannerCallback, undefined).catch(e2 => {
-                console.error("Fallback failed", e2);
-                alert("ไม่สามารถเปิดกล้องได้ กรุณาตรวจสอบสิทธิ์การเข้าถึงกล้อง");
-            });
-        } else {
-            console.error("Error starting camera", err);
-            alert("ไม่สามารถเปิดกล้องนี้ได้: " + err);
-        }
+        console.warn("Camera start failed with standard config, retrying with simple config...", err);
+        // Try starting without advanced sizing constraints
+        html5QrCode.start(
+            cameraConfig,
+            { fps: 15 },
+            currentScannerCallback,
+            undefined
+        ).catch(err2 => {
+            // If environment camera config fails, try user camera
+            if (typeof cameraConfig === 'object' && cameraConfig.facingMode === 'environment') {
+                html5QrCode.start({ facingMode: "user" }, { fps: 15 }, currentScannerCallback, undefined).catch(e2 => {
+                    console.error("Fallback failed", e2);
+                    alert("ไม่สามารถเปิดกล้องได้ กรุณาตรวจสอบสิทธิ์การเข้าถึงกล้อง");
+                });
+            } else {
+                console.error("Error starting camera", err2);
+                alert("ไม่สามารถเปิดกล้องนี้ได้: " + err2);
+            }
+        });
     });
 }
 
