@@ -823,7 +823,7 @@ export async function submitStudentAttendance() {
         const payload = {
             action: 'studentSelfCheckin',
             payload: {
-                studentId: AppState.currentUser.id,
+                studentId: (AppState.currentUser.data?.studentId || AppState.currentUser.data?.id || AppState.currentUser.id),
                 classId: currentQrData.clsId,
                 subjectId: currentQrData.subId,
                 teacherId: currentQrData.tId,
@@ -928,6 +928,7 @@ export function closeTeacherScanSuccess() {
 window.closeTeacherScanSuccess = closeTeacherScanSuccess;
 window.submitStudentAttendance = submitStudentAttendance;
 window.switchCamera = switchCamera;
+
 
 
 
