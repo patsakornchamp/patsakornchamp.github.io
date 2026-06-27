@@ -8,7 +8,7 @@ export function loadFromLocalStorage() {
     AppState.allRecords = JSON.parse(localStorage.getItem(DB_KEYS.RECORDS) || '[]');
     AppState.allSubjects = JSON.parse(localStorage.getItem(DB_KEYS.SUBJECTS) || '[]');
     AppState.allTeachers = JSON.parse(localStorage.getItem(DB_KEYS.TEACHERS) || '[]');
-    AppState.allClasses = JSON.parse(localStorage.getItem(DB_KEYS.CLASSES) || '[]');
+    AppState.allClasses = JSON.parse(localStorage.getItem(DB_KEYS.CLASSES) || '[]').sort((a, b) => (a.className || '').localeCompare(b.className || '', undefined, { numeric: true }));
     AppState.allClubs = JSON.parse(localStorage.getItem(DB_KEYS.CLUBS) || '[]');
     AppState.allClubEnrollments = JSON.parse(localStorage.getItem(DB_KEYS.CLUB_ENROLLMENTS) || '[]');
     AppState.allClubRecords = JSON.parse(localStorage.getItem(DB_KEYS.CLUB_RECORDS) || '[]');
@@ -39,7 +39,7 @@ export async function syncDataFromServer(silent = false) {
             AppState.allRecords = data.Records || [];
             AppState.allSubjects = data.Subjects || [];
             AppState.allTeachers = data.Teachers || [];
-            AppState.allClasses = data.Classes || [];
+            AppState.allClasses = (data.Classes || []).sort((a, b) => (a.className || '').localeCompare(b.className || '', undefined, { numeric: true }));
             AppState.allClubs = data.Clubs || [];
             AppState.allClubEnrollments = data.ClubEnrollments || [];
             AppState.allClubRecords = data.ClubRecords || [];

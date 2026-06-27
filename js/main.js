@@ -300,47 +300,23 @@ export function applySchoolSettings() {
 }
 
 export function updateDynamicManifest() {
-    const schoolSettings = AppState.schoolSettings || {};
-    const schoolName = schoolSettings.schoolName || 'MAKHRAB';
-    const logoUrl = schoolSettings.logoUrl || 'logopngPDF.png';
-    const directLogoUrl = window.getDirectImageUrl ? window.getDirectImageUrl(logoUrl) : logoUrl;
-    const startUrl = `./index.html${window.location.search}`;
-
-    const manifestObj = {
-        name: `MAKHRAB - ${schoolName}`,
-        short_name: schoolName,
-        description: `ระบบเช็คชื่อและจัดการข้อมูล - ${schoolName}`,
-        start_url: startUrl,
-        display: "standalone",
-        background_color: "#ffffff",
-        theme_color: "#0f766e",
-        icons: [
-            {
-                src: directLogoUrl,
-                sizes: "192x192",
-                type: "image/png",
-                purpose: "any maskable"
-            },
-            {
-                src: directLogoUrl,
-                sizes: "512x512",
-                type: "image/png",
-                purpose: "any maskable"
-            }
-        ]
-    };
-
-    const stringManifest = JSON.stringify(manifestObj);
-    const blob = new Blob([stringManifest], {type: 'application/json'});
-    const manifestURL = URL.createObjectURL(blob);
+    const urlParams = new URLSearchParams(window.location.search);
+    let schoolParam = urlParams.get('school') || localStorage.getItem('SELECTED_SCHOOL') || '';
     
+    let manifestFile = 'manifest.json';
+    if (schoolParam === 'rnn') {
+        manifestFile = 'manifest_rnn.json';
+    } else if (schoolParam === 'abc') {
+        manifestFile = 'manifest_abc.json';
+    }
+
     let manifestLink = document.querySelector('link[rel="manifest"]');
     if (!manifestLink) {
         manifestLink = document.createElement('link');
         manifestLink.rel = 'manifest';
         document.head.appendChild(manifestLink);
     }
-    manifestLink.href = manifestURL;
+    manifestLink.href = './' + manifestFile;
 }
 
 async function initApp() {

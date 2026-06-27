@@ -370,10 +370,11 @@ export async function downloadStudentTemplate() {
         
         sheet.columns = [
             { header: 'เลขที่', key: 'number', width: 10 },
-            { header: 'รหัสประจำตัว', key: 'studentId', width: 15 },
+            { header: 'เลขประจำตัว', key: 'studentId', width: 15 },
+            { header: 'เลขประจำตัวประชาชน', key: 'citizenId', width: 22 },
             { header: 'คำนำหน้า', key: 'title', width: 12 },
             { header: 'ชื่อ', key: 'firstName', width: 20 },
-            { header: 'นามสกุล', key: 'lastName', width: 20 },
+            { header: 'สกุล', key: 'lastName', width: 20 },
             { header: 'ชื่อเล่น', key: 'nickname', width: 12 }
         ];
 
@@ -386,11 +387,11 @@ export async function downloadStudentTemplate() {
         };
         headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
 
-        sheet.addRow([1, '10001', 'เด็กชาย', 'สมชาย', 'ใจดี', 'ชาย']);
-        sheet.addRow([2, '10002', 'เด็กหญิง', 'สมศรี', 'รักเรียน', 'ศรี']);
+        sheet.addRow([1, '10001', '1234567890123', 'เด็กชาย', 'สมชาย', 'ใจดี', 'ชาย']);
+        sheet.addRow([2, '10002', '', 'เด็กหญิง', 'สมศรี', 'รักเรียน', 'ศรี']);
         
         sheet.addRow([]);
-        const infoRow = sheet.addRow(['* หมายเหตุ: กรุณาอย่าสลับตำแหน่งคอลัมน์ หรือแก้ไขชื่อหัวตาราง และลบข้อมูลตัวอย่างออกด้วย*']);
+        const infoRow = sheet.addRow(['* หมายเหตุ: กรุณาอย่าสลับตำแหน่งคอลัมน์ หรือแก้ไขชื่อหัวตาราง และลบข้อมูลตัวอย่างออกด้วย (เลขประจำตัวประชาชนไม่บังคับกรอก)*']);
         infoRow.font = { name: 'Sarabun', italic: true, color: { argb: 'EF4444' } };
 
         const buffer = await workbook.xlsx.writeBuffer();
@@ -452,18 +453,87 @@ export function previewCSV(event) {
             let previewHtml = '';
             let errorFound = false;
 
-            for (let i = 1; i < rows.length; i++) {
+            // Scan first 20 rows to find headers dynamically
+            let headerRowIndex = -1;
+            let colIndices = {
+                number: -1,
+                studentId: -1,
+                citizenId: -1,
+                title: -1,
+                firstName: -1,
+                lastName: -1,
+                nickname: -1
+            };
+
+            for (let i = 0; i < Math.min(rows.length, 20); i++) {
+                const line = rows[i].trim();
+                if (!line) continue;
+                const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+                
+                let foundNumber = false;
+                let foundStudentId = false;
+                let foundFirstName = false;
+                let foundLastName = false;
+                
+                let tempIndices = {
+                    number: -1,
+                    studentId: -1,
+                    citizenId: -1,
+                    title: -1,
+                    firstName: -1,
+                    lastName: -1,
+                    nickname: -1
+                };
+
+                for (let c = 0; c < cols.length; c++) {
+                    const val = cols[c];
+                    if (val === 'เลขที่') {
+                        tempIndices.number = c;
+                        foundNumber = true;
+                    } else if (val === 'เลขประจำตัว' || val === 'รหัสประจำตัว') {
+                        tempIndices.studentId = c;
+                        foundStudentId = true;
+                    } else if (val === 'เลขประจำตัวประชาชน' || val === 'เลขบัตรประชาชน' || val === 'เลขบัตรประจำตัวประชาชน') {
+                        tempIndices.citizenId = c;
+                    } else if (val === 'คำนำหน้า' || val === 'คำนำหน้านาม') {
+                        tempIndices.title = c;
+                    } else if (val === 'ชื่อ' || val === 'ชื่อจริง') {
+                        tempIndices.firstName = c;
+                        foundFirstName = true;
+                    } else if (val === 'สกุล' || val === 'นามสกุล') {
+                        tempIndices.lastName = c;
+                        foundLastName = true;
+                    } else if (val === 'ชื่อเล่น') {
+                        tempIndices.nickname = c;
+                    }
+                }
+
+                if (foundNumber && foundStudentId && foundFirstName && foundLastName) {
+                    headerRowIndex = i;
+                    colIndices = tempIndices;
+                    break;
+                }
+            }
+
+            // Fallback default columns if header not matched
+            if (headerRowIndex === -1) {
+                headerRowIndex = 0; // Assume row 0 is header
+                colIndices = { number: 0, studentId: 1, citizenId: 2, title: 3, firstName: 4, lastName: 5, nickname: 6 };
+            }
+
+            for (let i = headerRowIndex + 1; i < rows.length; i++) {
                 const line = rows[i].trim();
                 if (!line) continue; 
                 
                 const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, '')); 
                 
-                const numberStr = cols[0] || '';
-                const studentId = cols[1] || '';
-                const title = cols[2] || '';
-                const fname = cols[3] || '';
-                const lname = cols[4] || '';
-                const nickname = cols[5] || '';
+                const numberStr = (colIndices.number !== -1 ? cols[colIndices.number] : '') || '';
+                const studentId = (colIndices.studentId !== -1 ? cols[colIndices.studentId] : '') || '';
+                const citizenId = (colIndices.citizenId !== -1 ? cols[colIndices.citizenId] : '') || '';
+                const title = (colIndices.title !== -1 ? cols[colIndices.title] : '') || '';
+                const fname = (colIndices.firstName !== -1 ? cols[colIndices.firstName] : '') || '';
+                const lname = (colIndices.lastName !== -1 ? cols[colIndices.lastName] : '') || '';
+                const nickname = (colIndices.nickname !== -1 ? cols[colIndices.nickname] : '') || '';
                 
                 // ข้ามแถวว่าง หรือ แถวที่เป็นหมายเหตุ (ไม่มีรหัสนักเรียน และ ไม่มีชื่อกับนามสกุล)
                 if (!studentId && !fname && !lname) {
@@ -487,11 +557,22 @@ export function previewCSV(event) {
                         rowError = true;
                         errorFound = true;
                     }
+
+                    if (citizenId && !rowError) {
+                        const citizenSystem = AppState.allStudents.find(s => s.citizenId && s.citizenId.toString().trim() === citizenId.toString().trim() && s.deleted_flg !== 'Y');
+                        const citizenFile = AppState.pendingUploadStudents.find(s => s.citizenId && s.citizenId.toString().trim() === citizenId.toString().trim());
+                        if (citizenSystem || citizenFile) {
+                            statusHtml = `<span class="text-red-600 font-bold"><i class="fas fa-times-circle"></i> เลขบัตร ปชช ${citizenId} ซ้ำ</span>`;
+                            rowError = true;
+                            errorFound = true;
+                        }
+                    }
                 }
 
                 if(!rowError) {
                     AppState.pendingUploadStudents.push({
                         id: generateId(), class: cls, number: number, studentId: studentId,
+                        citizenId: citizenId,
                         title: title, firstName: fname, lastName: lname, nickname: nickname,
                         status: 'ปกติ', isProfileComplete: 'false',
                         createdAt: getISOTimestamp(), createdBy: getCurrentUserId(),
@@ -549,15 +630,81 @@ export function previewExcel(file, sheetName = null) {
             let previewHtml = '';
             let errorFound = false;
             
-            activeSheet.eachRow({ includeEmpty: false }, function(row, rowNumber) {
-                if (rowNumber === 1) return;
+            // Scan first 20 rows of activeSheet to find headers dynamically
+            let headerRowNumber = -1;
+            let colIndices = {
+                number: -1,
+                studentId: -1,
+                citizenId: -1,
+                title: -1,
+                firstName: -1,
+                lastName: -1,
+                nickname: -1
+            };
+
+            for (let r = 1; r <= Math.min(activeSheet.rowCount, 20); r++) {
+                const row = activeSheet.getRow(r);
+                let foundNumber = false;
+                let foundStudentId = false;
+                let foundFirstName = false;
+                let foundLastName = false;
                 
-                const numberStr = (row.getCell(1).value !== null ? row.getCell(1).value.toString().trim() : '');
-                const studentId = (row.getCell(2).value !== null ? row.getCell(2).value.toString().trim() : '');
-                const title = (row.getCell(3).value !== null ? row.getCell(3).value.toString().trim() : '');
-                const fname = (row.getCell(4).value !== null ? row.getCell(4).value.toString().trim() : '');
-                const lname = (row.getCell(5).value !== null ? row.getCell(5).value.toString().trim() : '');
-                const nickname = (row.getCell(6).value !== null ? row.getCell(6).value.toString().trim() : '');
+                let tempIndices = {
+                    number: -1,
+                    studentId: -1,
+                    citizenId: -1,
+                    title: -1,
+                    firstName: -1,
+                    lastName: -1,
+                    nickname: -1
+                };
+
+                row.eachCell({ includeEmpty: true }, function(cell, colNumber) {
+                    const val = cell.value !== null && cell.value !== undefined ? cell.value.toString().trim() : '';
+                    if (val === 'เลขที่') {
+                        tempIndices.number = colNumber;
+                        foundNumber = true;
+                    } else if (val === 'เลขประจำตัว' || val === 'รหัสประจำตัว') {
+                        tempIndices.studentId = colNumber;
+                        foundStudentId = true;
+                    } else if (val === 'เลขประจำตัวประชาชน' || val === 'เลขบัตรประชาชน' || val === 'เลขบัตรประจำตัวประชาชน') {
+                        tempIndices.citizenId = colNumber;
+                    } else if (val === 'คำนำหน้า' || val === 'คำนำหน้านาม') {
+                        tempIndices.title = colNumber;
+                    } else if (val === 'ชื่อ' || val === 'ชื่อจริง') {
+                        tempIndices.firstName = colNumber;
+                        foundFirstName = true;
+                    } else if (val === 'สกุล' || val === 'นามสกุล') {
+                        tempIndices.lastName = colNumber;
+                        foundLastName = true;
+                    } else if (val === 'ชื่อเล่น') {
+                        tempIndices.nickname = colNumber;
+                    }
+                });
+
+                if (foundNumber && foundStudentId && foundFirstName && foundLastName) {
+                    headerRowNumber = r;
+                    colIndices = tempIndices;
+                    break;
+                }
+            }
+
+            // Fallback default columns if header not matched
+            if (headerRowNumber === -1) {
+                headerRowNumber = 1;
+                colIndices = { number: 1, studentId: 2, citizenId: 3, title: 4, firstName: 5, lastName: 6, nickname: 7 };
+            }
+
+            activeSheet.eachRow({ includeEmpty: false }, function(row, rowNumber) {
+                if (rowNumber <= headerRowNumber) return;
+                
+                const numberStr = (colIndices.number !== -1 && row.getCell(colIndices.number).value !== null ? row.getCell(colIndices.number).value.toString().trim() : '');
+                const studentId = (colIndices.studentId !== -1 && row.getCell(colIndices.studentId).value !== null ? row.getCell(colIndices.studentId).value.toString().trim() : '');
+                const citizenId = (colIndices.citizenId !== -1 && row.getCell(colIndices.citizenId).value !== null ? row.getCell(colIndices.citizenId).value.toString().trim() : '');
+                const title = (colIndices.title !== -1 && row.getCell(colIndices.title).value !== null ? row.getCell(colIndices.title).value.toString().trim() : '');
+                const fname = (colIndices.firstName !== -1 && row.getCell(colIndices.firstName).value !== null ? row.getCell(colIndices.firstName).value.toString().trim() : '');
+                const lname = (colIndices.lastName !== -1 && row.getCell(colIndices.lastName).value !== null ? row.getCell(colIndices.lastName).value.toString().trim() : '');
+                const nickname = (colIndices.nickname !== -1 && row.getCell(colIndices.nickname).value !== null ? row.getCell(colIndices.nickname).value.toString().trim() : '');
                 
                 // ข้ามแถวว่าง หรือ แถวที่เป็นหมายเหตุ (ไม่มีรหัสนักเรียน และ ไม่มีชื่อกับนามสกุล)
                 if (!studentId && !fname && !lname) {
@@ -581,11 +728,22 @@ export function previewExcel(file, sheetName = null) {
                         rowError = true;
                         errorFound = true;
                     }
+
+                    if (citizenId && !rowError) {
+                        const citizenSystem = AppState.allStudents.find(s => s.citizenId && s.citizenId.toString().trim() === citizenId.toString().trim() && s.deleted_flg !== 'Y');
+                        const citizenFile = AppState.pendingUploadStudents.find(s => s.citizenId && s.citizenId.toString().trim() === citizenId.toString().trim());
+                        if (citizenSystem || citizenFile) {
+                            statusHtml = `<span class="text-red-600 font-bold"><i class="fas fa-times-circle"></i> เลขบัตร ปชช ${citizenId} ซ้ำ</span>`;
+                            rowError = true;
+                            errorFound = true;
+                        }
+                    }
                 }
                 
                 if (!rowError) {
                     AppState.pendingUploadStudents.push({
                         id: generateId(), class: cls, number: number, studentId: studentId,
+                        citizenId: citizenId,
                         title: title, firstName: fname, lastName: lname, nickname: nickname,
                         status: 'ปกติ', isProfileComplete: 'false',
                         createdAt: getISOTimestamp(), createdBy: getCurrentUserId(),
