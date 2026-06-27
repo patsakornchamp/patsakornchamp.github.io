@@ -279,6 +279,13 @@ export function applySchoolSettings() {
 }
 
 async function initApp() {
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW reg failed:', err));
+        });
+    }
+
     AppState.googleSheetUrl = localStorage.getItem(DB_KEYS.SETTINGS) || DEFAULT_GOOGLE_SCRIPT_URL;
     
     // ตั้งค่าเวลาปกติ แต่หน้าประวัติให้ปล่อยว่างไว้

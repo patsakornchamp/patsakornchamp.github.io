@@ -1,0 +1,23 @@
+﻿{
+  "name": "MAKHRAB",
+  "short_name": "MAKHRAB",
+  "description": "ระบบเช็คชื่อและจัดการข้อมูลโรงเรียน",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f766e",
+  "icons": [
+    {
+      "src": "logopngPDF.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logopngPDF.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
