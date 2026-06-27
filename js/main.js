@@ -1,4 +1,4 @@
-import { DB_KEYS, DEFAULT_GOOGLE_SCRIPT_URL, DEPLOY_VERSION } from './core/config.js';
+import { DB_KEYS, DEFAULT_GOOGLE_SCRIPT_URL, DEPLOY_VERSION, ENVIRONMENT } from './core/config.js';
 import { AppState } from './core/state.js';
 import { syncDataFromServer, saveToDB } from './services/api.js';
 import { getBangkokDate, getDefaultAcademicYearAndSemester, showToast, customAlert, customConfirm, getISOTimestamp, getCurrentUserId } from './utils/helpers.js'; // 🌟 นำเข้าฟังก์ชันจัดการวันที่ของไทย
@@ -279,6 +279,15 @@ export function applySchoolSettings() {
 }
 
 async function initApp() {
+    // Dynamic school name updates based on ENVIRONMENT
+    if (ENVIRONMENT && ENVIRONMENT.systemName) {
+        document.title = `MAKHRAB - ${ENVIRONMENT.systemName}`;
+        const loginNameEl = document.getElementById('ui-login-school-name');
+        if (loginNameEl) loginNameEl.innerText = ENVIRONMENT.systemName;
+        const mainNameEl = document.getElementById('ui-main-school-name');
+        if (mainNameEl) mainNameEl.innerText = ENVIRONMENT.systemName;
+    }
+
     if (window.checkBiometricAvailability) window.checkBiometricAvailability();
 
     // Register Service Worker for PWA
