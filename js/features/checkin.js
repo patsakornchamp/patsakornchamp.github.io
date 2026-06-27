@@ -1,4 +1,4 @@
-import { AppState } from '../core/state.js';
+﻿import { AppState } from '../core/state.js';
 import { DB_KEYS } from '../core/config.js';
 import { generateId, getStudentFullName, showToast, matchRecordYearSemester, getBangkokDate, getBangkokCurrentTime, exportToCSV, getISOTimestamp, getCurrentUserId, customConfirm, showLoading, hideLoading } from '../utils/helpers.js';
 import { syncDataFromServer, saveToDB } from '../services/api.js';
@@ -656,8 +656,8 @@ export async function pullStudentCheckIns() {
             json.StudentCheckIns.forEach(record => {
                 // Check if match and PENDING
                 // In production we should compare date correctly. Here we assume the app script saved it in ISO.
-                if (record.status === 'PENDING' && record.classId === clsId && record.subjectId === subId && String(record.period||record.scanTime).includes(period)) { // scanTime can be tricky to match period exactly, let's assume they match session
-                    const stu = AppState.currentCheckinStudents.find(s => s.studentId === record.studentId || s.id === record.studentId);
+                if (record.status !== 'SYNCED' && String(record.classId) === String(clsId) && String(record.subjectId) === String(subId)) { // scanTime can be tricky to match period exactly, let's assume they match session
+                    const stu = AppState.currentCheckinStudents.find(s => String(s.studentId) === String(record.studentId) || String(s.id) === String(record.studentId));
                     if (stu) {
                         AppState.activeCheckinStates[stu.id] = 'มา';
                         if (!AppState.pendingSyncIds.includes(record.id)) {
@@ -839,7 +839,7 @@ export async function submitStudentAttendance() {
             body: JSON.stringify(payload)
         });
         const json = await res.json();
-        if (json.status === 'success') {
+        if (json.status === 'success' || json.success === true) {
             showToast("เช็คชื่อสำเร็จแล้ว!");
             document.getElementById('qr-scan-confirm-modal').classList.remove('show');
         } else {
@@ -928,3 +928,7 @@ export function closeTeacherScanSuccess() {
 window.closeTeacherScanSuccess = closeTeacherScanSuccess;
 window.submitStudentAttendance = submitStudentAttendance;
 window.switchCamera = switchCamera;
+
+
+
+
