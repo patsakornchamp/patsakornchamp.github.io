@@ -279,6 +279,8 @@ export function applySchoolSettings() {
 }
 
 async function initApp() {
+    if (window.checkBiometricAvailability) window.checkBiometricAvailability();
+
     // Register Service Worker for PWA
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {

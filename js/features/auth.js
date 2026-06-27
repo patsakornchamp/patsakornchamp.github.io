@@ -113,6 +113,12 @@ export function loginSuccess(userObj) {
     if (window.showPRAnnouncementIfActive) {
         window.showPRAnnouncementIfActive();
     }
+    
+    setTimeout(() => {
+        if (window.promptBiometricEnrollment) {
+            window.promptBiometricEnrollment();
+        }
+    }, 500);
 }
 
 export function logout() {

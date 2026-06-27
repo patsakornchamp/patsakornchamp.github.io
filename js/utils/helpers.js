@@ -192,6 +192,32 @@ export function getDirectImageUrl(url) {
 }
 
 // ==========================================
+// WebAuthn Utilities
+// ==========================================
+export function bufferToBase64(buffer) {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return window.btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+export function base64ToBuffer(base64) {
+    let b64 = base64.replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4 !== 0) {
+        b64 += '=';
+    }
+    const binary = window.atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes.buffer;
+}
+
+// ==========================================
 // ผูกฟังก์ชัน UI พื้นฐานเข้า Global Window (เพื่อให้ปุ่ม onclick ในหน้า HTML กดใช้งานได้)
 // ==========================================
 window.closeModal = closeModal;
