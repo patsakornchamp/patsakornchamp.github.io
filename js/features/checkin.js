@@ -295,8 +295,8 @@ window.exportCheckinCSV = exportCheckinCSV;
 // QR CODE CHECK-IN SYSTEM LOGIC
 // ==========================================
 
-const SCHOOL_LAT = 13.736717; // Placeholder: เปลี่ยนเป็นพิกัดจริงของโรงเรียน
-const SCHOOL_LON = 100.523186; // Placeholder: เปลี่ยนเป็นพิกัดจริงของโรงเรียน
+const SCHOOL_LAT = 17.394906687300967; // พิกัดจริงของโรงเรียน
+const SCHOOL_LON = 102.78445049999999; // พิกัดจริงของโรงเรียน
 
 let html5QrCode = null;
 let currentQrData = null;
@@ -604,20 +604,20 @@ export function openTeacherQrScanner() {
                 if (stu) {
                     playBeep();
                     onAttendanceChange(stu.id, 'มา');
-                    showToast(`เช็คชื่อ ${stu.firstName} สำเร็จ!`, false); // false = success green toast
+                    showToast(`เช็คชื่อ ${stu.firstName} สำเร็จ!`, 'success');
                     // ไม่ปิดกล้อง เผื่อสแกนคนต่อไป
                 } else {
                     playBeep();
-                    showToast(`ไม่พบนักเรียนรหัส ${stuId} ในคลาสนี้`, true); // true = error red toast
+                    showToast(`ไม่พบนักเรียนรหัส ${stuId} ในคลาสนี้`, 'error');
                 }
             } else {
                 playBeep();
-                showToast(`QR Code ไม่ใช่ของนักเรียน`, true);
+                showToast(`QR Code ไม่ใช่ของนักเรียน`, 'error');
             }
         } catch (e) { 
             console.error("Invalid QR", e);
             playBeep();
-            showToast(`QR Code ไม่ถูกต้อง`, true);
+            showToast(`QR Code ไม่ถูกต้อง`, 'error');
         }
     });
 }
@@ -679,7 +679,7 @@ export function showStudentPersonalQr() {
     document.getElementById('qr-classroom-timer').parentNode.style.display = "none";
     
     container.innerHTML = '';
-    const stu = AppState.currentUser;
+    const stu = AppState.currentUser.role === 'student' ? AppState.currentUser.data : AppState.currentUser;
     const qrData = {
         t: 'S',
         id: stu.studentId || stu.id,
@@ -698,7 +698,8 @@ export function startStudentQrScanner() {
             if (data.t === 'C' || data.type === 'CLASSROOM') {
                 const diff = Date.now() - (data.ts || data.timestamp);
                 if (diff > 5 * 60 * 1000) {
-                    alert("QR Code นี้หมดอายุแล้ว กรุณาแจ้งครูให้สร้างใหม่");
+                    playBeep();
+                    showToast("QR Code นี้หมดอายุแล้ว กรุณาแจ้งครูให้สร้างใหม่", 'error');
                     return;
                 }
                 playBeep();
@@ -709,8 +710,15 @@ export function startStudentQrScanner() {
                     tId: data.tc || data.tId,
                     period: data.p || data.period
                 });
+            } else {
+                playBeep();
+                showToast("QR Code ไม่ใช่รหัสห้องเรียน", 'error');
             }
-        } catch (e) {}
+        } catch (e) {
+            console.error("Invalid QR", e);
+            playBeep();
+            showToast("QR Code ไม่ถูกต้อง", 'error');
+        }
     });
 }
 
