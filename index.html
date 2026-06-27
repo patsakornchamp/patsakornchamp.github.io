@@ -422,7 +422,6 @@
             background-color: transparent;
         }
         #student-reader video {
-            border-radius: 1rem;
             object-fit: cover;
             width: 100% !important;
             height: 100% !important;
@@ -2909,7 +2908,7 @@
     <div id="qr-scanner-modal" class="modal z-[100] bg-white">
         <div class="w-full h-full flex flex-col relative bg-white">
             <!-- Header -->
-            <div class="absolute top-0 w-full p-4 flex justify-between items-center z-10 bg-gradient-to-b from-white to-transparent pb-8">
+            <div class="absolute top-0 w-full p-4 flex justify-between items-center z-50 bg-gradient-to-b from-white to-transparent pb-8">
                 <h3 class="text-gray-800 font-bold text-lg drop-shadow-sm"><i class="fas fa-camera mr-2"></i> สแกน QR Code</h3>
                 <button onclick="stopStudentQrScanner()" class="text-gray-500 hover:text-red-500 bg-white/80 w-10 h-10 rounded-full flex items-center justify-center transition-colors shadow-sm">
                     <i class="fas fa-times text-xl"></i>
@@ -2917,15 +2916,15 @@
             </div>
             
             <!-- Scanner Area -->
-            <div class="flex-1 flex flex-col items-center justify-center px-6 mb-4 mt-12 w-full max-w-sm md:max-w-md lg:max-w-lg mx-auto">
-                <div class="w-full aspect-[3/4] max-h-[60vh] md:max-h-[70vh] border-2 border-gray-200 rounded-[2rem] overflow-hidden relative bg-gray-100 shadow-xl">
+            <div class="flex-1 flex flex-col items-center justify-center w-full max-w-xl mx-auto bg-transparent">
+                <div class="w-full h-[70vh] md:h-[75vh] overflow-hidden relative bg-black shadow-xl">
                     <!-- Container สำหรับ html5-qrcode -->
                     <div id="student-reader" class="w-full h-full absolute inset-0 z-20"></div>
                 </div>
             </div>
             
             <!-- Footer -->
-            <div class="absolute bottom-0 w-full p-6 pb-10 z-10 bg-gradient-to-t from-white via-white to-transparent text-center pt-12">
+            <div class="absolute bottom-0 w-full p-6 pb-10 z-50 bg-gradient-to-t from-white via-white to-transparent text-center pt-12">
                 
                 <!-- Camera Controls -->
                 <div class="flex flex-col items-center justify-center mb-6 w-full max-w-xs mx-auto space-y-4">
@@ -2952,6 +2951,6 @@
         </div>
     </div>
 
-<script type="module" src="./js/main.js?v=20260627_1033"></script>
+<script type="module" src="./js/main.js?v=20260627_1631"></script>
 </body>
 </html>

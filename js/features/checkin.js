@@ -438,13 +438,15 @@ function _loadCameraList() {
             currentCameraIsFront = false;
             currentLensIndex = 0;
             
-            // Show/Hide flip button based on availability
+            // Show/Hide flip button based on availability (modified to always show for testing layout)
             const flipBtn = document.getElementById('btn-flip-camera');
             if (flipBtn) {
-                if (customCameras.front.length > 0 && customCameras.back.length > 0) {
-                    flipBtn.classList.remove('hidden');
+                flipBtn.classList.remove('hidden');
+                // If only 1 camera total, maybe reduce opacity
+                if (customCameras.front.length + customCameras.back.length <= 1) {
+                    flipBtn.style.opacity = '0.5';
                 } else {
-                    flipBtn.classList.add('hidden');
+                    flipBtn.style.opacity = '1';
                 }
             }
 
@@ -529,7 +531,7 @@ function _playSpecificCamera(cameraConfig) {
     const scanConfig = {
         fps: 15,
         qrbox: { width: 250, height: 250 },
-        aspectRatio: 0.75
+        aspectRatio: 1.333334
     };
 
     html5QrCode.start(
@@ -602,11 +604,21 @@ export function openTeacherQrScanner() {
                 if (stu) {
                     playBeep();
                     onAttendanceChange(stu.id, 'มา');
-                    showToast(`เช็คชื่อ ${stu.firstName} สำเร็จ`);
+                    showToast(`เช็คชื่อ ${stu.firstName} สำเร็จ!`, false); // false = success green toast
                     // ไม่ปิดกล้อง เผื่อสแกนคนต่อไป
+                } else {
+                    playBeep();
+                    showToast(`ไม่พบนักเรียนรหัส ${stuId} ในคลาสนี้`, true); // true = error red toast
                 }
+            } else {
+                playBeep();
+                showToast(`QR Code ไม่ใช่ของนักเรียน`, true);
             }
-        } catch (e) { console.error("Invalid QR", e); }
+        } catch (e) { 
+            console.error("Invalid QR", e);
+            playBeep();
+            showToast(`QR Code ไม่ถูกต้อง`, true);
+        }
     });
 }
 
