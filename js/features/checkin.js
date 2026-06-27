@@ -1,6 +1,6 @@
 import { AppState } from '../core/state.js';
 import { DB_KEYS } from '../core/config.js';
-import { generateId, getStudentFullName, showToast, matchRecordYearSemester, getBangkokDate, getBangkokCurrentTime, exportToCSV, getISOTimestamp, getCurrentUserId, customConfirm } from '../utils/helpers.js';
+import { generateId, getStudentFullName, showToast, matchRecordYearSemester, getBangkokDate, getBangkokCurrentTime, exportToCSV, getISOTimestamp, getCurrentUserId, customConfirm, showLoading, hideLoading } from '../utils/helpers.js';
 import { syncDataFromServer, saveToDB } from '../services/api.js';
 
 export function resetCheckinTable() {
@@ -700,10 +700,22 @@ export function startStudentQrScanner() {
                     showToast("QR Code นี้หมดอายุแล้ว กรุณาแจ้งครูให้สร้างใหม่", 'error');
                     return;
                 }
+                
+                // Validate if student is in the same class as the QR code
+                const studentClass = AppState.currentUser?.data?.class;
+                const qrClass = data.c || data.clsId;
+                if (studentClass && qrClass && studentClass !== qrClass) {
+                    playBeep();
+                    showToast(`คุณอยู่ชั้น ${studentClass} ไม่สามารถสแกนของชั้น ${qrClass} ได้`, 'error');
+                    return;
+                }
+
                 playBeep();
                 stopStudentQrScanner();
+                
+                showLoading("กำลังตรวจสอบตำแหน่งของคุณ...");
                 processStudentScan({
-                    clsId: data.c || data.clsId,
+                    clsId: qrClass,
                     subId: data.s || data.subId,
                     tId: data.tc || data.tId,
                     period: data.p || data.period
@@ -752,6 +764,7 @@ function processStudentScan(data) {
                 document.getElementById('qr-confirm-distance').innerText = `${Math.round(dist)} เมตร`;
                 
                 if (dist > 300) {
+                    hideLoading();
                     document.getElementById('qr-confirm-distance').classList.add('text-red-600');
                     alert(`คุณอยู่นอกพื้นที่โรงเรียน (ระยะห่าง ${Math.round(dist)} เมตร) ไม่อนุญาตให้เช็คชื่อ`);
                     return;
@@ -767,12 +780,17 @@ function processStudentScan(data) {
                 currentQrData.lat = lat;
                 currentQrData.lon = lon;
                 
+                hideLoading();
                 document.getElementById('qr-scan-confirm-modal').classList.add('show');
             },
-            (err) => { alert("ต้องอนุญาตการเข้าถึงตำแหน่งที่ตั้ง (GPS) เพื่อเช็คชื่อ"); },
-            { enableHighAccuracy: true }
+            (err) => { 
+                hideLoading();
+                alert("ต้องอนุญาตการเข้าถึงตำแหน่งที่ตั้ง (GPS) เพื่อเช็คชื่อ"); 
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     } else {
+        hideLoading();
         alert("เบราว์เซอร์นี้ไม่รองรับ GPS");
     }
 }
