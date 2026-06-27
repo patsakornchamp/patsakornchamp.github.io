@@ -2927,20 +2927,21 @@
             <div class="absolute bottom-0 w-full p-6 pb-10 z-50 bg-gradient-to-t from-white via-white to-transparent text-center pt-12">
                 
                 <!-- Camera Controls -->
-                <div class="flex flex-col items-center justify-center mb-6 w-full max-w-xs mx-auto space-y-4">
-                    <!-- Lens Switcher (e.g. 1x, 2x) - Hidden by default unless multiple back cameras exist -->
-                    <div id="lens-switcher-container" class="hidden flex-row gap-2 bg-black/80 p-1.5 rounded-full shadow-lg">
+                <div class="flex flex-row items-center justify-between mb-6 w-full max-w-xs mx-auto px-2">
+                    
+                    <!-- Left Spacer for centering the lens switcher (same width as flip button) -->
+                    <div class="w-14 h-14"></div>
+                    
+                    <!-- Lens Switcher (e.g. 1x, 2x) -->
+                    <div id="lens-switcher-container" class="hidden flex-row gap-1 bg-black/70 p-1 rounded-full shadow-lg border border-gray-700">
                         <!-- Buttons will be injected here via JS -->
                     </div>
 
-                    <div class="flex flex-row justify-between items-center w-full px-4">
-                        <div class="w-12 h-12"></div> <!-- Spacer for centering -->
-                        
-                        <!-- Toggle Camera Icon (Flip) -->
-                        <button id="btn-flip-camera" onclick="window.toggleFrontBackCamera && window.toggleFrontBackCamera()" class="w-14 h-14 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-full flex items-center justify-center transition-colors shadow-md border border-gray-300">
-                            <i class="fas fa-sync-alt text-xl"></i>
-                        </button>
-                    </div>
+                    <!-- Toggle Camera Icon (Flip) -->
+                    <button id="btn-flip-camera" onclick="window.toggleFrontBackCamera && window.toggleFrontBackCamera()" class="w-14 h-14 bg-white/90 hover:bg-white text-gray-800 rounded-full flex flex-shrink-0 items-center justify-center transition-colors shadow-lg border-2 border-transparent hover:border-gray-300 backdrop-blur-sm">
+                        <i class="fas fa-sync-alt text-xl"></i>
+                    </button>
+                    
                 </div>
 
                 <p class="text-gray-600 text-sm mb-4 font-medium">จัดให้อยู่ในกรอบเพื่อสแกนอัตโนมัติ</p>
@@ -2951,6 +2952,37 @@
         </div>
     </div>
 
-<script type="module" src="./js/main.js?v=20260627_1657"></script>
+    <!-- Teacher Scan Success Popup -->
+    <div id="teacher-scan-success-modal" class="modal z-[110]">
+        <div class="bg-white rounded-3xl p-6 w-11/12 max-w-sm mx-auto shadow-2xl relative overflow-hidden transform scale-95 opacity-0 transition-all duration-300" id="teacher-scan-success-card">
+            <!-- decorative background -->
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-green-200 rounded-full mix-blend-multiply filter blur-2xl opacity-50"></div>
+            <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-emerald-200 rounded-full mix-blend-multiply filter blur-2xl opacity-50"></div>
+            
+            <div class="text-center relative z-10">
+                <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-green-100 text-green-500 mb-4 shadow-inner">
+                    <i class="fas fa-check-circle text-5xl drop-shadow-sm"></i>
+                </div>
+                <h3 class="text-2xl font-black text-gray-800 mb-1 tracking-tight">เช็คชื่อสำเร็จ</h3>
+                <div class="bg-gray-50 rounded-2xl p-4 mt-4 shadow-sm border border-gray-100">
+                    <p class="text-gray-500 text-xs uppercase tracking-wider font-bold mb-1">รหัสนักเรียน</p>
+                    <p id="tsc-student-id" class="text-lg font-bold text-gray-700 font-mono mb-2">-</p>
+                    <p class="text-gray-500 text-xs uppercase tracking-wider font-bold mb-1">ชื่อ - นามสกุล</p>
+                    <p id="tsc-student-name" class="text-xl font-bold text-indigo-700">-</p>
+                </div>
+                
+                <div class="mt-6">
+                    <div class="w-full bg-gray-200 rounded-full h-1.5 mb-4 overflow-hidden flex">
+                        <div id="tsc-progress-bar" class="bg-green-500 h-1.5 rounded-full" style="width: 100%; transition: width 2s linear;"></div>
+                    </div>
+                    <button onclick="closeTeacherScanSuccess()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl transition-all shadow-sm">
+                        ปิดหน้าต่าง (<span id="tsc-countdown">2</span>s)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script type="module" src="./js/main.js?v=20260627_1720"></script>
 </body>
 </html>

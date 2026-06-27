@@ -478,10 +478,10 @@ function renderLensSwitcher() {
             const label = idx === 0 ? '1x' : (idx === 1 ? '2x' : (idx + 1) + 'x');
             
             btn.textContent = label;
-            btn.className = `w-10 h-10 rounded-full text-sm font-bold flex items-center justify-center transition-colors ${
+            btn.className = `w-11 h-11 flex-shrink-0 rounded-full text-sm font-bold flex items-center justify-center transition-all ${
                 idx === currentLensIndex 
-                    ? 'bg-yellow-500 text-black shadow-md border-2 border-yellow-300' 
-                    : 'bg-transparent text-white hover:bg-gray-700'
+                    ? 'bg-yellow-500 text-black shadow-md border-[3px] border-black scale-105' 
+                    : 'bg-transparent text-gray-300 hover:text-white hover:bg-gray-700/50'
             }`;
             
             btn.onclick = () => {
@@ -604,7 +604,7 @@ export function openTeacherQrScanner() {
                 if (stu) {
                     playBeep();
                     onAttendanceChange(stu.id, 'มา');
-                    showToast(`เช็คชื่อ ${stu.firstName} สำเร็จ!`, 'success');
+                    showTeacherScanSuccess(stu);
                     // ไม่ปิดกล้อง เผื่อสแกนคนต่อไป
                 } else {
                     playBeep();
@@ -814,8 +814,76 @@ export async function submitStudentAttendance() {
 window.showClassroomQrModal = showClassroomQrModal;
 window.openTeacherQrScanner = openTeacherQrScanner;
 window.pullStudentCheckIns = pullStudentCheckIns;
-window.showStudentPersonalQr = showStudentPersonalQr;
+window.openTeacherQrScanner = openTeacherQrScanner;
 window.startStudentQrScanner = startStudentQrScanner;
 window.stopStudentQrScanner = stopStudentQrScanner;
+
+let teacherScanSuccessTimeout = null;
+let teacherScanCountdownInterval = null;
+
+export function showTeacherScanSuccess(stu) {
+    document.getElementById('tsc-student-id').innerText = stu.studentId || stu.id;
+    document.getElementById('tsc-student-name').innerText = `${stu.firstName} ${stu.lastName}`;
+    
+    const modal = document.getElementById('teacher-scan-success-modal');
+    const card = document.getElementById('teacher-scan-success-card');
+    const progressBar = document.getElementById('tsc-progress-bar');
+    const countdownText = document.getElementById('tsc-countdown');
+    
+    // Reset state
+    progressBar.style.transition = 'none';
+    progressBar.style.width = '100%';
+    countdownText.innerText = '2';
+    
+    // Show modal
+    modal.classList.add('show');
+    
+    // Animate card in
+    setTimeout(() => {
+        card.classList.remove('scale-95', 'opacity-0');
+        card.classList.add('scale-100', 'opacity-100');
+        
+        // Start progress bar animation
+        setTimeout(() => {
+            progressBar.style.transition = 'width 2s linear';
+            progressBar.style.width = '0%';
+        }, 50);
+        
+        let seconds = 2;
+        if(teacherScanCountdownInterval) clearInterval(teacherScanCountdownInterval);
+        teacherScanCountdownInterval = setInterval(() => {
+            seconds--;
+            countdownText.innerText = seconds;
+            if (seconds <= 0) {
+                clearInterval(teacherScanCountdownInterval);
+            }
+        }, 1000);
+        
+        if (teacherScanSuccessTimeout) clearTimeout(teacherScanSuccessTimeout);
+        teacherScanSuccessTimeout = setTimeout(() => {
+            closeTeacherScanSuccess();
+        }, 2000);
+        
+    }, 10);
+}
+
+export function closeTeacherScanSuccess() {
+    if (teacherScanSuccessTimeout) clearTimeout(teacherScanSuccessTimeout);
+    if (teacherScanCountdownInterval) clearInterval(teacherScanCountdownInterval);
+    
+    const modal = document.getElementById('teacher-scan-success-modal');
+    const card = document.getElementById('teacher-scan-success-card');
+    
+    if (card) {
+        card.classList.remove('scale-100', 'opacity-100');
+        card.classList.add('scale-95', 'opacity-0');
+    }
+    
+    setTimeout(() => {
+        if (modal) modal.classList.remove('show');
+    }, 300); // Wait for transition
+}
+
+window.closeTeacherScanSuccess = closeTeacherScanSuccess;
 window.submitStudentAttendance = submitStudentAttendance;
 window.switchCamera = switchCamera;
