@@ -1,4 +1,4 @@
-# MAKHRAB — ระบบจัดการโรงเรียนออนไลน์
+# MAKHRAB — ระบบจัดการโรงเรียนออนไลน์ (Multi-tenant & PWA)
 
 > **📌 AI Instruction:** ทุกครั้งที่ได้รับคำสั่งงานในโปรเจคนี้ ให้อ่านไฟล์นี้ก่อนเสมอ เพื่อทำความเข้าใจโครงสร้าง กฎ และ pattern ของโปรเจคก่อนลงมือแก้ไขโค้ด
 
@@ -6,9 +6,11 @@
 
 ## 🏫 ภาพรวมโปรเจค
 
-**MAKHRAB** คือระบบจัดการข้อมูลโรงเรียนแบบ Single Page Application (SPA) สำหรับ **โรงเรียนไชยฉิมพลีวิทยาคม**  
-ระบบใช้ **Google Sheets** เป็นฐานข้อมูล และ **Google Apps Script** เป็น Backend API  
-Frontend เป็น HTML + Vanilla JS (ES Modules) + TailwindCSS
+**MAKHRAB** คือระบบจัดการข้อมูลโรงเรียนแบบ Single Page Application (SPA) รองรับการใช้งานแบบแยกหลายโรงเรียน (Multi-tenant)
+* **ฐานข้อมูล (Database):** ใช้ **Google Sheets** แยกชีตตามโรงเรียน
+* **หลังบ้าน (Backend API):** ใช้ **Google Apps Script (Web App)** ในการรับส่งข้อมูลผ่าน JSON
+* **หน้าบ้าน (Frontend):** พัฒนาด้วย HTML5 + Vanilla JS (ES Modules) + TailwindCSS
+* **สถาปัตยกรรมแอปพลิเคชัน:** รองรับการติดตั้งแบบ **PWA (Progressive Web App)** เพื่อดาวน์โหลดเป็นไอคอนแอปบนมือถือและคอมพิวเตอร์ และระบบล็อกอินความปลอดภัยสูงด้วย **WebAuthn (Passkeys / Biometrics - Face ID / ลายนิ้วมือ)**
 
 ---
 
@@ -16,33 +18,33 @@ Frontend เป็น HTML + Vanilla JS (ES Modules) + TailwindCSS
 
 ```
 d:\Makrb\patsakornchamp.github.io\
-├── index.html                  # UI หลักทั้งหมด (SPA) รวม Modal ทุกอัน
-├── homevisit_report.html       # หน้าพิมพ์รายงานเยี่ยมบ้าน (แยกต่างหาก)
+├── index.html                  # UI หลักทั้งหมด (SPA) รวมถึง Layout และ Modal ทั้งหมด
+├── homevisit_report.html       # หน้าพิมพ์รายงานเยี่ยมบ้าน (แยกเป็นหน้าเดี่ยวสำหรับ Print)
+├── manifest.json               # [PWA] ตั้งค่าไอคอน ชื่อแอป และ Theme ของการติดตั้งลงอุปกรณ์
+├── sw.js                       # [PWA] Service Worker จัดการ Cache ไฟล์เพื่อทำงานแบบออฟไลน์/โหลดเร็ว
+├── google_apps_script.js       # โค้ดฝั่ง Server (Google Apps Script) สำหรับคัดลอกลง Google Sheets
 ├── design.md                   # เอกสาร Design Guidelines และ Backend API Reference
 ├── README.md                   # ไฟล์นี้ — คู่มือสำหรับ AI
-├── logopng.png / logopng2.png  # โลโก้โรงเรียน
+├── logopng.png / logopng2.png  # โลโก้โรงเรียนเริ่มต้น
 └── js/
-    ├── main.js                 # Entry point: initApp, switchTab, updateAllDropdowns
+    ├── main.js                 # Entry point: initApp (เปลี่ยนชื่อโรงเรียน/เชื่อม DB), switchTab, SW register
     ├── core/
-    │   ├── config.js           # DB_KEYS (localStorage keys), DEFAULT_GOOGLE_SCRIPT_URL, DEPLOY_VERSION
+    │   ├── config.js           # ระบบตรวจ Parameter ?school=..., สร้าง DB_KEYS แยกแต่ละที่, DEPLOY_VERSION
     │   └── state.js            # AppState (Global state: allStudents, allRecords, currentUser ฯลฯ)
     ├── utils/
-    │   └── helpers.js          # ฟังก์ชันช่วย: showToast, customAlert, customConfirm, generateId,
-    │                           # validateThaiCitizenId, validatePhoneNumber, getStudentFullName,
-    │                           # getBangkokDate, getDefaultAcademicYearAndSemester
+    │   └── helpers.js          # ฟังก์ชันช่วย: showToast, customConfirm (มีจำสถานะการยกเลิก), ArrayBuffer utils (WebAuthn)
     ├── services/
-    │   └── api.js              # loadFromLocalStorage(), syncDataFromServer(), saveToDB()
+    │   └── api.js              # syncDataFromServer(), saveToDB() บันทึกลง Storage ตามโรงเรียน
     └── features/
-        ├── auth.js             # ล็อกอิน/ออก, loginSuccess()
-        ├── students.js         # จัดการนักเรียน: openStudentModal, editStudent, saveStudent,
-        │                       # renderStudentProfile, saveMyProfile, renderManageStudents
-        ├── checkin.js          # เช็คชื่อปกติ: loadCheckinList, saveAttendance, renderCheckinTable
+        ├── auth.js             # ล็อกอิน/ออก, ระบบ WebAuthn Biometric (enableBiometric, loginWithBiometric)
+        ├── checkin.js          # เช็คชื่อปกติ: แสดง QR ครู, สแกน QR นำพิกัด/เช็คความต่างระยะทาง/ดึงประวัติสแกนแล้วจับคู่รายชื่อ
+        ├── students.js         # จัดการนักเรียน & กรอกข้อมูลประวัติส่วนตัว/บิดามารดา/ที่อยู่
         ├── club.js             # ชุมนุม: เช็คชื่อชุมนุม, ลงทะเบียนชุมนุม
-        ├── history.js          # ประวัติเช็คชื่อ: searchHistory, renderHistory
-        ├── stats.js            # สถิติเวลาเรียน: renderStats
-        ├── master.js           # Master Data: วิชา, ครู, ชั้นเรียน, นักเรียน
-        ├── homevisit.js        # ระบบเยี่ยมบ้าน: บันทึกฟอร์ม, GPS, รูปภาพ, พิมพ์รายงาน
-        └── assignments.js      # การบ้าน/งาน: ครูสั่งงาน, นักเรียนดูงาน
+        ├── history.js          # ประวัติเช็คชื่อ: แสดงบันทึกและสถิติรายบุคคล
+        ├── stats.js            # สถิติเวลาเรียนรายวิชา/รายห้อง
+        ├── master.js           # Master Data: จัดการข้อมูล วิชา, ครู, ชั้นเรียน, นักเรียน
+        ├── homevisit.js        # ระบบเยี่ยมบ้าน: ปักหมุดบ้านนักเรียน, แนบรูป, พิมพ์แบบรายงาน
+        └── assignments.js      # การบ้าน/งาน: ครูส่ง/สั่งงาน, นักเรียนเช็คงานของตนเอง
 ```
 
 ---
@@ -54,8 +56,9 @@ d:\Makrb\patsakornchamp.github.io\
 | Property | ประเภท | คำอธิบาย |
 |---|---|---|
 | `currentUser` | Object / null | ข้อมูลผู้ใช้ที่ login: `{ role: 'admin'/'teacher'/'student', data: {...} }` |
-| `googleSheetUrl` | string | URL ของ Google Apps Script Web App |
-| `allStudents` | Array | รายชื่อนักเรียนทั้งหมด |
+| `googleSheetUrl` | string | URL ของ Google Apps Script Web App ของโรงเรียนปัจจุบัน |
+| `schoolSettings` | Object | ข้อมูลตั้งค่า (ชื่อโรงเรียน, โลโก้, ปีการศึกษา/เทอมปัจจุบัน) |
+| `allStudents` | Array | รายชื่อนักเรียนทั้งหมดของโรงเรียนที่กำลังเข้าใช้งาน |
 | `allRecords` | Array | บันทึกการเช็คชื่อปกติ |
 | `allSubjects` | Array | รายวิชาทั้งหมด |
 | `allTeachers` | Array | รายชื่อครูทั้งหมด |
@@ -63,312 +66,64 @@ d:\Makrb\patsakornchamp.github.io\
 | `allClubs` | Array | ชุมนุมทั้งหมด |
 | `allClubEnrollments` | Array | การลงทะเบียนชุมนุม |
 | `allClubRecords` | Array | บันทึกการเช็คชื่อชุมนุม |
-| `allAssignments` | Array | รายการงาน/การบ้าน |
-| `allStudentAssignments` | Array | การส่งงานของนักเรียน |
 
 ---
 
-## 👤 ระบบผู้ใช้ (Roles)
+## 🏢 ระบบแยกหลายโรงเรียน (Multi-tenancy)
 
-| Role | สิทธิ์ |
-|---|---|
-| `admin` | เข้าถึงทุกแท็บ ทุกฟังก์ชัน รวมถึงการจัดการ Master Data |
-| `teacher` | เช็คชื่อ, ดูสถิติ, จัดการนักเรียน, เยี่ยมบ้าน, จัดการการบ้าน |
-| `student` | ดูโปรไฟล์ตัวเอง, ดูชุมนุม, ดูเกรด/งาน |
-
----
-
-## 🗂️ โครงสร้างข้อมูลสำคัญ
-
-### Student Object (ข้อมูลนักเรียน)
-```js
-{
-  id: string,             // UUID
-  studentId: string,      // รหัสประจำตัวนักเรียน (เช่น "12345")
-  title: string,          // คำนำหน้า: 'เด็กชาย' | 'เด็กหญิง' | 'นาย' | 'นางสาว'
-  firstName: string,
-  lastName: string,
-  nickname: string,
-  class: string,          // ชื่อชั้นเรียน เช่น "ม.1/1"
-  number: number,         // เลขที่
-  citizenId: string,      // เลข ปชช. 13 หลัก
-  dob: string,            // วันเกิด (YYYY-MM-DD)
-  phone: string,
-  email: string,
-  address: string,
-  profileImageUrl: string,// URL รูปโปรไฟล์ (Google Drive)
-  status: string,         // 'ปกติ' | 'ลาออก'
-  homeVisit: string,      // 'ยังไม่เยี่ยม' | 'สำเร็จ' | 'เลื่อนวันเข้าเยี่ยม' | ...
-  isProfileComplete: string, // 'true' | 'false'
-  
-  // ข้อมูลผู้ปกครองหลัก
-  parentTitle: string,    // 'นาย' | 'นาง' | 'นางสาว'
-  parentFirstName: string,
-  parentLastName: string,
-  parentRelation: string, // 'บิดา' | 'มารดา' | 'ปู่/ย่า/ตา/ยาย' | ...
-  parentPhone: string,
-  
-  // ข้อมูลบิดา
-  fatherFirstName: string,
-  fatherLastName: string,
-  fatherAge: string,
-  fatherJob: string,
-  fatherPhone: string,
-  
-  // ข้อมูลมารดา
-  motherFirstName: string,
-  motherLastName: string,
-  motherAge: string,
-  motherJob: string,
-  motherPhone: string,
-  
-  // ข้อมูลที่พัก (GPS + รูปภาพ)
-  home_latitude: string,
-  home_longitude: string,
-  home_directions: string,
-  home_photo_1_url: string,
-  home_photo_2_url: string,
-  home_photo_3_url: string,
-  
-  // Soft Delete
-  deleted_flg: 'N' | 'Y',
-  deletedAt: string | null,
-  deletedBy: string | null,
-  
-  // Audit
-  createdAt: string,
-  createdBy: string,
-  updatedAt: string,
-  updatedBy: string,
-}
-```
-
-### Attendance Record (บันทึกเช็คชื่อ)
-```js
-{
-  id: string,
-  date: string,         // YYYY-MM-DD
-  year: string,         // ปีการศึกษา (พ.ศ.)
-  semester: string,     // '1' | '2'
-  period: string,       // 'โฮมรูม' | '1'-'8' | 'พักเที่ยง' | 'กิจกรรม'
-  classId: string,
-  subjectId: string,
-  teacherId: string,
-  attendance: [{ studentId: string, status: 'มา'|'สาย'|'ลา'|'ขาด' }],
-  deleted_flg: 'N' | 'Y',
-  ...audit fields
-}
-```
+ระบบใช้ URL Parameter ในการระบุตัวตนโรงเรียนและดึงฐานข้อมูลแยกกัน ผ่าน `js/core/config.js`
+* **ตัวอย่างการใช้:** `https://domain.com/?school=rnn` หรือ `https://domain.com/?school=abc`
+* **กลไกการสลับ:**
+  1. โค้ดจะดึงพารามิเตอร์ `school` มาแมปค่าใน `ENVIRONMENT`
+  2. เปลี่ยนค่า `DEFAULT_GOOGLE_SCRIPT_URL` ให้เชื่อมไปยัง App Script ของโรงเรียนนั้น
+  3. เพิ่ม `keyPrefix` (เช่น `rnn_`, `ccpw_`) นำหน้า Key ใน LocalStorage ทำให้สลับโรงเรียนแล้วเซสชันไม่ปนกัน
 
 ---
 
-## ⚙️ LocalStorage Keys (DB_KEYS)
+## 🔑 ระบบล็อกอินด้วย Biometrics (WebAuthn)
 
-```js
-'school_students'          // allStudents
-'school_records'           // allRecords (เช็คชื่อปกติ)
-'school_subjects'          // allSubjects
-'school_teachers'          // allTeachers
-'school_classes'           // allClasses
-'school_google_sheet_url'  // URL ของ Apps Script
-'school_active_session'    // session ผู้ใช้ที่ login อยู่
-'school_clubs'             // allClubs
-'school_club_enrollments'  // allClubEnrollments
-'school_club_records'      // allClubRecords
-'ASSIGNMENTS'              // allAssignments
-'STUDENT_ASSIGNMENTS'      // allStudentAssignments
-```
+ระบบจะถามเพื่อบันทึกสแกนนิ้ว/ใบหน้า ทันทีหลังจากลงชื่อเข้าใช้ด้วยรหัสผ่านสำเร็จครั้งแรกบนเครื่อง
+* **กลไกการจดจำ:**
+  * หากเปิดใช้งานสำเร็จ คีย์ประจำเครื่องจะถูกเซฟในชื่อ `BIOMETRIC_CRED`
+  * หากครูหรือนักเรียนกด "ยกเลิก" จะเซฟค่า `BIOMETRIC_DISMISSED: "true"` เพื่อไม่ให้หน้าต่างยืนยันเด้งรบกวนเวลาเปิดใช้แอปครั้งถัดไป
+  * เมื่อผู้ใช้คลิกปุ่ม **เข้าสู่ระบบด้วย Face ID / ลายนิ้วมือ** (หน้าจอ Login) ระบบจะเปรียบเทียบคีย์และล็อกอินเข้าสู่ระบบได้ทันทีโดยไม่ต้องพิมพ์รหัสผ่าน
 
 ---
 
-## 🎨 Design Guidelines (สรุป)
+## 📸 QR Code Check-in Workflow (แบบเรียลไทม์)
 
-- **Font:** `'Sarabun', sans-serif` (ทุก element)
-- **Theme:** Glassmorphism — backdrop-blur, white/opacity background, soft shadows
-- **สีหลัก:** Green (`green-600` to `green-800`) สำหรับ header/nav/primary actions
-- **ปุ่ม:** opacity 70%, rounded-xl, hover ยกตัว translateY(-2px)
-- **Input/Select/Textarea:** class `.glass-input` หรือ `border rounded focus:ring-green-500`
-- **Mobile:** ตารางแปลงเป็น Card View อัตโนมัติ (class `mobile-card-table`)
-- **Modal:** class `glass-modal`, เปิดด้วย `.classList.add('show')`, ปิดด้วย `closeModal(id)`
-- **Toast:** เรียก `showToast('ข้อความ')` — แสดงมุมขวาล่าง
-- **Loading:** `showLoading('ข้อความ')` / `hideLoading()`
-- **Alert/Confirm:** ใช้ `customAlert(msg)` และ `customConfirm(title, msg, callback)` แทน browser default
-
----
-
-## 🔌 Backend API (Google Apps Script)
-
-### Endpoint
-URL เก็บอยู่ใน `AppState.googleSheetUrl` (ตั้งค่าได้ในหน้า Settings)  
-Default URL: `https://script.google.com/macros/s/AKfycbz.../exec`
-
-### GET (ดึงข้อมูลทั้งหมด)
-```
-GET {url}?action=getData&t={timestamp}
-```
-Response: `{ status: 'success', Students: [...], Records: [...], ... }`
-
-### POST (บันทึกข้อมูล)
-```js
-fetch(url, {
-  method: 'POST',
-  headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-  body: JSON.stringify({ action: 'actionName', data: [...] })
-})
-```
-
-### POST Actions ที่มีอยู่
-
-| action | คำอธิบาย |
-|---|---|
-| `saveStudents` | บันทึกนักเรียนทั้งหมด (เหมาชีท) |
-| `saveRecords` | บันทึกประวัติเช็คชื่อทั้งหมด |
-| `saveSubjects` | บันทึกรายวิชา |
-| `saveTeachers` | บันทึกครูผู้สอน |
-| `saveClasses` | บันทึกชั้นเรียน |
-| `saveClubs` | บันทึกชุมนุม |
-| `saveClubEnrollments` | บันทึกการลงทะเบียนชุมนุม |
-| `saveClubRecords` | บันทึกเช็คชื่อชุมนุม |
-| `saveStudentProfile` | บันทึกโปรไฟล์นักเรียนรายบุคคล พร้อมอัปโหลดรูปภาพขึ้น Google Drive |
-| `getHomeVisitData` | ดึงข้อมูลเยี่ยมบ้าน |
-| `saveHomeVisitData` | บันทึกข้อมูลเยี่ยมบ้าน พร้อมอัปโหลดรูปภาพ |
-
-### Soft Delete Pattern
-ทุก record ใช้ Soft Delete: ตั้ง `deleted_flg: 'Y'` แทนการลบจริง  
-**ห้าม** ลบ record ออกจาก array โดยตรง  
-เมื่อ query ข้อมูลให้ filter เสมอ: `.filter(x => x.deleted_flg !== 'Y')`
+มีกระบวนการตรวจสอบสิทธิ์และพิกัด GPS เพื่อความแม่นยำ ป้องกันการสแกนทุจริต:
+1. **การสร้าง QR Code (ฝั่งครู):**
+   * ครูเลือกปีการศึกษา ภาคเรียน วิชา คาบเรียน ระบบจะดึงพิกัด GPS ปัจจุบันของครูรวมถึงข้อมูลอื่นๆ ใส่ลงไปใน QR Code
+2. **การสแกนและยืนยัน (ฝั่งนักเรียน):**
+   * นักเรียนสแกน QR Code จากเครื่องของครู ระบบจะตรวจดูว่า:
+     * QR หมดอายุหรือไม่ (มีผล 5 นาที)
+     * ชั้นเรียนของนักเรียน ตรงกับชั้นเรียนที่ระบุใน QR หรือไม่ (เช่น สแกนข้ามห้องไม่ได้)
+     * พิกัด GPS ของนักเรียนกับครู ห่างกันไม่เกินที่กำหนดใน Settings (เช่น 100 เมตร)
+   * เมื่อผ่านเกณฑ์ นักเรียนจะกดยืนยันการเข้าเรียน ข้อมูลจะถูกบันทึกลงชีต `StudentCheckIns` บนฐานข้อมูลหลักด้วยสถานะ `PENDING`
+3. **การดึงข้อมูลและบันทึก (ฝั่งครู):**
+   * คุณครูคลิกปุ่ม **"ดึงสแกน"** ระบบจะเรียกข้อมูลจากชีต `StudentCheckIns` มาทำการฟิลเตอร์จับคู่รหัสประจำตัวนักเรียน (`studentId` ที่เป็นประเภทเดียวกัน) เพื่อนำมาเปลี่ยนสถานะในหน้าตารางเช็คชื่อของครู
+   * เมื่อคุณครูกด **"บันทึก"** บนหน้าจอ ระบบจะสร้างบันทึกการเข้าเรียนลงตารางหลัก และส่งคำสั่งอัปเดตสถานะของ ID สแกนเหล่านั้นในฐานข้อมูลกลางให้เปลี่ยนเป็น `SYNCED`
 
 ---
 
-## 🧩 Pattern การเขียนโค้ด
+## 🔌 API Actions (Google Apps Script)
 
-### 1. การบันทึกข้อมูล
-```js
-// บันทึกลง LocalStorage + Google Sheets พร้อมกัน
-await saveToDB(DB_KEYS.STUDENTS, AppState.allStudents, 'saveStudents');
-```
+ข้อมูลที่เรียกใช้งานหลักๆ ฝั่ง Server:
 
-### 2. การดึงข้อมูลสดจาก Server
-```js
-await syncDataFromServer(silent = false);
-// silent=true = ไม่แสดง error toast
-```
-
-### 3. การ Export ฟังก์ชันออก window (ให้ HTML เรียกได้)
-```js
-// ทุกฟังก์ชันที่ถูกเรียกจาก HTML attribute เช่น onclick="xxx()"
-// ต้องผูกกับ window ที่ท้ายไฟล์
-window.functionName = functionName;
-```
-
-### 4. Dropdown ที่รองรับ Tom Select
-```js
-// ใช้ safeSetSelectHtml() แทนการ set innerHTML โดยตรง
-// เพื่อรองรับกรณีที่ dropdown ถูกแปลงเป็น Tom Select แล้ว
-window.safeSetSelectHtml(selectId, htmlString);
-```
-
-### 5. การ Generate ID
-```js
-import { generateId } from '../utils/helpers.js';
-const id = generateId(); // UUID-like string
-```
-
-### 6. Timestamp
-```js
-import { getISOTimestamp, getCurrentUserId } from '../utils/helpers.js';
-obj.updatedAt = getISOTimestamp();
-obj.updatedBy = getCurrentUserId();
-```
+| action | วิธีการรับส่ง | คำอธิบาย |
+|---|---|---|
+| `studentSelfCheckin` | POST | ใช้บันทึกการเช็คชื่อด้วย QR Code ของฝั่งนักเรียน (เข้าตาราง `StudentCheckIns` เป็น `PENDING`) |
+| `getStudentCheckIns` | POST | ใช้ดึงข้อมูลการสแกนเช็คชื่อทั้งหมดเพื่อนำมารอทำการตรวจและดึงแสดงผลฝั่งครู |
+| `updateStudentCheckInsStatus` | POST | อัปเดตสถานะการเช็คชื่อตาม ID ที่ระบุ (แปลง String Array) ให้กลายเป็น `SYNCED` |
+| `saveStudentProfile` | POST | บันทึกข้อมูลและประวัตินักเรียนพร้อมแนบอัปโหลดรูปขึ้น Google Drive |
+| `saveHomeVisitData` | POST | บันทึกแบบฟอร์มการเยี่ยมบ้านพร้อมอัปโหลดภาพถ่ายพิกัดจริงขึ้น Drive |
 
 ---
 
-## 🏷️ HTML Modal Pattern
+## 🚫 กฎเหล็กในการแก้ไขโค้ดเพิ่มเติม
 
-Modal ทุกอันใน `index.html` ใช้ pattern เดียวกัน:
-```html
-<div id="modal-name" class="modal-overlay glass-modal">
-  <!-- เนื้อหา -->
-</div>
-```
-- **เปิด:** `document.getElementById('modal-name').classList.add('show')`
-- **ปิด:** `closeModal('modal-name')` (จาก helpers.js)
-
-### Modal IDs สำคัญ
-
-| Modal ID | ใช้สำหรับ |
-|---|---|
-| `student-modal` | เพิ่ม/แก้ไขนักเรียน (ครู/แอดมิน) |
-| `csv-upload-modal` | อัปโหลด CSV นักเรียน |
-| `home-visit-modal` | บันทึกเยี่ยมบ้าน |
-| `subject-modal` | เพิ่ม/แก้ไขวิชา |
-| `teacher-modal` | เพิ่ม/แก้ไขครู |
-| `class-modal` | เพิ่ม/แก้ไขชั้นเรียน |
-| `club-modal` | เพิ่ม/แก้ไขชุมนุม |
-
----
-
-## 📋 Form Field IDs สำคัญ (Modal นักเรียน)
-
-### Modal ครู/แอดมิน (`student-modal`)
-| Field ID | ข้อมูล |
-|---|---|
-| `stu-id` | hidden — UUID ของนักเรียน |
-| `stu-studentid` | รหัสประจำตัว |
-| `stu-title` | คำนำหน้านักเรียน |
-| `stu-fname` / `stu-lname` | ชื่อ-นามสกุล |
-| `stu-class` / `stu-number` | ชั้นเรียน/เลขที่ |
-| `stu-p-title` | คำนำหน้าผู้ปกครอง (นาย/นาง/นางสาว) |
-| `stu-p-fname` / `stu-p-lname` | ชื่อ-นามสกุลผู้ปกครอง |
-| `stu-p-rel` | ความสัมพันธ์ |
-| `stu-p-phone` | เบอร์โทรผู้ปกครอง |
-| `stu-f-fname` / `stu-f-lname` | ชื่อ-นามสกุลบิดา |
-| `stu-m-fname` / `stu-m-lname` | ชื่อ-นามสกุลมารดา |
-
-### หน้านักเรียนกรอกเอง (`student-self-form`)
-| Field ID | ข้อมูล |
-|---|---|
-| `sp-p-title` | คำนำหน้าผู้ปกครอง (นาย/นาง/นางสาว) |
-| `sp-p-fname` / `sp-p-lname` | ชื่อ-นามสกุลผู้ปกครอง |
-| `sp-f-fname` / `sp-f-lname` | ชื่อ-นามสกุลบิดา |
-| `sp-m-fname` / `sp-m-lname` | ชื่อ-นามสกุลมารดา |
-| `sp-home-lat` / `sp-home-lng` | พิกัด GPS บ้าน |
-
----
-
-## 🚫 กฎที่ต้องปฏิบัติเสมอ
-
-1. **อย่าลบ record จริง** — ใช้ `deleted_flg: 'Y'` เสมอ
-2. **อย่าแก้ไข `index.html` โดยไม่รู้ตำแหน่ง** — ไฟล์ใหญ่มาก (2300+ บรรทัด) ต้อง grep หา ID/section ก่อนเสมอ
-3. **ฟังก์ชันที่เรียกจาก HTML** ต้องผูก `window.xxx = xxx` ที่ท้ายไฟล์ feature เสมอ
-4. **ใช้ `safeSetSelectHtml()`** แทน `.innerHTML =` สำหรับ `<select>` element ทุกอัน
-5. **ภาษาไทยในระบบ** — ตรวจสอบให้ถูกต้อง ระวัง encoding เมื่อใช้ grep
-6. **ข้อมูลปีการศึกษา** เป็น พ.ศ. (เช่น 2567, 2568)
-7. **อย่าเปลี่ยน `design.md`** เป็นแหล่ง reference ของ Backend API ที่สำคัญ
-
----
-
-## 🔍 วิธีค้นหาโค้ดในโปรเจคนี้
-
-เนื่องจาก `index.html` ใหญ่มาก ให้ใช้วิธีดังนี้:
-
-```bash
-# ค้นหา element ID ใน HTML
-grep -n "id=\"stu-p-title\"" index.html
-
-# ค้นหา function ใน JS
-grep -rn "function openStudentModal" js/
-
-# ค้นหา Modal ที่เกี่ยวกับนักเรียน
-grep -n "student-modal" index.html
-```
-
----
-
-## 📝 การอัปเดต README นี้
-
-เมื่อเพิ่มฟีเจอร์ใหม่ที่สำคัญ ให้อัปเดตส่วนที่เกี่ยวข้องใน README นี้ด้วย เช่น:
-- Field ID ใหม่ใน Form
-- Action ใหม่ใน Backend API
-- Global State ใหม่
-- Modal ใหม่
+1. **ห้ามทำการลบแถวข้อมูลจริง (Hard Delete):** ให้ตั้งค่า `deleted_flg: 'Y'` เสมอ และเมื่อเรียกดูข้อมูลให้ทำการกรองดึงเฉพาะ `.filter(x => x.deleted_flg !== 'Y')`
+2. **ห้ามลืมใส่ Cache Buster ใน index.html:** ทุกครั้งที่ทำการแก้ไขไฟล์ Javascript/CSS ในระบบหลัก ให้เข้าไปเปลี่ยนค่าเลข Cache Buster ท้ายลิงก์เชื่อมไฟล์ JS (เช่น `v=20260628_xxxx`) ที่ด้านล่างของไฟล์ `index.html` เสมอ เพื่อให้การแก้ไขมีผลบนอุปกรณ์ PWA ของผู้ใช้งานโดยไม่ต้องถอนการติดตั้งแอปเก่าออก
+3. **ห้ามแก้ไขตัวแปร `value` ในกล่องเลือกคาบเรียน (`checkin-period`):** เพราะส่งผลต่อความแม่นยำในการระบุและตั้งเวลาคาบเรียนแบบออโต้
+4. **หากมีการแก้ไขฟังก์ชัน Google Apps Script:** ให้อัปเดตไฟล์ `google_apps_script.js` เพื่อให้สอดคล้องกับฝั่งหน้าบ้านเสมอ และเตือนผู้ใช้ให้นำสคริปต์นี้ไปเปลี่ยนในฝั่ง Google Sheets ด้วยทุกครั้ง

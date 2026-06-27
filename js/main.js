@@ -1,4 +1,4 @@
-import { DB_KEYS, DEFAULT_GOOGLE_SCRIPT_URL, DEPLOY_VERSION, ENVIRONMENT } from './core/config.js';
+﻿import { DB_KEYS, DEFAULT_GOOGLE_SCRIPT_URL, DEPLOY_VERSION, ENVIRONMENT } from './core/config.js';
 import { AppState } from './core/state.js';
 import { syncDataFromServer, saveToDB } from './services/api.js';
 import { getBangkokDate, getDefaultAcademicYearAndSemester, showToast, customAlert, customConfirm, getISOTimestamp, getCurrentUserId } from './utils/helpers.js'; // 🌟 นำเข้าฟังก์ชันจัดการวันที่ของไทย
@@ -232,17 +232,36 @@ export function autoSelectPeriod() {
     
     const timeNum = hour * 100 + minute;
     let period = '1';
-    if (timeNum < 830) period = 'โฮมรูม';
-    else if (timeNum >= 830 && timeNum < 920) period = '1';
-    else if (timeNum >= 920 && timeNum < 1010) period = '2';
-    else if (timeNum >= 1010 && timeNum < 1100) period = '3';
-    else if (timeNum >= 1100 && timeNum < 1150) period = '4';
-    else if (timeNum >= 1150 && timeNum < 1240) period = 'พักเที่ยง';
-    else if (timeNum >= 1240 && timeNum < 1330) period = '5';
-    else if (timeNum >= 1330 && timeNum < 1420) period = '6';
-    else if (timeNum >= 1420 && timeNum < 1510) period = '7';
-    else if (timeNum >= 1510 && timeNum < 1600) period = '8';
-    else period = 'กิจกรรม';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const schoolParam = urlParams.get('school') || '';
+
+    if (schoolParam === 'rnn') {
+        if (timeNum < 830) period = '1';
+        else if (timeNum >= 830 && timeNum < 920) period = '1';
+        else if (timeNum >= 920 && timeNum < 1010) period = '2';
+        else if (timeNum >= 1010 && timeNum < 1020) period = 'พัก';
+        else if (timeNum >= 1020 && timeNum < 1110) period = '3';
+        else if (timeNum >= 1110 && timeNum < 1200) period = '4';
+        else if (timeNum >= 1200 && timeNum < 1250) period = '5';
+        else if (timeNum >= 1250 && timeNum < 1340) period = '6';
+        else if (timeNum >= 1340 && timeNum < 1430) period = '7';
+        else if (timeNum >= 1430 && timeNum < 1520) period = '8';
+        else if (timeNum >= 1520 && timeNum < 1610) period = '9';
+        else period = '9';
+    } else {
+        if (timeNum < 830) period = 'โฮมรูม';
+        else if (timeNum >= 830 && timeNum < 920) period = '1';
+        else if (timeNum >= 920 && timeNum < 1010) period = '2';
+        else if (timeNum >= 1010 && timeNum < 1100) period = '3';
+        else if (timeNum >= 1100 && timeNum < 1150) period = '4';
+        else if (timeNum >= 1150 && timeNum < 1240) period = 'พักเที่ยง';
+        else if (timeNum >= 1240 && timeNum < 1330) period = '5';
+        else if (timeNum >= 1330 && timeNum < 1420) period = '6';
+        else if (timeNum >= 1420 && timeNum < 1510) period = '7';
+        else if (timeNum >= 1510 && timeNum < 1600) period = '8';
+        else period = 'กิจกรรม';
+    }
     
     const periodSelect = document.getElementById('checkin-period');
     if (periodSelect) periodSelect.value = period;
@@ -275,7 +294,53 @@ export function applySchoolSettings() {
             if (loginLogo) loginLogo.src = directUrl;
             if (mainLogo) mainLogo.src = directUrl;
         }
+
+        updateDynamicManifest();
     }
+}
+
+export function updateDynamicManifest() {
+    const schoolSettings = AppState.schoolSettings || {};
+    const schoolName = schoolSettings.schoolName || 'MAKHRAB';
+    const logoUrl = schoolSettings.logoUrl || 'logopngPDF.png';
+    const directLogoUrl = window.getDirectImageUrl ? window.getDirectImageUrl(logoUrl) : logoUrl;
+    const startUrl = `./index.html${window.location.search}`;
+
+    const manifestObj = {
+        name: `MAKHRAB - ${schoolName}`,
+        short_name: schoolName,
+        description: `ระบบเช็คชื่อและจัดการข้อมูล - ${schoolName}`,
+        start_url: startUrl,
+        display: "standalone",
+        background_color: "#ffffff",
+        theme_color: "#0f766e",
+        icons: [
+            {
+                src: directLogoUrl,
+                sizes: "192x192",
+                type: "image/png",
+                purpose: "any maskable"
+            },
+            {
+                src: directLogoUrl,
+                sizes: "512x512",
+                type: "image/png",
+                purpose: "any maskable"
+            }
+        ]
+    };
+
+    const stringManifest = JSON.stringify(manifestObj);
+    const blob = new Blob([stringManifest], {type: 'application/json'});
+    const manifestURL = URL.createObjectURL(blob);
+    
+    let manifestLink = document.querySelector('link[rel="manifest"]');
+    if (!manifestLink) {
+        manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        document.head.appendChild(manifestLink);
+    }
+    manifestLink.href = manifestURL;
 }
 
 async function initApp() {
@@ -286,6 +351,14 @@ async function initApp() {
         if (loginNameEl) loginNameEl.innerText = ENVIRONMENT.systemName;
         const mainNameEl = document.getElementById('ui-main-school-name');
         if (mainNameEl) mainNameEl.innerText = ENVIRONMENT.systemName;
+    }
+
+    // Render dynamic periods list
+    const periodSelect = document.getElementById('checkin-period');
+    if (periodSelect && ENVIRONMENT && ENVIRONMENT.periods) {
+        periodSelect.innerHTML = ENVIRONMENT.periods.map(p => 
+            `<option value="${p.value}">${p.label}</option>`
+        ).join('');
     }
 
     if (window.checkBiometricAvailability) window.checkBiometricAvailability();
@@ -379,7 +452,11 @@ async function initApp() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', initApp);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    initApp();
+}
 
 // ==========================================
 // ฟังก์ชันควบคุมการทำงานของ Dropdown ความสัมพันธ์
