@@ -332,8 +332,10 @@ function handleLoginSuccessInternal(user) {
 export function promptBiometricEnrollment() {
     if (!window.PublicKeyCredential) return;
     const cred = localStorage.getItem('BIOMETRIC_CRED');
+    const dismissed = localStorage.getItem('BIOMETRIC_DISMISSED');
     // If not enrolled on this device yet, ask them
-    if (!cred) {
+    if (!cred && !dismissed) {
+        localStorage.setItem('BIOMETRIC_DISMISSED', 'true');
         customConfirm("ใช้งาน Biometric", "คุณต้องการเปิดใช้งานการเข้าสู่ระบบด้วยใบหน้า (Face ID) หรือสแกนลายนิ้วมือ สำหรับเครื่องนี้หรือไม่? เพื่อความสะดวกในครั้งต่อไป", () => {
             enableBiometric();
         });
@@ -344,4 +346,6 @@ window.checkBiometricAvailability = checkBiometricAvailability;
 window.enableBiometric = enableBiometric;
 window.loginWithBiometric = loginWithBiometric;
 window.promptBiometricEnrollment = promptBiometricEnrollment;
+
+
 
