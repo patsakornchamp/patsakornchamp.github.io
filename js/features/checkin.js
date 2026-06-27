@@ -337,8 +337,22 @@ export function showClassroomQrModal() {
         return; 
     }
 
+    const year = document.getElementById('checkin-year') ? document.getElementById('checkin-year').value : '';
+    const semester = document.getElementById('checkin-semester') ? document.getElementById('checkin-semester').value : '';
+    
     const subObj = AppState.allSubjects.find(s => s.id === subId);
-    document.getElementById('qr-classroom-desc').innerText = `วิชา: ${subObj ? subObj.name : subId} | คาบ: ${period}`;
+    const tObj = AppState.allTeachers.find(t => t.id === tId);
+    const subjectName = subObj ? subObj.name : subId;
+    const teacherName = tObj ? `${tObj.firstName} ${tObj.lastName}`.trim() : tId;
+    
+    document.getElementById('qr-classroom-desc').innerHTML = `
+        <div class="text-gray-700 space-y-1">
+            <p><b>ปีการศึกษา:</b> ${year} <b>ภาคเรียน:</b> ${semester}</p>
+            <p><b>ชั้นเรียน:</b> ${clsId} <b>คาบ:</b> ${period}</p>
+            <p><b>วิชา:</b> ${subjectName}</p>
+            <p><b>ครูผู้สอน:</b> ${teacherName}</p>
+        </div>
+    `;
 
     const qrData = {
         t: 'C',
