@@ -449,9 +449,9 @@
     <div id="login-screen" class="hidden overflow-hidden relative">
 
         <div class="text-center mb-8 w-full px-4 relative z-10">
-            <div class="bg-white/30 backdrop-blur-sm p-4 rounded-full inline-block mb-4 shadow-sm border border-white/50"><img src="logopng.png" alt="School Logo" class="w-28 h-28 md:w-36 md:h-36 drop-shadow-lg"></div>
-            <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-green-900 drop-shadow-sm">MAKHRAB</h1>
-            <h2 class="text-xl mt-2 text-green-700 font-medium tracking-wide">โรงเรียนไชยฉิมพลีวิทยาคม</h2>
+            <div class="bg-white/30 backdrop-blur-sm p-4 rounded-full inline-block mb-4 shadow-sm border border-white/50"><img id="ui-login-logo" src="logopng.png" alt="School Logo" class="w-28 h-28 md:w-36 md:h-36 drop-shadow-lg object-contain"></div>
+            <h1 id="ui-login-system-name" class="text-3xl md:text-4xl font-extrabold tracking-tight text-green-900 drop-shadow-sm">MAKHRAB</h1>
+            <h2 id="ui-login-school-name" class="text-xl mt-2 text-green-700 font-medium tracking-wide">โรงเรียนไชยฉิมพลีวิทยาคม</h2>
         </div>
         
         <div class="glass-card rounded-3xl w-full max-w-md p-6 sm:p-8 mx-4 relative z-10">
@@ -509,10 +509,10 @@
     <header class="glass-header text-white shadow-xl sticky top-0 z-50 w-full hidden rounded-b-2xl sm:rounded-b-3xl mb-4" id="app-header">
         <div class="w-full max-w-[1400px] mx-auto px-4 py-3 lg:py-5 flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <img src="logopng.png" alt="School Logo" class="w-12 h-12 lg:w-16 lg:h-16 flex-shrink-0">
+                <img id="ui-main-logo" src="logopng.png" alt="School Logo" class="w-12 h-12 lg:w-16 lg:h-16 flex-shrink-0 object-contain">
                 <div>
-                    <h1 class="text-xl lg:text-3xl font-bold tracking-tight">MAKHRAB</h1>
-                    <h2 class="text-xs lg:text-base font-medium text-green-100 hidden sm:block">โรงเรียนไชยฉิมพลีวิทยาคม</h2>
+                    <h1 id="ui-main-system-name" class="text-xl lg:text-3xl font-bold tracking-tight">MAKHRAB</h1>
+                    <h2 id="ui-main-school-name" class="text-xs lg:text-base font-medium text-green-100 hidden sm:block">โรงเรียนไชยฉิมพลีวิทยาคม</h2>
                 </div>
             </div>
             <div class="flex items-center gap-4">
@@ -2983,6 +2983,6 @@
         </div>
     </div>
 
-<script type="module" src="./js/main.js?v=20260627_1726"></script>
+<script type="module" src="./js/main.js?v=20260627_1811"></script>
 </body>
 </html>

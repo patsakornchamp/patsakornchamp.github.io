@@ -15,6 +15,7 @@ export function loadFromLocalStorage() {
     AppState.allAssignments = JSON.parse(localStorage.getItem('ASSIGNMENTS') || '[]');
     AppState.allStudentAssignments = JSON.parse(localStorage.getItem('STUDENT_ASSIGNMENTS') || '[]');
     AppState.allPrNews = JSON.parse(localStorage.getItem(DB_KEYS.PR_NEWS) || '[]');
+    AppState.schoolSettings = JSON.parse(localStorage.getItem(DB_KEYS.SCHOOL_SETTINGS) || '{}');
 }
 
 // ในไฟล์ test/js/services/api.js
@@ -46,6 +47,13 @@ export async function syncDataFromServer(silent = false) {
             AppState.allStudentAssignments = data.StudentAssignments || [];
             AppState.allPrNews = data.PRNews || [];
             
+            // Extract the first row of Settings
+            if (data.Settings && data.Settings.length > 0) {
+                AppState.schoolSettings = data.Settings[0];
+            } else {
+                AppState.schoolSettings = {};
+            }
+            
             // Save to LocalStorage เพื่อสำรองตอนเน็ตหลุด
             localStorage.setItem(DB_KEYS.STUDENTS, JSON.stringify(AppState.allStudents));
             localStorage.setItem(DB_KEYS.RECORDS, JSON.stringify(AppState.allRecords));
@@ -58,6 +66,7 @@ export async function syncDataFromServer(silent = false) {
             localStorage.setItem('ASSIGNMENTS', JSON.stringify(AppState.allAssignments));
             localStorage.setItem('STUDENT_ASSIGNMENTS', JSON.stringify(AppState.allStudentAssignments));
             localStorage.setItem(DB_KEYS.PR_NEWS, JSON.stringify(AppState.allPrNews));
+            localStorage.setItem(DB_KEYS.SCHOOL_SETTINGS, JSON.stringify(AppState.schoolSettings));
             
             // อัปเดตข้อมูลผู้ใช้ปัจจุบัน (currentUser)
             if (AppState.currentUser) { // ตรวจสอบข้อมูล user ที่ล็อกอินค้างไว้กับข้อมูลใหม่

@@ -2,6 +2,7 @@ export const AppState = {
     currentTab: '',
     googleSheetUrl: '',
     currentUser: null,
+    schoolSettings: {},
     
     // Database Data
     allStudents: [],

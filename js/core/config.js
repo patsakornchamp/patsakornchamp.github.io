@@ -9,7 +9,8 @@ export const DB_KEYS = {
     CLUBS: 'school_clubs',
     CLUB_ENROLLMENTS: 'school_club_enrollments',
     CLUB_RECORDS: 'school_club_records',
-    PR_NEWS: 'school_pr_news'
+    PR_NEWS: 'school_pr_news',
+    SCHOOL_SETTINGS: 'school_settings_data'
 };
 
 //export const DEFAULT_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwiRyzPr1vDN6w39Z8-rJE_wph-gXM8Sd3jXXcR3HkD7Z0TlL_fjpTuRROLOoVeIVswCQ/exec";

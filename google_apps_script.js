@@ -19,7 +19,7 @@ function doGet(e) {
   const action = (e.parameter && e.parameter.action) ? e.parameter.action : 'getData';
   
   // ตรวจสอบและสร้างชีตใหม่หากยังไม่มี
-  const requiredSheets = ['Assignments', 'StudentAssignments', 'Home_Visits'];
+  const requiredSheets = ['Assignments', 'StudentAssignments', 'Home_Visits', 'Settings'];
   requiredSheets.forEach(sheetName => {
     if (!ss.getSheetByName(sheetName)) ss.insertSheet(sheetName);
   });
@@ -31,6 +31,9 @@ function doGet(e) {
   }
   if (!ss.getSheetByName('StudentCheckIns')) {
     ss.insertSheet('StudentCheckIns').appendRow(['id', 'studentId', 'classId', 'subjectId', 'teacherId', 'latitude', 'longitude', 'scanTime', 'status']);
+  }
+  if (ss.getSheetByName('Settings').getLastRow() === 0) {
+    ss.getSheetByName('Settings').appendRow(['schoolName', 'systemName', 'schoolAddress', 'latitude', 'longitude', 'logoUrl']);
   }
 
   if (action === 'getData') {
@@ -47,7 +50,8 @@ function doGet(e) {
       Assignments: getSheetData(ss, 'Assignments'),
       StudentAssignments: getSheetData(ss, 'StudentAssignments'),
       PRNews: getSheetData(ss, 'PR_News'),
-      StudentCheckIns: getSheetData(ss, 'StudentCheckIns')
+      StudentCheckIns: getSheetData(ss, 'StudentCheckIns'),
+      Settings: getSheetData(ss, 'Settings')
     };
     return successResponse(result);
   }

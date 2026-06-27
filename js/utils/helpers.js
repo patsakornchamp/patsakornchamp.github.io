@@ -25,6 +25,7 @@ export function getISOTimestamp() {
     return new Date().toISOString();
 }
 
+// ฟังก์ชันแปลงลิงก์ Google Drive เป็นลิงก์ที่แสดงภาพได้โดยตรง
 export function showLoading(text = 'กำลังประมวลผล...') {
     const overlay = document.getElementById('loading-overlay');
     const textEl = document.getElementById('loading-text');

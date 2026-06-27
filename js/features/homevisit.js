@@ -1,7 +1,7 @@
 import { DB_KEYS } from '../core/config.js';
 import { saveToDB, syncDataFromServer } from '../services/api.js';
 import { AppState } from '../core/state.js';
-import { getStudentFullName, showLoading, hideLoading, showToast, customAlert, getBangkokDate, getISOTimestamp } from '../utils/helpers.js';
+import { getStudentFullName, showLoading, hideLoading, showToast, customAlert, getBangkokDate, getISOTimestamp, getDirectImageUrl } from '../utils/helpers.js';
 
 let currentHvStep = 1;
 let currentStudentFamilyData = null;
@@ -9,17 +9,6 @@ let isDrawingSig = false;
 let sigCanvas = null;
 let sigCtx = null;
 let hasSigned = false;
-
-// ฟังก์ชันแปลงลิงก์ Google Drive เป็นลิงก์ที่แสดงภาพได้โดยตรง
-function getDirectImageUrl(url) {
-    if (!url) return '';
-    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-    if (match && match[1]) {
-        // เปลี่ยนมาใช้ endpoint thumbnail ซึ่ง Google ยังอนุญาตให้ใช้เป็น src ของรูปภาพได้
-        return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1200`;
-    }
-    return url;
-}
 
 // ฟังก์ชันสำหรับแสดง/ซ่อนช่อง Text Box กรณีที่เลือก "อื่นๆ"
 export function toggleHvOther(selectElem, targetId) {
@@ -1325,6 +1314,8 @@ export async function printHomeVisitReport(studentId) {
 
         // จับคู่แทนที่ตัวแปรใน HTML Template
         const replacements = {
+            '{{school_name}}': AppState.schoolSettings?.schoolName || 'โรงเรียนไชยฉิมพลีวิทยาคม',
+            '{{logo_url}}': AppState.schoolSettings?.logoUrl ? getDirectImageUrl(AppState.schoolSettings.logoUrl) : 'logopngPDF.png',
             '{{semester}}': sem,
             '{{academic_year}}': yr,
             '{{visit_id}}': `HV-${yr}-${sem}-${student.studentId || student.id}`,

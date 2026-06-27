@@ -295,8 +295,6 @@ window.exportCheckinCSV = exportCheckinCSV;
 // QR CODE CHECK-IN SYSTEM LOGIC
 // ==========================================
 
-const SCHOOL_LAT = 17.394906687300967; // พิกัดจริงของโรงเรียน
-const SCHOOL_LON = 102.78445049999999; // พิกัดจริงของโรงเรียน
 
 let html5QrCode = null;
 let currentQrData = null;
@@ -478,9 +476,9 @@ function renderLensSwitcher() {
             const label = idx === 0 ? '1x' : (idx === 1 ? '2x' : (idx + 1) + 'x');
             
             btn.textContent = label;
-            btn.className = `w-11 h-11 flex-shrink-0 rounded-full text-sm font-bold flex items-center justify-center transition-all ${
+            btn.className = `w-10 h-10 flex-shrink-0 rounded-full text-sm font-bold flex items-center justify-center transition-colors ${
                 idx === currentLensIndex 
-                    ? 'bg-yellow-500 text-black shadow-md border-[3px] border-black scale-105' 
+                    ? 'bg-yellow-500 text-black shadow-md' 
                     : 'bg-transparent text-gray-300 hover:text-white hover:bg-gray-700/50'
             }`;
             
@@ -744,7 +742,12 @@ function processStudentScan(data) {
             (pos) => {
                 const lat = pos.coords.latitude;
                 const lon = pos.coords.longitude;
-                const dist = calculateDistance(lat, lon, SCHOOL_LAT, SCHOOL_LON);
+                
+                // Get School Lat/Lon from settings, fallback to some default if not set
+                const targetLat = AppState.schoolSettings?.latitude ? parseFloat(AppState.schoolSettings.latitude) : 17.394906687300967;
+                const targetLon = AppState.schoolSettings?.longitude ? parseFloat(AppState.schoolSettings.longitude) : 102.78445049999999;
+                
+                const dist = calculateDistance(lat, lon, targetLat, targetLon);
                 
                 document.getElementById('qr-confirm-distance').innerText = `${Math.round(dist)} เมตร`;
                 

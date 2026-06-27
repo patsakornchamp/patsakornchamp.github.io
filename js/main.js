@@ -249,6 +249,35 @@ export function autoSelectPeriod() {
 }
 
 // 🌟 4. เริ่มการทำงานของแอป
+export function applySchoolSettings() {
+    if (AppState.schoolSettings && Object.keys(AppState.schoolSettings).length > 0) {
+        const { schoolName, systemName, logoUrl } = AppState.schoolSettings;
+        
+        if (systemName) {
+            document.title = `${systemName} - ${schoolName || ''}`;
+            const loginSystemName = document.getElementById('ui-login-system-name');
+            const mainSystemName = document.getElementById('ui-main-system-name');
+            if (loginSystemName) loginSystemName.innerText = systemName;
+            if (mainSystemName) mainSystemName.innerText = systemName;
+        }
+        
+        if (schoolName) {
+            const loginSchoolName = document.getElementById('ui-login-school-name');
+            const mainSchoolName = document.getElementById('ui-main-school-name');
+            if (loginSchoolName) loginSchoolName.innerText = schoolName;
+            if (mainSchoolName) mainSchoolName.innerText = schoolName;
+        }
+        
+        if (logoUrl) {
+            const loginLogo = document.getElementById('ui-login-logo');
+            const mainLogo = document.getElementById('ui-main-logo');
+            const directUrl = window.getDirectImageUrl ? window.getDirectImageUrl(logoUrl) : logoUrl;
+            if (loginLogo) loginLogo.src = directUrl;
+            if (mainLogo) mainLogo.src = directUrl;
+        }
+    }
+}
+
 async function initApp() {
     AppState.googleSheetUrl = localStorage.getItem(DB_KEYS.SETTINGS) || DEFAULT_GOOGLE_SCRIPT_URL;
     
@@ -259,8 +288,12 @@ async function initApp() {
     document.getElementById('history-date').value = ''; 
     autoSelectPeriod();
 
+    // Apply settings from cache first
+    applySchoolSettings();
+
     try {
         await syncDataFromServer(true);
+        applySchoolSettings(); // Re-apply after sync
         updateAllDropdowns();
 
         // 🌟 1. ตั้งค่าเริ่มต้นให้ปี/ภาคเรียน เป็นเทอมปัจจุบัน
