@@ -814,7 +814,7 @@ export async function submitStudentAttendance() {
 window.showClassroomQrModal = showClassroomQrModal;
 window.openTeacherQrScanner = openTeacherQrScanner;
 window.pullStudentCheckIns = pullStudentCheckIns;
-window.openTeacherQrScanner = openTeacherQrScanner;
+window.showStudentPersonalQr = showStudentPersonalQr;
 window.startStudentQrScanner = startStudentQrScanner;
 window.stopStudentQrScanner = stopStudentQrScanner;
 
