@@ -717,10 +717,15 @@ export function startStudentQrScanner() {
                 
                 // Validate if student is in the same class as the QR code
                 const studentClass = AppState.currentUser?.data?.class;
-                const qrClass = data.c || data.clsId;
-                if (studentClass && qrClass && studentClass !== qrClass) {
+                const qrClassId = data.c || data.clsId;
+                
+                // Map qrClassId to className
+                const classObj = AppState.allClasses.find(c => c.id === qrClassId);
+                const qrClassName = classObj ? classObj.className : qrClassId;
+                
+                if (studentClass && qrClassName && studentClass !== qrClassName) {
                     playBeep();
-                    showToast(`คุณอยู่ชั้น ${studentClass} ไม่สามารถสแกนของชั้น ${qrClass} ได้`, 'error');
+                    showToast(`คุณอยู่ชั้น ${studentClass} ไม่สามารถสแกนของชั้น ${qrClassName} ได้`, 'error');
                     return;
                 }
 
