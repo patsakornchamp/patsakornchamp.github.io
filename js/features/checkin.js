@@ -242,7 +242,7 @@ export async function saveAttendance() {
                     method: 'POST',
                     body: JSON.stringify({
                         action: 'updateStudentCheckInsStatus',
-                        payload: { ids: AppState.pendingSyncIds, status: 'SYNCED' }
+                        payload: { ids: AppState.pendingSyncIds.map(String), status: 'SYNCED' }
                     })
                 });
                 AppState.pendingSyncIds = [];
@@ -928,6 +928,7 @@ export function closeTeacherScanSuccess() {
 window.closeTeacherScanSuccess = closeTeacherScanSuccess;
 window.submitStudentAttendance = submitStudentAttendance;
 window.switchCamera = switchCamera;
+
 
 
 

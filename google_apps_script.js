@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // MAKHRAB - Google Apps Script Backend (Unified Version)
 // ==========================================
 
@@ -845,7 +845,7 @@ function updateStudentCheckInsStatus(payload) {
     if (!sheet) return { success: false, message: 'ไม่พบชีต StudentCheckIns' };
     
     const data = sheet.getDataRange().getValues();
-    const idsToUpdate = payload.ids || [];
+    const idsToUpdate = (payload.ids || []).map(String);
     const newStatus = payload.status || 'SYNCED';
     
     if (idsToUpdate.length === 0) {
@@ -863,3 +863,4 @@ function updateStudentCheckInsStatus(payload) {
     return { success: false, message: error.toString() };
   }
 }
+
