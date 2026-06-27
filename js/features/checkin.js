@@ -734,7 +734,7 @@ export function startStudentQrScanner() {
                 
                 showLoading("กำลังตรวจสอบตำแหน่งของคุณ...");
                 processStudentScan({
-                    clsId: qrClass,
+                    clsId: qrClassId,
                     subId: data.s || data.subId,
                     tId: data.tc || data.tId,
                     period: data.p || data.period
@@ -744,6 +744,7 @@ export function startStudentQrScanner() {
                 showToast("QR Code ไม่ใช่รหัสห้องเรียน", 'error');
             }
         } catch (e) {
+            hideLoading();
             console.error("Invalid QR", e);
             playBeep();
             showToast("QR Code ไม่ถูกต้อง", 'error');

@@ -1,4 +1,4 @@
-import { AppState } from '../core/state.js';
+﻿import { AppState } from '../core/state.js';
 import { DB_KEYS } from '../core/config.js';
 import { getStudentFullName, showLoading, hideLoading, customAlert, closeModal } from '../utils/helpers.js';
 import { syncDataFromServer } from '../services/api.js';
@@ -225,3 +225,123 @@ window.handleLogin = handleLogin;
 window.logout = logout;
 window.openTeacherRegisterSearch = openTeacherRegisterSearch;
 window.searchTeacherForRegister = searchTeacherForRegister;
+// ==========================================
+// WebAuthn Biometric Login
+// ==========================================
+
+export function checkBiometricAvailability() {
+    const cred = localStorage.getItem('BIOMETRIC_CRED');
+    const bBtns = document.querySelectorAll('.biometric-login-btn');
+    if (cred && window.PublicKeyCredential) {
+        bBtns.forEach(btn => btn.classList.remove('hidden'));
+    } else {
+        bBtns.forEach(btn => btn.classList.add('hidden'));
+    }
+}
+
+export async function enableBiometric() {
+    if (!window.PublicKeyCredential) {
+        showToast("อุปกรณ์หรือเบราว์เซอร์ของคุณไม่รองรับระบบนี้", "error");
+        return;
+    }
+    const user = AppState.currentUser;
+    if (!user) return;
+    
+    try {
+        showLoading("กำลังตั้งค่าระบบ Biometric...");
+        
+        const challenge = new Uint8Array(32);
+        window.crypto.getRandomValues(challenge);
+        
+        const userId = user.role + '_' + (user.data.id || user.data.studentId || 'admin');
+        const encoder = new TextEncoder();
+        const userIdBuffer = encoder.encode(userId);
+        
+        const publicKey = {
+            challenge: challenge,
+            rp: { name: "MAKHRAB System", id: window.location.hostname },
+            user: {
+                id: userIdBuffer,
+                name: userId,
+                displayName: user.data.name || getStudentFullName(user.data) || "User"
+            },
+            pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+            authenticatorSelection: {
+                authenticatorAttachment: "platform",
+                userVerification: "required"
+            },
+            timeout: 60000,
+            attestation: "none"
+        };
+        
+        const credential = await navigator.credentials.create({ publicKey });
+        const credId = bufferToBase64(credential.rawId);
+        
+        localStorage.setItem('BIOMETRIC_CRED', JSON.stringify({
+            id: credId,
+            user: user
+        }));
+        
+        hideLoading();
+        showToast("ตั้งค่า Biometric สำเร็จ!", "success");
+        checkBiometricAvailability();
+    } catch (e) {
+        hideLoading();
+        console.error("Biometric Setup Error:", e);
+        showToast("ยกเลิกหรือเกิดข้อผิดพลาดในการตั้งค่า", "error");
+    }
+}
+
+export async function loginWithBiometric() {
+    const savedCred = JSON.parse(localStorage.getItem('BIOMETRIC_CRED'));
+    if (!savedCred || !savedCred.id) return;
+    
+    try {
+        const challenge = new Uint8Array(32);
+        window.crypto.getRandomValues(challenge);
+        
+        const publicKey = {
+            challenge: challenge,
+            allowCredentials: [{
+                id: base64ToBuffer(savedCred.id),
+                type: "public-key"
+            }],
+            userVerification: "required",
+            timeout: 60000
+        };
+        
+        await navigator.credentials.get({ publicKey });
+        
+        // Success! Log the user in
+        handleLoginSuccessInternal(savedCred.user);
+        
+    } catch (e) {
+        console.error("Biometric Login Error:", e);
+        showToast("ไม่สามารถเข้าสู่ระบบด้วย Biometric ได้", "error");
+    }
+}
+
+function handleLoginSuccessInternal(user) {
+    if (window.loginSuccess) {
+        window.loginSuccess(user);
+    } else {
+        loginSuccess(user);
+    }
+}
+
+export function promptBiometricEnrollment() {
+    if (!window.PublicKeyCredential) return;
+    const cred = localStorage.getItem('BIOMETRIC_CRED');
+    // If not enrolled on this device yet, ask them
+    if (!cred) {
+        customConfirm("ใช้งาน Biometric", "คุณต้องการเปิดใช้งานการเข้าสู่ระบบด้วยใบหน้า (Face ID) หรือสแกนลายนิ้วมือ สำหรับเครื่องนี้หรือไม่? เพื่อความสะดวกในครั้งต่อไป", () => {
+            enableBiometric();
+        });
+    }
+}
+
+window.checkBiometricAvailability = checkBiometricAvailability;
+window.enableBiometric = enableBiometric;
+window.loginWithBiometric = loginWithBiometric;
+window.promptBiometricEnrollment = promptBiometricEnrollment;
+
