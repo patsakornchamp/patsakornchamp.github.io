@@ -356,6 +356,9 @@ export function showClassroomQrModal() {
 }
 
 let currentScannerCallback = null;
+let customCameras = { front: [], back: [] };
+let currentCameraIsFront = false;
+let currentLensIndex = 0;
 
 function startCameraWithList(callback) {
     if (!window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
@@ -367,12 +370,6 @@ function startCameraWithList(callback) {
 
     currentScannerCallback = callback;
     document.getElementById('qr-scanner-modal').classList.add('show');
-    
-    const select = document.getElementById('camera-select');
-    if (select) {
-        select.innerHTML = '<option value="">กำลังค้นหากล้อง...</option>';
-        select.disabled = true;
-    }
 
     if (html5QrCode && html5QrCode.isScanning) {
         html5QrCode.stop().then(() => { 
@@ -415,43 +412,107 @@ function startCamInit() {
 
 function _loadCameraList() {
     Html5Qrcode.getCameras().then(devices => {
-        const select = document.getElementById('camera-select');
         if (devices && devices.length > 0) {
-            if (select) select.innerHTML = '';
-            let defaultCameraId = devices[0].id;
+            customCameras.front = [];
+            customCameras.back = [];
             
-            devices.forEach((device, index) => {
-                const opt = document.createElement('option');
-                opt.value = device.id;
-                opt.text = device.label || `Camera ${index + 1}`;
-                const labelLow = opt.text.toLowerCase();
-                if (labelLow.includes('back') || labelLow.includes('environment') || labelLow.includes('rear')) {
-                    defaultCameraId = device.id;
+            devices.forEach(device => {
+                const labelLow = (device.label || '').toLowerCase();
+                if (labelLow.includes('front') || labelLow.includes('user')) {
+                    customCameras.front.push(device);
+                } else {
+                    // Default to back/environment
+                    customCameras.back.push(device);
                 }
-                if (select) select.appendChild(opt);
             });
+
+            // Fallback if filtering didn't work well
+            if (customCameras.front.length === 0 && customCameras.back.length === 0) {
+                customCameras.back = devices;
+            } else if (customCameras.back.length === 0 && customCameras.front.length > 0) {
+                // If only front is found but we want back, just put everything in back for now
+                customCameras.back = devices;
+                customCameras.front = [];
+            }
+
+            currentCameraIsFront = false;
+            currentLensIndex = 0;
             
-            if (select) {
-                select.value = defaultCameraId;
-                select.disabled = false;
+            // Show/Hide flip button based on availability
+            const flipBtn = document.getElementById('btn-flip-camera');
+            if (flipBtn) {
+                if (customCameras.front.length > 0 && customCameras.back.length > 0) {
+                    flipBtn.classList.remove('hidden');
+                } else {
+                    flipBtn.classList.add('hidden');
+                }
             }
-            startSpecificCamera(defaultCameraId);
+
+            renderLensSwitcher();
+            playCurrentCamera();
         } else {
-            if(select) {
-                select.innerHTML = '<option value="">กล้องเริ่มต้น (Default)</option>';
-                select.disabled = true;
-            }
             startSpecificCamera({ facingMode: "environment" });
         }
     }).catch(err => {
-        const select = document.getElementById('camera-select');
-        if (select) {
-            select.innerHTML = '<option value="">กล้องเริ่มต้น (Default)</option>';
-            select.disabled = true;
-        }
+        console.error("Error getting cameras", err);
         startSpecificCamera({ facingMode: "environment" });
     });
 }
+
+function renderLensSwitcher() {
+    const container = document.getElementById('lens-switcher-container');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    const activeCameras = currentCameraIsFront ? customCameras.front : customCameras.back;
+    
+    if (activeCameras.length > 1) {
+        container.classList.remove('hidden');
+        container.classList.add('flex');
+        
+        activeCameras.forEach((cam, idx) => {
+            const btn = document.createElement('button');
+            // Mock lens numbers e.g. 1x, 2x
+            const label = idx === 0 ? '1x' : (idx === 1 ? '2x' : (idx + 1) + 'x');
+            
+            btn.textContent = label;
+            btn.className = `w-10 h-10 rounded-full text-sm font-bold flex items-center justify-center transition-colors ${
+                idx === currentLensIndex 
+                    ? 'bg-yellow-500 text-black shadow-md border-2 border-yellow-300' 
+                    : 'bg-transparent text-white hover:bg-gray-700'
+            }`;
+            
+            btn.onclick = () => {
+                currentLensIndex = idx;
+                renderLensSwitcher();
+                playCurrentCamera();
+            };
+            container.appendChild(btn);
+        });
+    } else {
+        container.classList.add('hidden');
+        container.classList.remove('flex');
+    }
+}
+
+function playCurrentCamera() {
+    const activeCameras = currentCameraIsFront ? customCameras.front : customCameras.back;
+    if (activeCameras.length > 0) {
+        // Ensure index is in bounds
+        if (currentLensIndex >= activeCameras.length) currentLensIndex = 0;
+        const camId = activeCameras[currentLensIndex].id;
+        startSpecificCamera(camId);
+    } else {
+        startSpecificCamera({ facingMode: currentCameraIsFront ? "user" : "environment" });
+    }
+}
+
+window.toggleFrontBackCamera = function() {
+    currentCameraIsFront = !currentCameraIsFront;
+    currentLensIndex = 0;
+    renderLensSwitcher();
+    playCurrentCamera();
+};
 
 function startSpecificCamera(cameraConfig) {
     if (!html5QrCode) html5QrCode = new Html5Qrcode("student-reader");
@@ -467,11 +528,8 @@ function startSpecificCamera(cameraConfig) {
 function _playSpecificCamera(cameraConfig) {
     const scanConfig = {
         fps: 15,
-        qrbox: (width, height) => {
-            const min = Math.min(width, height);
-            const size = Math.floor(min * 0.75);
-            return { width: size, height: size };
-        }
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 0.75
     };
 
     html5QrCode.start(
@@ -479,7 +537,16 @@ function _playSpecificCamera(cameraConfig) {
         scanConfig,
         currentScannerCallback,
         undefined
-    ).catch(err => {
+    ).then(() => {
+        const video = document.querySelector('#student-reader video');
+        if (video) {
+            video.style.display = "block";
+            video.style.setProperty("display", "block", "important");
+            if (video.paused) {
+                video.play().catch(e => console.error("Error playing video:", e));
+            }
+        }
+    }).catch(err => {
         console.warn("Camera start failed with standard config, retrying with simple config...", err);
         // Try starting without advanced sizing constraints
         html5QrCode.start(
@@ -487,10 +554,28 @@ function _playSpecificCamera(cameraConfig) {
             { fps: 15 },
             currentScannerCallback,
             undefined
-        ).catch(err2 => {
+        ).then(() => {
+            const video = document.querySelector('#student-reader video');
+            if (video) {
+                video.style.display = "block";
+                video.style.setProperty("display", "block", "important");
+                if (video.paused) {
+                    video.play().catch(e => console.error("Error playing video:", e));
+                }
+            }
+        }).catch(err2 => {
             // If environment camera config fails, try user camera
             if (typeof cameraConfig === 'object' && cameraConfig.facingMode === 'environment') {
-                html5QrCode.start({ facingMode: "user" }, { fps: 15 }, currentScannerCallback, undefined).catch(e2 => {
+                html5QrCode.start({ facingMode: "user" }, { fps: 15 }, currentScannerCallback, undefined).then(() => {
+                    const video = document.querySelector('#student-reader video');
+                    if (video) {
+                        video.style.display = "block";
+                        video.style.setProperty("display", "block", "important");
+                        if (video.paused) {
+                            video.play().catch(e => console.error("Error playing video:", e));
+                        }
+                    }
+                }).catch(e2 => {
                     console.error("Fallback failed", e2);
                     alert("ไม่สามารถเปิดกล้องได้ กรุณาตรวจสอบสิทธิ์การเข้าถึงกล้อง");
                 });
