@@ -585,6 +585,7 @@ export function previewCSV(event) {
                 previewHtml += `<tr>
                     <td class="px-4 py-2 text-center">${numberStr || '-'}</td>
                     <td class="px-4 py-2">${studentId || '-'}</td>
+                    <td class="px-4 py-2">${citizenId || '-'}</td>
                     <td class="px-4 py-2">${title}${fname} ${lname}${displayNick}</td>
                     <td class="px-4 py-2 text-center">${statusHtml}</td>
                 </tr>`;
@@ -756,6 +757,7 @@ export function previewExcel(file, sheetName = null) {
                 previewHtml += `<tr>
                     <td class="px-4 py-2 text-center">${numberStr || '-'}</td>
                     <td class="px-4 py-2">${studentId || '-'}</td>
+                    <td class="px-4 py-2">${citizenId || '-'}</td>
                     <td class="px-4 py-2">${title}${fname} ${lname}${displayNick}</td>
                     <td class="px-4 py-2 text-center">${statusHtml}</td>
                 </tr>`;
