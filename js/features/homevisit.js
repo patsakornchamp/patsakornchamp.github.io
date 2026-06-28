@@ -50,7 +50,7 @@ export function initHomeVisitTab() {
         advisorClasses = AppState.allClasses.filter(c => c.deleted_flg !== 'Y');
     }
 
-    advisorClasses.sort((a,b) => a.className.localeCompare(b.className, undefined, {numeric: true}));
+    advisorClasses.sort((a,b) => a.className.localeCompare(b.className, 'th', { numeric: true }));
     classSelect.innerHTML = '<option value="">-- เลือกชั้นเรียน --</option>' + 
         advisorClasses.map(c => `<option value="${c.className}">${c.className}</option>`).join('');
     
@@ -69,6 +69,9 @@ export async function searchHomeVisit() {
     showLoading('กำลังดึงข้อมูลล่าสุดจากเซิร์ฟเวอร์...');
     try {
         await syncDataFromServer(true);
+        if (clsName && typeof window.ensureStudentsLoadedForClass === 'function') {
+            await window.ensureStudentsLoadedForClass(clsName);
+        }
     } catch (e) {
         console.error('Error syncing home visit data:', e);
     }

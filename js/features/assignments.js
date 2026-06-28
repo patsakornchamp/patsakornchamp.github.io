@@ -90,7 +90,7 @@ export function initAssignmentsTab() {
             return c.subjects && Array.isArray(c.subjects) && c.subjects.some(subId => teacherSubjects.includes(subId));
         });
     }
-    classes.sort((a,b) => a.className.localeCompare(b.className, undefined, {numeric: true}));
+    classes.sort((a,b) => a.className.localeCompare(b.className, 'th', { numeric: true }));
     const filterClassEl = document.getElementById('asm-filter-class');
     const formClassEl = document.getElementById('asm-class');
     
@@ -282,10 +282,10 @@ export function renderAssignmentsList() {
             <td class="hidden md:table-cell px-4 py-3 text-sm text-gray-600">${sub ? sub.name : '-'}</td>
             <td class="px-4 py-3 text-center text-sm font-medium text-gray-600">${a.submitLocation === 'สอบ' ? '-' : `${getBangkokDate(a.assignDate)} ${a.assignTime || ''}`}</td>
             <td class="px-4 py-3 text-center text-sm font-medium text-red-600">${a.submitLocation === 'สอบ' ? '<span class="text-gray-400 font-normal italic">สอบ (ไม่ต้องส่ง)</span>' : `${getBangkokDate(a.dueDate)} ${a.dueTime}`}</td>
-            <td class="px-4 py-3 text-center">
+            <td class="px-4 py-3 text-center whitespace-nowrap">
                 <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold">${submitCount} / ${stuCount}</span>
             </td>
-            <td class="px-4 py-3 text-center">
+            <td class="px-4 py-3 text-center whitespace-nowrap">
                 <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded font-bold">${a._gradeCount} / ${stuCount}</span>
             </td>
             <td class="px-4 py-3 text-center whitespace-nowrap">
@@ -321,7 +321,7 @@ export function openAssignmentModal() {
             return c.subjects && Array.isArray(c.subjects) && c.subjects.some(subId => teacherSubjects.includes(subId));
         });
     }
-    classes.sort((a,b) => a.className.localeCompare(b.className, undefined, {numeric: true}));
+    classes.sort((a,b) => a.className.localeCompare(b.className, 'th', { numeric: true }));
     const formClassEl = document.getElementById('asm-class');
     if (formClassEl) {
         formClassEl.innerHTML = '<option value="">-- เลือกชั้นเรียน --</option>' + classes.map(c => `<option value="${c.id}">${c.className}</option>`).join('');
@@ -365,7 +365,7 @@ export function editAssignment(id) {
         const teacherSubjects = AppState.currentUser.data.subjects || [];
         classes = classes.filter(c => c.subjects && Array.isArray(c.subjects) && c.subjects.some(subId => teacherSubjects.includes(subId)));
     }
-    classes.sort((a,b) => a.className.localeCompare(b.className, undefined, {numeric: true}));
+    classes.sort((a,b) => a.className.localeCompare(b.className, 'th', { numeric: true }));
     const formClassEl = document.getElementById('asm-class');
     if (formClassEl) {
         formClassEl.innerHTML = '<option value="">-- เลือกชั้นเรียน --</option>' + classes.map(c => `<option value="${c.id}">${c.className}</option>`).join('');
@@ -719,10 +719,15 @@ export function deleteAssignment(id) {
 let currentGradingAssignmentId = null;
 let currentGradingStudentId = null;
 
-export function openGradingModal(assignmentId) {
+export async function openGradingModal(assignmentId) {
     currentGradingAssignmentId = assignmentId;
     const asm = AppState.allAssignments.find(a => a.id === assignmentId);
     if (!asm) return;
+    
+    const cls = AppState.allClasses.find(c => c.id === asm.classId);
+    if (cls && cls.className && typeof window.ensureStudentsLoadedForClass === 'function') {
+        await window.ensureStudentsLoadedForClass(cls.className);
+    }
     
     document.getElementById('grading-title').innerText = asm.title;
     document.getElementById('grading-max-score').innerText = `(เต็ม ${asm.maxScore})`;

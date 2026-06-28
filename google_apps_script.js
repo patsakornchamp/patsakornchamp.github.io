@@ -85,6 +85,13 @@ function doPost(e) {
     if (action === 'getHomeVisitData') {
       return successResponse(getHomeVisitData(postData));
     }
+    if (action === 'getStudentsByIds') {
+      const parsed = JSON.parse(payload);
+      const targetIds = (parsed.ids || []).map(String);
+      const allStudents = getSheetData(ss, 'Students');
+      const filtered = allStudents.filter(s => targetIds.includes(String(s.id)));
+      return successResponse({ Students: filtered });
+    }
     
     // 🌟 2. บันทึกข้อมูลที่ต้องการ Logic เฉพาะตัว (Custom Saves)
     if (action === 'saveStudentProfile') {

@@ -62,6 +62,10 @@ export async function renderStats(skipSync = false) {
         
         const clsObj = AppState.allClasses.find(c => c.id === statsClassOrClubId);
         const className = clsObj ? clsObj.className : statsClassOrClubId;
+        
+        if (className && typeof window.ensureStudentsLoadedForClass === 'function') {
+            await window.ensureStudentsLoadedForClass(className);
+        }
         const subObj = AppState.allSubjects.find(s => s.id === statsSubId);
         const subName = subObj ? subObj.name : statsSubId;
 
@@ -115,7 +119,12 @@ export async function renderStats(skipSync = false) {
 
         const enrollments = AppState.allClubEnrollments.filter(e => e.clubId === statsClassOrClubId && e.year == yr && e.semester == sem && e.deleted_flg !== 'Y');
         const enrolledStudentIds = enrollments.map(e => e.studentId);
-        const stus = AppState.allStudents.filter(x => enrolledStudentIds.includes(x.id) && x.status !== 'ลาออก' && x.deleted_flg !== 'Y').sort((a,b)=>a.class.localeCompare(b.class, undefined, { numeric: true }) || a.number-b.number);
+        
+        if (enrolledStudentIds.length > 0 && typeof window.ensureStudentsLoadedByIds === 'function') {
+            await window.ensureStudentsLoadedByIds(enrolledStudentIds);
+        }
+        
+        const stus = AppState.allStudents.filter(x => enrolledStudentIds.map(String).includes(String(x.id)) && x.status !== 'ลาออก' && x.deleted_flg !== 'Y').sort((a,b)=>a.class.localeCompare(b.class, 'th', { numeric: true }) || a.number-b.number);
         
         let recs = AppState.allClubRecords.filter(x => x.clubId === statsClassOrClubId && matchRecordYearSemester(x, yr, sem) && x.deleted_flg !== 'Y');
 

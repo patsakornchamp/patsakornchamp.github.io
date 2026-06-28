@@ -8,7 +8,7 @@ export function loadFromLocalStorage() {
     AppState.allRecords = JSON.parse(localStorage.getItem(DB_KEYS.RECORDS) || '[]');
     AppState.allSubjects = JSON.parse(localStorage.getItem(DB_KEYS.SUBJECTS) || '[]');
     AppState.allTeachers = JSON.parse(localStorage.getItem(DB_KEYS.TEACHERS) || '[]');
-    AppState.allClasses = JSON.parse(localStorage.getItem(DB_KEYS.CLASSES) || '[]').sort((a, b) => (a.className || '').localeCompare(b.className || '', undefined, { numeric: true }));
+    AppState.allClasses = JSON.parse(localStorage.getItem(DB_KEYS.CLASSES) || '[]').sort((a, b) => (a.className || '').localeCompare(b.className || '', 'th', { numeric: true }));
     AppState.allClubs = JSON.parse(localStorage.getItem(DB_KEYS.CLUBS) || '[]');
     AppState.allClubEnrollments = JSON.parse(localStorage.getItem(DB_KEYS.CLUB_ENROLLMENTS) || '[]');
     AppState.allClubRecords = JSON.parse(localStorage.getItem(DB_KEYS.CLUB_RECORDS) || '[]');
@@ -35,11 +35,13 @@ export async function syncDataFromServer(silent = false) {
         
         if(data.status === 'success') {
             // 🌟 แก้ไขตรงนี้: ต้องรับข้อมูลให้ครบทุกชีต ห้ามย่อ
-            AppState.allStudents = data.Students || [];
+            if (data.Students && data.Students.length > 0) {
+                AppState.allStudents = data.Students;
+            }
             AppState.allRecords = data.Records || [];
             AppState.allSubjects = data.Subjects || [];
             AppState.allTeachers = data.Teachers || [];
-            AppState.allClasses = (data.Classes || []).sort((a, b) => (a.className || '').localeCompare(b.className || '', undefined, { numeric: true }));
+            AppState.allClasses = (data.Classes || []).sort((a, b) => (a.className || '').localeCompare(b.className || '', 'th', { numeric: true }));
             AppState.allClubs = data.Clubs || [];
             AppState.allClubEnrollments = data.ClubEnrollments || [];
             AppState.allClubRecords = data.ClubRecords || [];

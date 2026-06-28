@@ -72,7 +72,7 @@ export function renderMasterData() {
         filteredClasses = filteredClasses.filter(c => (c.className || '').toLowerCase().includes(searchClass));
     }
 
-    const sortedClasses = filteredClasses.sort((a, b) => (a.className || '').localeCompare(b.className || '', undefined, { numeric: true }));
+    const sortedClasses = filteredClasses.sort((a, b) => (a.className || '').localeCompare(b.className || '', 'th', { numeric: true }));
     document.getElementById('tbody-classes').innerHTML = sortedClasses.map(c => {
         const advs = c.advisors ? c.advisors.map(tid => { const t = AppState.allTeachers.find(x=>x.id===tid && x.deleted_flg !== 'Y'); return t?t.firstName:''; }).filter(Boolean).join(', ') : '-';
         const subs = c.subjects ? c.subjects.map(sid => { const s = AppState.allSubjects.find(x=>x.id===sid && x.deleted_flg !== 'Y'); return s?s.name:''; }).filter(Boolean).join(', ') : '-';

@@ -73,7 +73,7 @@ export function renderHistory() {
         recs.forEach(r => {
             let stat={มา:0,สาย:0,ลา:0,ขาด:0}; 
             r.attendance.forEach(a => {
-                if (AppState.allStudents.some(stu => stu.id === a.studentId)) {
+                if (stat[a.status] !== undefined) {
                     stat[a.status]++;
                 }
             });
@@ -121,7 +121,7 @@ export function renderHistory() {
         recs.forEach(r => {
             let stat={มา:0,สาย:0,ลา:0,ขาด:0}; 
             r.attendance.forEach(a => {
-                if (AppState.allStudents.some(stu => stu.id === a.studentId)) {
+                if (stat[a.status] !== undefined) {
                     stat[a.status]++;
                 }
             });

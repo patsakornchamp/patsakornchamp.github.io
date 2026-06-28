@@ -184,7 +184,7 @@ export function exportToCSV(filename, headers, rows) {
 
 export function getDirectImageUrl(url) {
     if (!url) return '';
-    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
     if (match && match[1]) {
         return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1200`;
     }

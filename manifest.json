@@ -1,20 +1,20 @@
-﻿{
-  "name": "MAKHRAB",
+{
+  "name": "MAKHRAB - CCPW",
   "short_name": "MAKHRAB",
-  "description": "ระบบเช็คชื่อและจัดการข้อมูลโรงเรียน",
+  "description": "ระบบเช็คชื่อและจัดการข้อมูลโรงเรียน ไชยฉิมพลีวิทยาคม",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0f766e",
   "icons": [
     {
-      "src": "logopngPDF.png",
+      "src": "https://drive.google.com/thumbnail?id=1YQ2gOFcMp688iFpv5k5b_9ZKDqZ0L7bI&sz=w192",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "logopngPDF.png",
+      "src": "https://drive.google.com/thumbnail?id=1YQ2gOFcMp688iFpv5k5b_9ZKDqZ0L7bI&sz=w512",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

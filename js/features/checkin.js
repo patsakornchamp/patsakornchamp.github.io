@@ -38,6 +38,10 @@ export async function loadCheckinList() {
 
     const clsObj = AppState.allClasses.find(c => c.id === clsId);
     const clsName = clsObj ? clsObj.className : clsId;
+    
+    if (clsName && typeof window.ensureStudentsLoadedForClass === 'function') {
+        await window.ensureStudentsLoadedForClass(clsName);
+    }
     const subObj = AppState.allSubjects.find(s => s.id === subId);
     const subName = subObj ? subObj.name : subId;
 

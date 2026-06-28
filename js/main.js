@@ -92,7 +92,7 @@ export function updateAllDropdowns() {
     }
 
     // ดึงค่าจาก AppState.allClasses โดยใช้ className (ค่าจริงจากฐานข้อมูล) และจำค่าเดิมไว้
-    const classOptions = '<option value="">-- เลือกชั้นเรียน --</option>' + AppState.allClasses.filter(c => c.deleted_flg !== 'Y').sort((a,b)=>a.className.localeCompare(b.className, undefined, {numeric: true})).map(c => `<option value="${c.id}">${c.className}</option>`).join('');
+    const classOptions = '<option value="">-- เลือกชั้นเรียน --</option>' + AppState.allClasses.filter(c => c.deleted_flg !== 'Y').sort((a,b)=>a.className.localeCompare(b.className, 'th', { numeric: true })).map(c => `<option value="${c.id}">${c.className}</option>`).join('');
     ['checkin-class', 'history-class', 'stats-class'].forEach(id => {
         safeSetSelectHtml(id, classOptions);
     });
@@ -439,7 +439,7 @@ if (document.readyState === 'loading') {
 // ==========================================
 export function updateClassDropdown(yearVal, semVal, targetId, defaultText) {
     const filtered = AppState.allClasses.filter(c => c.year == yearVal && c.semester == semVal && c.deleted_flg !== 'Y');
-    filtered.sort((a,b) => a.className.localeCompare(b.className, undefined, {numeric:true}));
+    filtered.sort((a,b) => a.className.localeCompare(b.className, 'th', { numeric: true }));
     const html = `<option value="">${defaultText}</option>` + 
         filtered.map(c => `<option value="${c.id}">${c.className}</option>`).join('');
     safeSetSelectHtml(targetId, html);

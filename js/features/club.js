@@ -164,7 +164,7 @@ export function deleteClub(id) {
 }
 
 // --- 2. Club Enrollments ---
-export function onEnrollFilterChange() {
+export async function onEnrollFilterChange() {
     const yr = document.getElementById('enroll-year').value;
     const sem = document.getElementById('enroll-semester').value;
     
@@ -176,19 +176,23 @@ export function onEnrollFilterChange() {
 
     const classDropdown = document.getElementById('enroll-filter-class');
     const filteredClasses = AppState.allClasses.filter(c => c.year == yr && c.semester == sem && c.deleted_flg !== 'Y');
-    filteredClasses.sort((a, b) => a.className.localeCompare(b.className, undefined, { numeric: true }));
+    filteredClasses.sort((a, b) => a.className.localeCompare(b.className, 'th', { numeric: true }));
     classDropdown.innerHTML = `<option value="">ทุกชั้นเรียน</option>` + 
         filteredClasses.map(c => `<option value="${c.className}">${c.className}</option>`).join('');
 
-    renderEnrollStudents();
+    await renderEnrollStudents();
 }
 
-export function renderEnrollStudents() {
+export async function renderEnrollStudents() {
     const yr = document.getElementById('enroll-year').value;
     const sem = document.getElementById('enroll-semester').value;
     const classFilter = document.getElementById('enroll-filter-class').value;
     const statusFilter = document.getElementById('enroll-filter-status').value;
     const search = document.getElementById('enroll-search').value.toLowerCase().trim();
+
+    if (classFilter && typeof window.ensureStudentsLoadedForClass === 'function') {
+        await window.ensureStudentsLoadedForClass(classFilter);
+    }
 
     let filteredStudents = AppState.allStudents.filter(s => s.status !== 'ลาออก' && s.deleted_flg !== 'Y');
     if(classFilter) filteredStudents = filteredStudents.filter(s => s.class === classFilter);
@@ -210,7 +214,7 @@ export function renderEnrollStudents() {
     if (statusFilter === 'noclub') finalStudents = mappedStudents.filter(m => !m.club);
     else if (statusFilter === 'hasclub') finalStudents = mappedStudents.filter(m => m.club);
 
-    finalStudents.sort((a,b) => a.student.class.localeCompare(b.student.class, undefined, { numeric: true }) || a.student.number - b.student.number);
+    finalStudents.sort((a,b) => a.student.class.localeCompare(b.student.class, 'th', { numeric: true }) || a.student.number - b.student.number);
 
     document.getElementById('tbody-enroll-students').innerHTML = finalStudents.map(m => {
         const s = m.student;
@@ -459,9 +463,13 @@ export async function loadClubCheckinList() {
     const enrollments = AppState.allClubEnrollments.filter(e => e.clubId === clubId && e.year == yr && e.semester == sem && e.deleted_flg !== 'Y');
     const enrolledStudentIds = enrollments.map(e => e.studentId);
     
-    AppState.currentCheckinStudents = AppState.allStudents.filter(s => enrolledStudentIds.includes(s.id) && s.status !== 'ลาออก' && s.deleted_flg !== 'Y');
+    if (enrolledStudentIds.length > 0 && typeof window.ensureStudentsLoadedByIds === 'function') {
+        await window.ensureStudentsLoadedByIds(enrolledStudentIds);
+    }
+    
+    AppState.currentCheckinStudents = AppState.allStudents.filter(s => enrolledStudentIds.map(String).includes(String(s.id)) && s.status !== 'ลาออก' && s.deleted_flg !== 'Y');
     AppState.currentCheckinStudents.sort((a, b) => {
-        const classCompare = a.class.localeCompare(b.class, undefined, { numeric: true });
+        const classCompare = a.class.localeCompare(b.class, 'th', { numeric: true });
         if (classCompare !== 0) return classCompare;
         const numA = parseInt(a.number) || 9999;
         const numB = parseInt(b.number) || 9999;
@@ -531,7 +539,7 @@ export function renderClubCheckinTable() {
             if (weightA !== weightB) return weightA - weightB;
         }
 
-        const classCompare = a.class.localeCompare(b.class, undefined, { numeric: true });
+        const classCompare = a.class.localeCompare(b.class, 'th', { numeric: true });
         if (classCompare !== 0) return classCompare;
         const numA = parseInt(a.number) || 9999;
         const numB = parseInt(b.number) || 9999;

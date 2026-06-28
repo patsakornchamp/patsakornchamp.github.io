@@ -348,7 +348,7 @@ export function openUploadCsvModal() {
     document.getElementById('upload-file').value = '';
     
     // Populate classes dynamically
-    const uniqueClasses = [...new Set(AppState.allClasses.filter(c => c.deleted_flg !== 'Y').map(c => c.className))].filter(Boolean).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    const uniqueClasses = [...new Set(AppState.allClasses.filter(c => c.deleted_flg !== 'Y').map(c => c.className))].filter(Boolean).sort((a, b) => a.localeCompare(b, 'th', { numeric: true }));
     const uploadClassSelect = document.getElementById('upload-class');
     if (uploadClassSelect) {
         uploadClassSelect.innerHTML = '<option value="">-- เลือกชั้นเรียน --</option>' + 
@@ -834,7 +834,7 @@ export function openStudentModal() {
     document.getElementById('stu-p-rel').value='บิดา'; 
     document.getElementById('stu-nickname').value=''; 
 
-    const uniqueClasses = [...new Set(AppState.allClasses.filter(c => c.deleted_flg !== 'Y').map(c => c.className))].filter(Boolean).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    const uniqueClasses = [...new Set(AppState.allClasses.filter(c => c.deleted_flg !== 'Y').map(c => c.className))].filter(Boolean).sort((a, b) => a.localeCompare(b, 'th', { numeric: true }));
     const classSelect = document.getElementById('stu-class');
     if (classSelect) {
         classSelect.innerHTML = '<option value="">-- เลือกชั้นเรียน --</option>' + 
@@ -865,7 +865,7 @@ export function editStudent(id) {
 const s = AppState.allStudents.find(x => x.id === id && x.deleted_flg !== 'Y');
     if (!s) return;
 
-    const uniqueClasses = [...new Set(AppState.allClasses.filter(c => c.deleted_flg !== 'Y').map(c => c.className))].filter(Boolean).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    const uniqueClasses = [...new Set(AppState.allClasses.filter(c => c.deleted_flg !== 'Y').map(c => c.className))].filter(Boolean).sort((a, b) => a.localeCompare(b, 'th', { numeric: true }));
     const classSelect = document.getElementById('stu-class');
     classSelect.innerHTML = '<option value="">-- เลือกชั้นเรียน --</option>' + 
         uniqueClasses.map(c => `<option value="${c}">${c}</option>`).join('');
@@ -1109,19 +1109,21 @@ export async function ensureStudentsLoadedForClass(className) {
 
 export async function ensureStudentsLoadedByIds(studentIds) {
     if (!studentIds || studentIds.length === 0) return;
-    const missingIds = studentIds.filter(id => !AppState.allStudents.some(s => s.id === id));
+    const missingIds = studentIds.filter(id => !AppState.allStudents.some(s => String(s.id) === String(id)));
     if (missingIds.length > 0) {
         showLoading(`กำลังโหลดรายชื่อนักเรียนเพิ่มเติม...`);
         try {
             const res = await fetch(AppState.googleSheetUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                redirect: 'follow',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({
                     action: 'getStudentsByIds',
                     payload: JSON.stringify({ ids: missingIds })
                 })
             });
-            const json = await res.json();
+            const text = await res.text();
+            const json = JSON.parse(text);
             if (json.status === 'success' && json.Students) {
                 AppState.allStudents.push(...json.Students);
                 localStorage.setItem(DB_KEYS.STUDENTS, JSON.stringify(AppState.allStudents));
@@ -1169,12 +1171,6 @@ export function renderManageStudents() {
     const f = document.getElementById('manage-filter-class').value.trim();
     const txt = document.getElementById('manage-search').value.toLowerCase();
     
-    const datalist = document.getElementById('manage-filter-class-list');
-    const classList = [...new Set(AppState.allClasses.filter(c => c.deleted_flg !== 'Y').map(c => c.className))].filter(Boolean).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-    if (datalist) {
-        datalist.innerHTML = classList.map(c => `<option value="${c}"></option>`).join('');
-    }
-
     const searchCol = document.getElementById('manage-search-col');
     const refreshCol = document.getElementById('manage-refresh-col');
 
@@ -1199,7 +1195,7 @@ export function renderManageStudents() {
     if(f) stus = stus.filter(s=>s.class===f); 
     if(txt) stus = stus.filter(s => getStudentFullName(s).toLowerCase().includes(txt) || (s.studentId && s.studentId.toString().includes(txt)));
     
-    stus.sort((a,b)=> a.class.localeCompare(b.class, undefined, { numeric: true }) || a.number-b.number);
+    stus.sort((a,b)=> a.class.localeCompare(b.class, 'th', { numeric: true }) || a.number-b.number);
 
     document.getElementById('manage-students-table-body').innerHTML = stus.map(s => {
         const isResigned = s.status === 'ลาออก';
@@ -2208,7 +2204,7 @@ export function openBulkTransferModal() {
     // Get unique active classes
     const activeClasses = AppState.allClasses.filter(c => c.deleted_flg !== 'Y');
     // Sort classes: e.g. Year/Semester and name
-    activeClasses.sort((a, b) => a.className.localeCompare(b.className, undefined, { numeric: true }) || a.year - b.year);
+    activeClasses.sort((a, b) => a.className.localeCompare(b.className, 'th', { numeric: true }) || a.year - b.year);
 
     const classOptions = '<option value="">-- เลือกชั้นเรียน --</option>' + 
         activeClasses.map(c => `<option value="${c.id}">${c.className} (ปี ${c.year}/${c.semester})</option>`).join('');
@@ -2442,5 +2438,60 @@ idsToValidate.forEach(id => {
     const el = document.getElementById(id);
     if (el) {
         el.addEventListener('change', validateProfileInputFormat);
+    }
+});
+
+// ==========================================
+// Custom Searchable Dropdown for Student Class Filter
+// ==========================================
+window.toggleManageClassDropdown = function(e) {
+    if (e) e.stopPropagation();
+    const list = document.getElementById('manage-class-dropdown-list');
+    if (list) {
+        list.classList.toggle('hidden');
+        if (!list.classList.contains('hidden')) {
+            filterManageClassDropdown(''); // Show all on open
+        }
+    }
+};
+
+window.filterManageClassDropdown = function(query) {
+    const list = document.getElementById('manage-class-dropdown-list');
+    if (!list) return;
+    list.classList.remove('hidden');
+    
+    const classList = [...new Set(AppState.allClasses.filter(c => c.deleted_flg !== 'Y').map(c => c.className))].filter(Boolean).sort((a, b) => a.localeCompare(b, 'th', { numeric: true }));
+    const filtered = classList.filter(c => c.toLowerCase().includes(query.toLowerCase().trim()));
+    
+    if (filtered.length === 0) {
+        list.innerHTML = `<div class="px-3 py-2 text-gray-400 italic">ไม่พบชั้นเรียน</div>`;
+        return;
+    }
+    
+    list.innerHTML = filtered.map(c => `
+        <div class="px-3 py-2 hover:bg-green-50 hover:text-green-800 cursor-pointer transition-colors" onclick="selectManageClassOption('${c}')">${c}</div>
+    `).join('');
+};
+
+window.selectManageClassOption = function(c) {
+    const input = document.getElementById('manage-filter-class');
+    if (input) {
+        input.value = c;
+    }
+    const list = document.getElementById('manage-class-dropdown-list');
+    if (list) {
+        list.classList.add('hidden');
+    }
+    if (window.onManageClassChange) {
+        window.onManageClassChange();
+    }
+};
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+    const container = document.getElementById('manage-class-dropdown-container');
+    if (container && !container.contains(e.target)) {
+        const list = document.getElementById('manage-class-dropdown-list');
+        if (list) list.classList.add('hidden');
     }
 });

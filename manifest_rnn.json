@@ -1,20 +1,20 @@
 {
-  "name": "MAKHRAB - โรงเรียน RNN",
-  "short_name": "RNN",
-  "description": "ระบบเช็คชื่อและจัดการข้อมูลโรงเรียน RNN",
+  "name": "MAKHRAB - RNN",
+  "short_name": "MAKHRAB",
+  "description": "ระบบเช็คชื่อและจัดการข้อมูลโรงเรียน ราชวินิต นนทบุรี",
   "start_url": "./index.html?school=rnn",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0f766e",
   "icons": [
     {
-      "src": "logopngPDF.png",
+      "src": "https://drive.google.com/thumbnail?id=1i8lJyPYuT-UbSM54dCbzVOY38kox41N2&sz=w192",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "logopngPDF.png",
+      "src": "https://drive.google.com/thumbnail?id=1i8lJyPYuT-UbSM54dCbzVOY38kox41N2&sz=w512",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
