@@ -1085,23 +1085,116 @@ export async function saveStudent() {
     }
 }
 
+export async function ensureStudentsLoadedForClass(className) {
+    if (!className) return;
+    const hasStudents = AppState.allStudents.some(s => s.class === className && s.deleted_flg !== 'Y');
+    if (!hasStudents) {
+        showLoading(`กำลังโหลดรายชื่อนักเรียนชั้น ${className}...`);
+        try {
+            const res = await fetch(`${AppState.googleSheetUrl}?action=getStudentsByClass&class=${encodeURIComponent(className)}`);
+            const json = await res.json();
+            if (json.status === 'success' && json.Students) {
+                AppState.allStudents = AppState.allStudents.filter(s => s.class !== className);
+                AppState.allStudents.push(...json.Students);
+                localStorage.setItem(DB_KEYS.STUDENTS, JSON.stringify(AppState.allStudents));
+            }
+        } catch(e) {
+            console.error("Error loading students by class:", e);
+            showToast("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้", true);
+        } finally {
+            hideLoading();
+        }
+    }
+}
+
+export async function ensureStudentsLoadedByIds(studentIds) {
+    if (!studentIds || studentIds.length === 0) return;
+    const missingIds = studentIds.filter(id => !AppState.allStudents.some(s => s.id === id));
+    if (missingIds.length > 0) {
+        showLoading(`กำลังโหลดรายชื่อนักเรียนเพิ่มเติม...`);
+        try {
+            const res = await fetch(AppState.googleSheetUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'getStudentsByIds',
+                    payload: JSON.stringify({ ids: missingIds })
+                })
+            });
+            const json = await res.json();
+            if (json.status === 'success' && json.Students) {
+                AppState.allStudents.push(...json.Students);
+                localStorage.setItem(DB_KEYS.STUDENTS, JSON.stringify(AppState.allStudents));
+            }
+        } catch(e) {
+            console.error("Error loading students by IDs:", e);
+        } finally {
+            hideLoading();
+        }
+    }
+}
+
+export async function onManageClassChange() {
+    const className = document.getElementById('manage-filter-class').value;
+    if (className) {
+        await ensureStudentsLoadedForClass(className);
+    }
+    renderManageStudents();
+}
+
 export async function searchManageStudents() {
-    await syncDataFromServer();
+    const className = document.getElementById('manage-filter-class').value;
+    if (className) {
+        showLoading(`กำลังรีเฟรชข้อมูลนักเรียนชั้น ${className}...`);
+        try {
+            const res = await fetch(`${AppState.googleSheetUrl}?action=getStudentsByClass&class=${encodeURIComponent(className)}`);
+            const json = await res.json();
+            if (json.status === 'success' && json.Students) {
+                AppState.allStudents = AppState.allStudents.filter(s => s.class !== className);
+                AppState.allStudents.push(...json.Students);
+                localStorage.setItem(DB_KEYS.STUDENTS, JSON.stringify(AppState.allStudents));
+            }
+        } catch(e) {
+            console.error(e);
+        } finally {
+            hideLoading();
+        }
+    } else {
+        await syncDataFromServer();
+    }
     renderManageStudents();
 }
 
 export function renderManageStudents() {
-    const f = document.getElementById('manage-filter-class').value;
+    const f = document.getElementById('manage-filter-class').value.trim();
     const txt = document.getElementById('manage-search').value.toLowerCase();
-    const allActiveStudents = AppState.allStudents.filter(s => s.deleted_flg !== 'Y'); 
     
-    const filterClassDropdown = document.getElementById('manage-filter-class');
-    // สร้างตัวเลือก Dropdown จากนักเรียนทั้งหมด (ที่ยังไม่ได้กรอง)
-    const classList = [...new Set(allActiveStudents.map(s => s.class))].filter(Boolean).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-    const currentSelected = filterClassDropdown.value;
-    filterClassDropdown.innerHTML = `<option value="">ดูทุกชั้นเรียน</option>` + classList.map(c => `<option value="${c}">${c}</option>`).join('');
-    filterClassDropdown.value = currentSelected;
+    const datalist = document.getElementById('manage-filter-class-list');
+    const classList = [...new Set(AppState.allClasses.filter(c => c.deleted_flg !== 'Y').map(c => c.className))].filter(Boolean).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    if (datalist) {
+        datalist.innerHTML = classList.map(c => `<option value="${c}"></option>`).join('');
+    }
 
+    const searchCol = document.getElementById('manage-search-col');
+    const refreshCol = document.getElementById('manage-refresh-col');
+
+    if (!f) {
+        if (searchCol) searchCol.classList.add('hidden');
+        if (refreshCol) refreshCol.classList.add('hidden');
+        document.getElementById('manage-students-table-body').innerHTML = `
+            <tr>
+                <td colspan="5" class="px-6 py-8 text-center text-gray-500 font-bold">
+                    <i class="fas fa-info-circle mr-2 text-blue-500"></i>กรุณาเลือกชั้นเรียนเพื่อแสดงข้อมูลนักเรียน
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    if (searchCol) searchCol.classList.remove('hidden');
+    if (refreshCol) refreshCol.classList.remove('hidden');
+
+    const allActiveStudents = AppState.allStudents.filter(s => s.deleted_flg !== 'Y'); 
     let stus = [...allActiveStudents];
     if(f) stus = stus.filter(s=>s.class===f); 
     if(txt) stus = stus.filter(s => getStudentFullName(s).toLowerCase().includes(txt) || (s.studentId && s.studentId.toString().includes(txt)));
@@ -2304,6 +2397,9 @@ window.executeBulkTransfer = executeBulkTransfer;
 window.downloadStudentTemplate = downloadStudentTemplate;
 window.previewExcel = previewExcel;
 window.onUploadSheetChange = onUploadSheetChange;
+window.onManageClassChange = onManageClassChange;
+window.ensureStudentsLoadedForClass = ensureStudentsLoadedForClass;
+window.ensureStudentsLoadedByIds = ensureStudentsLoadedByIds;
 
 // Event listeners for profile image uploads
 document.getElementById('profile-pic-upload').addEventListener('change', (e) => previewImageForProfile(e, 'profile-pic-preview', null));

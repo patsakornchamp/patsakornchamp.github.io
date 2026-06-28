@@ -1,4 +1,4 @@
-﻿// ==========================================
+// ==========================================
 // MAKHRAB - Google Apps Script Backend (Unified Version)
 // ==========================================
 
@@ -39,7 +39,7 @@ function doGet(e) {
   if (action === 'getData') {
     const result = {
       status: 'success',
-      Students: getSheetData(ss, 'Students'),
+      Students: [],
       Records: getSheetData(ss, 'Records'),
       Subjects: getSheetData(ss, 'Subjects'),
       Teachers: getSheetData(ss, 'Teachers'),
@@ -54,6 +54,20 @@ function doGet(e) {
       Settings: getSheetData(ss, 'Settings')
     };
     return successResponse(result);
+  }
+  
+  if (action === 'getStudentsByClass') {
+    const className = e.parameter.class;
+    const allStudents = getSheetData(ss, 'Students');
+    const filtered = allStudents.filter(s => String(s.class) === String(className));
+    return successResponse({ Students: filtered });
+  }
+  
+  if (action === 'getStudentById') {
+    const studentId = e.parameter.studentId;
+    const allStudents = getSheetData(ss, 'Students');
+    const student = allStudents.find(s => String(s.studentId).trim() === String(studentId).trim() && s.deleted_flg !== 'Y');
+    return successResponse({ Student: student || null });
   }
   
   return errorResponse('Invalid action');
@@ -247,6 +261,8 @@ function createAssignmentWithFiles(ss, payload) {
 function saveStudentsData(ss, studentsArray) {
   if (!studentsArray || studentsArray.length === 0) return;
 
+  const existingStudents = getSheetData(ss, 'Students');
+
   studentsArray.forEach(function(student) {
     if (student.profileImage_base64) {
       try {
@@ -277,9 +293,16 @@ function saveStudentsData(ss, studentsArray) {
         delete student[mimeKey];
       }
     }
+
+    const idx = existingStudents.findIndex(s => String(s.id) === String(student.id));
+    if (idx > -1) {
+      existingStudents[idx] = Object.assign({}, existingStudents[idx], student);
+    } else {
+      existingStudents.push(student);
+    }
   });
 
-  saveSheetData(ss, 'Students', studentsArray);
+  saveSheetData(ss, 'Students', existingStudents);
 }
 
 // 🔧 แก้ไขแล้ว: saveStudentProfile — บันทึกโปรไฟล์นักเรียนรายบุคคล

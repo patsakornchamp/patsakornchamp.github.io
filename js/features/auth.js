@@ -55,11 +55,25 @@ export async function handleLogin(e, role) {
         const user = document.getElementById('login-stu-id').value.trim();
         const pass = document.getElementById('login-stu-pass').value.trim();
 
-        const student = AppState.allStudents.find(s => {
+        let student = AppState.allStudents.find(s => {
             if (!s.studentId) return false;
             const cleanStudentId = s.studentId.toString().trim();
             return cleanStudentId === user && cleanStudentId === pass && s.deleted_flg !== 'Y';
         });
+        
+        if (!student && user === pass) {
+            try {
+                const res = await fetch(`${AppState.googleSheetUrl}?action=getStudentById&studentId=${encodeURIComponent(user)}`);
+                const json = await res.json();
+                if (json.status === 'success' && json.Student) {
+                    student = json.Student;
+                    AppState.allStudents.push(student);
+                    localStorage.setItem(DB_KEYS.STUDENTS, JSON.stringify(AppState.allStudents));
+                }
+            } catch (err) {
+                console.error("Login fetch error:", err);
+            }
+        }
         
         if (student) {
             if (student.status === 'ลาออก') {

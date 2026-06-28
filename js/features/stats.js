@@ -407,7 +407,7 @@ export function openDrilldownModal(stuId, type, filterValue, academicYear, acade
     document.getElementById('student-drilldown-modal').classList.add('show');
 }
 
-export function openSessionDrilldownModal(recordId, type) {
+export async function openSessionDrilldownModal(recordId, type) {
     const containers = document.querySelectorAll('#session-drilldown-modal #sd-list-container');
     if (containers.length === 0) return;
 
@@ -424,6 +424,10 @@ export function openSessionDrilldownModal(recordId, type) {
         const rTeacherName = record.teacherId ? (() => { const t = AppState.allTeachers.find(t=>t.id===record.teacherId); return t ? `${t.firstName} ${t.lastName}` : record.teacher; })() : record.teacher;
         document.querySelectorAll('#sd-session-title').forEach(el => el.innerHTML = `<i class="fas fa-calendar-day mr-2 text-blue-600"></i>${getBangkokDate(record.date)} (คาบ: ${record.period || '-'} | ปีการศึกษา ${rYr} ภาคเรียน ${rSem})`);
         document.querySelectorAll('#sd-session-meta').forEach(el => el.innerText = `ชั้นเรียน: ${rClassName} | วิชา: ${rSubName} | ครู: ${rTeacherName||'-'}`);
+        
+        if (rClassName && typeof window.ensureStudentsLoadedForClass === 'function') {
+            await window.ensureStudentsLoadedForClass(rClassName);
+        }
     } else {
         record = AppState.allClubRecords.find(r => r.id === recordId && r.deleted_flg !== 'Y');
         if (!record) return;
@@ -432,6 +436,11 @@ export function openSessionDrilldownModal(recordId, type) {
         const rSem = record.semester !== undefined ? record.semester : getYearSemesterFromDate(record.date).semester;
         document.querySelectorAll('#sd-session-title').forEach(el => el.innerHTML = `<i class="fas fa-calendar-day mr-2 text-green-600"></i>${getBangkokDate(record.date)} (กิจกรรมวิชาชุมนุม - ปี ${rYr}/${rSem})`);
         document.querySelectorAll('#sd-session-meta').forEach(el => el.innerText = `ชุมนุม: ${club ? club.name : 'ไม่พบข้อมูลชุมนุม'}`);
+        
+        if (record.attendance && typeof window.ensureStudentsLoadedByIds === 'function') {
+            const studentIds = record.attendance.map(a => a.studentId);
+            await window.ensureStudentsLoadedByIds(studentIds);
+        }
     }
 
     const badgeColorMap = { 'มา': 'bg-green-100 text-green-800', 'สาย': 'bg-yellow-100 text-yellow-800', 'ลา': 'bg-blue-100 text-blue-800', 'ขาด': 'bg-red-100 text-red-800' };

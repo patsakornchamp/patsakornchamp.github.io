@@ -1,6 +1,6 @@
-﻿import { AppState } from '../core/state.js';
+import { AppState } from '../core/state.js';
 import { DB_KEYS } from '../core/config.js';
-import { generateId, getStudentFullName, showToast, matchRecordYearSemester, getBangkokDate, getBangkokCurrentTime, exportToCSV, getISOTimestamp, getCurrentUserId, customConfirm, showLoading, hideLoading } from '../utils/helpers.js';
+import { generateId, getStudentFullName, showToast, matchRecordYearSemester, getBangkokDate, getBangkokCurrentTime, exportToCSV, getISOTimestamp, getCurrentUserId, customConfirm, showLoading, hideLoading, customAlert } from '../utils/helpers.js';
 import { syncDataFromServer, saveToDB } from '../services/api.js';
 
 export function resetCheckinTable() {
@@ -342,13 +342,15 @@ export function showClassroomQrModal() {
     
     const subObj = AppState.allSubjects.find(s => s.id === subId);
     const tObj = AppState.allTeachers.find(t => t.id === tId);
+    const classObj = AppState.allClasses.find(c => c.id === clsId);
     const subjectName = subObj ? subObj.name : subId;
     const teacherName = tObj ? `${tObj.firstName} ${tObj.lastName}`.trim() : tId;
+    const className = classObj ? classObj.className : clsId;
     
     document.getElementById('qr-classroom-desc').innerHTML = `
         <div class="text-gray-700 space-y-1">
             <p><b>ปีการศึกษา:</b> ${year} <b>ภาคเรียน:</b> ${semester}</p>
-            <p><b>ชั้นเรียน:</b> ${clsId} <b>คาบ:</b> ${period}</p>
+            <p><b>ชั้นเรียน:</b> ${className} <b>คาบ:</b> ${period}</p>
             <p><b>วิชา:</b> ${subjectName}</p>
             <p><b>ครูผู้สอน:</b> ${teacherName}</p>
         </div>
@@ -711,7 +713,7 @@ export function startStudentQrScanner() {
                 const diff = Date.now() - (data.ts || data.timestamp);
                 if (diff > 5 * 60 * 1000) {
                     playBeep();
-                    showToast("QR Code นี้หมดอายุแล้ว กรุณาแจ้งครูให้สร้างใหม่", 'error');
+                    customAlert("QR Code นี้หมดอายุแล้ว กรุณาแจ้งครูให้สร้างใหม่");
                     return;
                 }
                 
@@ -725,7 +727,7 @@ export function startStudentQrScanner() {
                 
                 if (studentClass && qrClassName && studentClass !== qrClassName) {
                     playBeep();
-                    showToast(`คุณอยู่ชั้น ${studentClass} ไม่สามารถสแกนของชั้น ${qrClassName} ได้`, 'error');
+                    customAlert(`คุณอยู่ชั้น ${studentClass} ไม่สามารถสแกนของชั้น ${qrClassName} ได้`);
                     return;
                 }
 
@@ -741,13 +743,13 @@ export function startStudentQrScanner() {
                 });
             } else {
                 playBeep();
-                showToast("QR Code ไม่ใช่รหัสห้องเรียน", 'error');
+                customAlert("QR Code ไม่ใช่รหัสห้องเรียน");
             }
         } catch (e) {
             hideLoading();
             console.error("Invalid QR", e);
             playBeep();
-            showToast("QR Code ไม่ถูกต้อง", 'error');
+            customAlert("QR Code ไม่ถูกต้อง");
         }
     });
 }

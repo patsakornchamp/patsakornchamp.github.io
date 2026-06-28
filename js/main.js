@@ -1,4 +1,4 @@
-﻿import { DB_KEYS, DEFAULT_GOOGLE_SCRIPT_URL, DEPLOY_VERSION, ENVIRONMENT } from './core/config.js';
+import { DB_KEYS, DEFAULT_GOOGLE_SCRIPT_URL, DEPLOY_VERSION, ENVIRONMENT } from './core/config.js';
 import { AppState } from './core/state.js';
 import { syncDataFromServer, saveToDB } from './services/api.js';
 import { getBangkokDate, getDefaultAcademicYearAndSemester, showToast, customAlert, customConfirm, getISOTimestamp, getCurrentUserId } from './utils/helpers.js'; // 🌟 นำเข้าฟังก์ชันจัดการวันที่ของไทย
@@ -488,10 +488,17 @@ export function onTeacherChange() {
     if (window.resetCheckinTable) window.resetCheckinTable();
 }
 
-export function onCheckinClassChange() {
+export async function onCheckinClassChange() {
     const teacherId = document.getElementById('checkin-teacher')?.value;
     const classId = document.getElementById('checkin-class')?.value;
     populateCheckinSubjectDropdown(teacherId, classId);
+    if (classId) {
+        const clsObj = AppState.allClasses.find(c => c.id === classId);
+        const clsName = clsObj ? clsObj.className : classId;
+        if (clsName && typeof window.ensureStudentsLoadedForClass === 'function') {
+            await window.ensureStudentsLoadedForClass(clsName);
+        }
+    }
     if (window.resetCheckinTable) window.resetCheckinTable();
 }
 
