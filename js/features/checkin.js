@@ -1,5 +1,5 @@
 import { AppState } from '../core/state.js';
-import { DB_KEYS } from '../core/config.js';
+import { DB_KEYS, ENVIRONMENT } from '../core/config.js';
 import { generateId, getStudentFullName, showToast, matchRecordYearSemester, getBangkokDate, getBangkokCurrentTime, exportToCSV, getISOTimestamp, getCurrentUserId, customConfirm, showLoading, hideLoading, customAlert } from '../utils/helpers.js';
 import { syncDataFromServer, saveToDB } from '../services/api.js';
 
@@ -13,6 +13,8 @@ export function resetCheckinTable() {
     AppState.lastCheckedStuId = null;
     AppState.lastCheckedStuId = null;
     AppState.pendingSyncIds = [];
+    AppState.checkinUnsavedChanges = false;
+    clearCheckinDraft();
     document.getElementById('no-students-alert').classList.add('hidden');
     document.getElementById('tc-show-qr-btn').classList.add('hidden');
     document.getElementById('tc-scan-btn').classList.add('hidden');
@@ -63,14 +65,24 @@ export async function loadCheckinList() {
     
     AppState.activeCheckinStates = {};
     AppState.lastCheckedStuId = null;
+    
+    const isResumingDraft = AppState.draftCheckinAttendance !== undefined && AppState.draftCheckinAttendance !== null;
+    
     AppState.currentCheckinStudents.forEach(stu => {
         let status = ''; 
-        if(existRec) { 
+        if (isResumingDraft) {
+            status = AppState.draftCheckinAttendance[stu.id] || '';
+        } else if(existRec) { 
             const r = existRec.attendance.find(a=>a.studentId===stu.id); 
             if(r) status = r.status; 
         }
         AppState.activeCheckinStates[stu.id] = status;
     });
+
+    if (isResumingDraft) {
+        AppState.checkinUnsavedChanges = true;
+        delete AppState.draftCheckinAttendance;
+    }
 
     if(document.getElementById('checkin-search')) document.getElementById('checkin-search').value = '';
     if(document.getElementById('checkin-hide-checked')) document.getElementById('checkin-hide-checked').checked = false;
@@ -83,6 +95,7 @@ export async function loadCheckinList() {
     document.getElementById('tc-scan-btn').classList.remove('hidden');
     document.getElementById('pull-qr-btn').classList.remove('hidden');
 
+    AppState.checkinUnsavedChanges = false;
     renderCheckinTable();
 }
 
@@ -92,7 +105,9 @@ export function renderCheckinTable() {
     if (query) {
         filteredStudents = filteredStudents.filter(s => {
             const fullName = getStudentFullName(s).toLowerCase();
-            return s.number.toString().includes(query) || s.studentId.toString().toLowerCase().includes(query) || fullName.includes(query);
+            const numStr = s && s.number !== undefined && s.number !== null ? s.number.toString() : '';
+            const idStr = s && s.studentId !== undefined && s.studentId !== null ? s.studentId.toString().toLowerCase() : '';
+            return numStr.includes(query) || idStr.includes(query) || fullName.includes(query);
         });
     }
 
@@ -150,6 +165,8 @@ export function renderCheckinTable() {
 export function onAttendanceChange(stuId, status) {
     AppState.activeCheckinStates[stuId] = status;
     AppState.lastCheckedStuId = stuId;
+    AppState.checkinUnsavedChanges = true;
+    saveCheckinDraft();
     renderCheckinTable(); 
 }
 
@@ -158,6 +175,8 @@ export function setAllAttendance(st) {
         AppState.activeCheckinStates[stu.id] = st;
     }); 
     AppState.lastCheckedStuId = null;
+    AppState.checkinUnsavedChanges = true;
+    saveCheckinDraft();
     renderCheckinTable();
 }
 
@@ -256,6 +275,8 @@ export async function saveAttendance() {
         }
         
         showToast('บันทึกการเช็คชื่อเรียบร้อย');
+        AppState.checkinUnsavedChanges = false;
+        clearCheckinDraft();
     });
 }
 
@@ -373,6 +394,7 @@ export function showClassroomQrModal() {
     document.getElementById('qr-classroom-modal').classList.add('show');
 }
 
+let isTeacherScanningPaused = false;
 let currentScannerCallback = null;
 let customCameras = { front: [], back: [] };
 let currentCameraIsFront = false;
@@ -614,6 +636,9 @@ export function switchCamera(cameraId) {
 export function openTeacherQrScanner() {
     // ครูสแกน QR ของเด็ก
     startCameraWithList((decodedText) => {
+        if (isTeacherScanningPaused) return;
+        isTeacherScanningPaused = true;
+
         try {
             const data = JSON.parse(decodedText);
             if (data.t === 'S' || data.type === 'STUDENT') {
@@ -623,19 +648,22 @@ export function openTeacherQrScanner() {
                     playBeep();
                     onAttendanceChange(stu.id, 'มา');
                     showTeacherScanSuccess(stu);
-                    // ไม่ปิดกล้อง เผื่อสแกนคนต่อไป
+                    // สำหรับเคสสำเร็จ ตัวแปร isTeacherScanningPaused จะถูกรีเซ็ตกลับเป็น false เมื่อปิดกล่องความสำเร็จลง (closeTeacherScanSuccess)
                 } else {
                     playBeep();
                     showToast(`ไม่พบนักเรียนรหัส ${stuId} ในคลาสนี้`, 'error');
+                    setTimeout(() => { isTeacherScanningPaused = false; }, 1500);
                 }
             } else {
                 playBeep();
                 showToast(`QR Code ไม่ใช่ของนักเรียน`, 'error');
+                setTimeout(() => { isTeacherScanningPaused = false; }, 1500);
             }
         } catch (e) { 
             console.error("Invalid QR", e);
             playBeep();
             showToast(`QR Code ไม่ถูกต้อง`, 'error');
+            setTimeout(() => { isTeacherScanningPaused = false; }, 1500);
         }
     });
 }
@@ -673,6 +701,7 @@ export async function pullStudentCheckIns() {
                     }
                 }
             });
+            if (count > 0) AppState.checkinUnsavedChanges = true;
             renderCheckinTable();
             if (count > 0) showToast(`ดึงข้อมูลสำเร็จ ${count} คน`);
             else showToast(`ไม่มีข้อมูลใหม่`, false);
@@ -759,6 +788,7 @@ export function startStudentQrScanner() {
 }
 
 export function stopStudentQrScanner() {
+    isTeacherScanningPaused = false;
     try {
         if (html5QrCode && html5QrCode.isScanning) {
             html5QrCode.stop().then(() => {
@@ -918,6 +948,8 @@ export function closeTeacherScanSuccess() {
     if (teacherScanSuccessTimeout) clearTimeout(teacherScanSuccessTimeout);
     if (teacherScanCountdownInterval) clearInterval(teacherScanCountdownInterval);
     
+    isTeacherScanningPaused = false;
+
     const modal = document.getElementById('teacher-scan-success-modal');
     const card = document.getElementById('teacher-scan-success-card');
     
@@ -934,6 +966,118 @@ export function closeTeacherScanSuccess() {
 window.closeTeacherScanSuccess = closeTeacherScanSuccess;
 window.submitStudentAttendance = submitStudentAttendance;
 window.switchCamera = switchCamera;
+
+export function saveCheckinDraft() {
+    const isClub = AppState.currentTab === 'club-checkin';
+    const date = document.getElementById(isClub ? 'club-checkin-date' : 'checkin-date')?.value;
+    const period = isClub ? '' : document.getElementById('checkin-period')?.value;
+    const clsId = document.getElementById(isClub ? 'club-checkin-id' : 'checkin-class')?.value;
+    const subId = isClub ? '' : document.getElementById('checkin-subject')?.value;
+    const teacherId = document.getElementById(isClub ? '' : 'checkin-teacher')?.value || '';
+    const yr = document.getElementById(isClub ? 'club-checkin-year' : 'checkin-year')?.value;
+    const sem = document.getElementById(isClub ? 'club-checkin-semester' : 'checkin-semester')?.value;
+
+    if (!clsId) return;
+
+    const draft = {
+        isClub,
+        date,
+        period,
+        clsId,
+        subId,
+        teacherId,
+        yr,
+        sem,
+        attendance: AppState.activeCheckinStates
+    };
+    const key = (ENVIRONMENT ? ENVIRONMENT.keyPrefix : '') + 'checkin_draft';
+    localStorage.setItem(key, JSON.stringify(draft));
+}
+
+export function clearCheckinDraft() {
+    const key = (ENVIRONMENT ? ENVIRONMENT.keyPrefix : '') + 'checkin_draft';
+    localStorage.removeItem(key);
+}
+
+export function resumeCheckinDraft(draft) {
+    if (draft.isClub) {
+        // Resume Club Checkin
+        const yrEl = document.getElementById('club-checkin-year');
+        if (yrEl) yrEl.value = draft.yr;
+        
+        const semEl = document.getElementById('club-checkin-semester');
+        if (semEl) semEl.value = draft.sem;
+
+        if (window.onClubCheckinYearSemesterChange) {
+            window.onClubCheckinYearSemesterChange();
+        }
+
+        const clubEl = document.getElementById('club-checkin-id');
+        if (clubEl) {
+            if (clubEl.tomselect) clubEl.tomselect.setValue(draft.clsId, true);
+            else clubEl.value = draft.clsId;
+        }
+
+        const dateEl = document.getElementById('club-checkin-date');
+        if (dateEl) dateEl.value = draft.date;
+
+        AppState.draftCheckinAttendance = draft.attendance;
+        if (window.loadClubCheckinList) {
+            window.loadClubCheckinList();
+        }
+    } else {
+        // Resume Normal Checkin
+        const yrEl = document.getElementById('checkin-year');
+        if (yrEl) yrEl.value = draft.yr;
+        
+        const semEl = document.getElementById('checkin-semester');
+        if (semEl) semEl.value = draft.sem;
+        
+        if (window.onCheckinYearSemesterChange) {
+            window.onCheckinYearSemesterChange();
+        }
+        
+        const clsEl = document.getElementById('checkin-class');
+        if (clsEl) {
+            if (clsEl.tomselect) clsEl.tomselect.setValue(draft.clsId, true);
+            else clsEl.value = draft.clsId;
+        }
+        
+        const tcEl = document.getElementById('checkin-teacher');
+        if (tcEl) {
+            if (tcEl.tomselect) tcEl.tomselect.setValue(draft.teacherId, true);
+            else tcEl.value = draft.teacherId;
+        }
+        
+        if (window.populateCheckinSubjectDropdown) {
+            window.populateCheckinSubjectDropdown(draft.teacherId, draft.clsId);
+        }
+        
+        const subEl = document.getElementById('checkin-subject');
+        if (subEl) {
+            if (subEl.tomselect) subEl.tomselect.setValue(draft.subId, true);
+            else subEl.value = draft.subId;
+        }
+        
+        const dateEl = document.getElementById('checkin-date');
+        if (dateEl) dateEl.value = draft.date;
+        
+        const periodEl = document.getElementById('checkin-period');
+        if (periodEl) {
+            if (periodEl.tomselect) periodEl.tomselect.setValue(draft.period, true);
+            else periodEl.value = draft.period;
+        }
+        
+        AppState.draftCheckinAttendance = draft.attendance;
+        if (window.loadCheckinList) {
+            window.loadCheckinList();
+        }
+    }
+}
+
+window.resumeCheckinDraft = resumeCheckinDraft;
+window.clearCheckinDraft = clearCheckinDraft;
+window.saveCheckinDraft = saveCheckinDraft;
 
 
 

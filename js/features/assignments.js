@@ -75,12 +75,8 @@ export function onAsmTypeChange() {
     });
 }
 
-export function initAssignmentsTab() {
-    // เตรียม State จำลอง หากยังไม่มีข้อมูล (เพราะ backend อาจจะยังไม่พร้อมรับ action แบบอัตโนมัติ)
+export function updateAssignmentClassFilter() {
     if (!AppState.allAssignments) AppState.allAssignments = [];
-    if (!AppState.allStudentAssignments) AppState.allStudentAssignments = [];
-    
-    // เตรียม Dropdown กรองชั้นเรียน
     let classes = AppState.allClasses.filter(c => c.deleted_flg !== 'Y');
     
     if (AppState.currentUser && AppState.currentUser.role === 'teacher') {
@@ -91,18 +87,55 @@ export function initAssignmentsTab() {
         });
     }
     classes.sort((a,b) => a.className.localeCompare(b.className, 'th', { numeric: true }));
+
+    // กรองเอาเฉพาะชั้นเรียนที่มีงานที่มอบหมายแล้วสำหรับ Dropdown ตัวกรอง
+    let filterClasses = classes.filter(c => {
+        return AppState.allAssignments.some(a => 
+            a.classId === c.id && 
+            a.deleted_flg !== 'Y' && 
+            (AppState.currentUser.role !== 'teacher' || a.teacherId === AppState.currentUser.data.id)
+        );
+    });
+
     const filterClassEl = document.getElementById('asm-filter-class');
-    const formClassEl = document.getElementById('asm-class');
-    
     if (filterClassEl) {
-        filterClassEl.innerHTML = '<option value="">-- ทุกชั้นเรียน --</option>' + classes.map(c => `<option value="${c.id}">${c.className}</option>`).join('');
+        const currentVal = filterClassEl.value;
+        filterClassEl.innerHTML = '<option value="">-- ทุกชั้นเรียน --</option>' + filterClasses.map(c => `<option value="${c.id}">${c.className}</option>`).join('');
+        filterClassEl.value = currentVal;
     }
+}
+
+export function initAssignmentsTab() {
+    // เตรียม State จำลอง หากยังไม่มีข้อมูล (เพราะ backend อาจจะยังไม่พร้อมรับ action แบบอัตโนมัติ)
+    if (!AppState.allAssignments) AppState.allAssignments = [];
+    if (!AppState.allStudentAssignments) AppState.allStudentAssignments = [];
+    
+    updateAssignmentClassFilter();
+
+    let classes = AppState.allClasses.filter(c => c.deleted_flg !== 'Y');
+    if (AppState.currentUser && AppState.currentUser.role === 'teacher') {
+        const teacherId = AppState.currentUser.data.id;
+        const teacherSubjects = AppState.currentUser.data.subjects || [];
+        classes = classes.filter(c => {
+            return c.subjects && Array.isArray(c.subjects) && c.subjects.some(subId => teacherSubjects.includes(subId));
+        });
+    }
+    classes.sort((a,b) => a.className.localeCompare(b.className, 'th', { numeric: true }));
+
+    const formClassEl = document.getElementById('asm-class');
     if (formClassEl) {
         formClassEl.innerHTML = '<option value="">-- เลือกชั้นเรียน --</option>' + classes.map(c => `<option value="${c.id}">${c.className}</option>`).join('');
     }
 
     if (document.getElementById('asm-filter-title')) document.getElementById('asm-filter-title').value = '';
     if (document.getElementById('asm-filter-progress')) document.getElementById('asm-filter-progress').value = '';
+
+    const form = document.getElementById('form-assignment');
+    if (form && !form.dataset.listenerAttached) {
+        form.addEventListener('input', () => { AppState.checkinUnsavedChanges = true; });
+        form.addEventListener('change', () => { AppState.checkinUnsavedChanges = true; });
+        form.dataset.listenerAttached = 'true';
+    }
 
     renderAssignmentsList();
 }
@@ -348,6 +381,26 @@ export function openAssignmentModal() {
     
     [1,2,3].forEach(i => removeAsmFile(i));
     
+    clearQuizPreview();
+    document.getElementById('asm-quiz-show-answer').checked = true;
+    const fileInput = document.getElementById('asm-quiz-file');
+    if (fileInput) {
+        fileInput.disabled = false;
+        fileInput.value = '';
+    }
+    const container = document.getElementById('asm-quiz-file-container');
+    if (container) {
+        container.classList.remove('bg-gray-100', 'cursor-not-allowed', 'opacity-60');
+        container.classList.add('bg-white', 'cursor-pointer');
+    }
+    const label = document.getElementById('asm-quiz-file-label');
+    if (label) {
+        label.innerText = 'เลือกไฟล์ข้อสอบ .xlsx';
+        label.classList.remove('text-indigo-600');
+    }
+    const warningLabel = document.getElementById('asm-quiz-warning');
+    if (warningLabel) warningLabel.classList.add('hidden');
+
     document.getElementById('assignment-modal').classList.add('show');
 }
 
@@ -488,7 +541,188 @@ export function editAssignment(id) {
             });
         }
     }
+
+    // โหลดข้อมูลแบบทดสอบ (Quiz)
+    clearQuizPreview();
+    if (asm.quizQuestions) {
+        let qArray = [];
+        try {
+            qArray = typeof asm.quizQuestions === 'string' ? JSON.parse(asm.quizQuestions) : asm.quizQuestions;
+        } catch(e) {}
+        if (Array.isArray(qArray) && qArray.length > 0) {
+            document.getElementById('asm-quiz-data').value = JSON.stringify(qArray);
+            renderQuizPreview(qArray);
+        }
+    }
+    document.getElementById('asm-quiz-show-answer').checked = (asm.quizShowAnswer === 'true' || asm.quizShowAnswer === true);
+
+    // เช็คว่ามีเด็กคนไหนที่ทำแบบทดสอบไปแล้วหรือยัง เพื่อล็อกการแก้ไข
+    const hasSubmissions = AppState.allStudentAssignments && AppState.allStudentAssignments.some(sa => 
+        (sa.assignmentId === asm.id || (sa.assignmentId && asm.id && (sa.assignmentId.startsWith(asm.id) || asm.id.startsWith(sa.assignmentId)))) && 
+        sa.quizAnswers && 
+        sa.deleted_flg !== 'Y'
+    );
+    const fileInput = document.getElementById('asm-quiz-file');
+    const warningLabel = document.getElementById('asm-quiz-warning');
+    const container = document.getElementById('asm-quiz-file-container');
+    if (fileInput) {
+        fileInput.disabled = !!hasSubmissions;
+        if (hasSubmissions) {
+            fileInput.setAttribute('title', 'ไม่สามารถแก้ไขข้อสอบได้ เนื่องจากมีนักเรียนทำข้อสอบชุดนี้แล้ว');
+            if (warningLabel) warningLabel.classList.remove('hidden');
+            if (container) {
+                container.classList.add('bg-gray-100', 'cursor-not-allowed', 'opacity-60');
+                container.classList.remove('bg-white', 'cursor-pointer');
+            }
+        } else {
+            fileInput.removeAttribute('title');
+            if (warningLabel) warningLabel.classList.add('hidden');
+            if (container) {
+                container.classList.remove('bg-gray-100', 'cursor-not-allowed', 'opacity-60');
+                container.classList.add('bg-white', 'cursor-pointer');
+            }
+        }
+    }
+
     document.getElementById('assignment-modal').classList.add('show');
+}
+
+export async function parseQuizExcel(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Update label to show the selected filename
+    const label = document.getElementById('asm-quiz-file-label');
+    if (label) {
+        label.innerText = `ไฟล์ที่เลือก: ${file.name}`;
+        label.classList.add('text-indigo-600');
+    }
+    
+    showLoading('กำลังวิเคราะห์ข้อสอบ...');
+    
+    try {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const arrayBuffer = e.target.result;
+                const workbook = new ExcelJS.Workbook();
+                await workbook.xlsx.load(arrayBuffer);
+                const worksheet = workbook.worksheets[0];
+                
+                const questions = [];
+                
+                worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+                    if (rowNumber === 1) return; // Skip header row
+                    
+                    const qNum = row.getCell(1).value;
+                    const questionText = row.getCell(2).value;
+                    if (!questionText) return;
+                    
+                    const choices = [];
+                    // Columns C to G are columns 3 to 7
+                    for (let col = 3; col <= 7; col++) {
+                        const cellVal = row.getCell(col).value;
+                        if (cellVal !== null && cellVal !== undefined && cellVal.toString().trim() !== '') {
+                            choices.push(cellVal.toString().trim());
+                        }
+                    }
+                    
+                    if (choices.length < 2) return; // At least two choices required
+                    
+                    let correctVal = row.getCell(8).value;
+                    if (correctVal === null || correctVal === undefined) return;
+                    
+                    correctVal = correctVal.toString().trim();
+                    let correctIndex = -1;
+                    
+                    // Convert Thai letters if needed
+                    const thaiMapping = { 'ก': 1, 'ข': 2, 'ค': 3, 'ง': 4, 'จ': 5 };
+                    if (thaiMapping[correctVal]) {
+                        correctIndex = thaiMapping[correctVal] - 1;
+                    } else {
+                        const parsedNum = parseInt(correctVal);
+                        if (!isNaN(parsedNum) && parsedNum >= 1 && parsedNum <= 5) {
+                            correctIndex = parsedNum - 1;
+                        }
+                    }
+                    
+                    if (correctIndex < 0 || correctIndex >= choices.length) {
+                        throw new Error(`ข้อ ${qNum || rowNumber}: เฉลย "${correctVal}" ไม่ตรงกับจำนวนตัวเลือกที่มี หรือระบุคำตอบไม่ถูกต้อง`);
+                    }
+                    
+                    const explanation = row.getCell(9).value ? row.getCell(9).value.toString().trim() : '';
+                    
+                    questions.push({
+                        q: questionText.toString().trim(),
+                        choices: choices,
+                        ans: correctIndex,
+                        exp: explanation
+                    });
+                });
+                
+                if (questions.length === 0) {
+                    throw new Error('ไม่พบข้อมูลข้อสอบในไฟล์ กรุณาตรวจสอบรูปแบบตาราง');
+                }
+                
+                document.getElementById('asm-quiz-data').value = JSON.stringify(questions);
+                renderQuizPreview(questions);
+                showToast(`อ่านข้อสอบเสร็จเรียบร้อย ${questions.length} ข้อ`);
+            } catch (err) {
+                console.error(err);
+                customAlert(err.message || 'เกิดข้อผิดพลาดในการเปิดไฟล์ Excel');
+                clearQuizPreview();
+            } finally {
+                hideLoading();
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    } catch (err) {
+        console.error(err);
+        hideLoading();
+        customAlert('ไม่สามารถอ่านไฟล์ได้');
+    }
+}
+
+export function renderQuizPreview(questions) {
+    const tbody = document.getElementById('asm-quiz-preview-tbody');
+    const container = document.getElementById('asm-quiz-preview-container');
+    const countSpan = document.getElementById('asm-quiz-q-count');
+    
+    if (!tbody || !container || !countSpan) return;
+    
+    countSpan.innerText = questions.length;
+    
+    tbody.innerHTML = questions.map((q, idx) => {
+        const thaiLetter = ['ก', 'ข', 'ค', 'ง', 'จ'][q.ans] || (q.ans + 1);
+        return `
+            <tr>
+                <td class="px-3 py-2 font-bold text-gray-700">${idx + 1}</td>
+                <td class="px-3 py-2 text-gray-600">${q.q}</td>
+                <td class="px-3 py-2 text-gray-500">${q.choices.length} ตัวเลือก</td>
+                <td class="px-3 py-2 font-bold text-green-600">${thaiLetter}</td>
+            </tr>
+        `;
+    }).join('');
+    
+    container.classList.remove('hidden');
+}
+
+export function clearQuizPreview() {
+    document.getElementById('asm-quiz-data').value = '';
+    const fileInput = document.getElementById('asm-quiz-file');
+    if (fileInput) fileInput.value = '';
+    
+    const label = document.getElementById('asm-quiz-file-label');
+    if (label) {
+        label.innerText = 'เลือกไฟล์ข้อสอบ .xlsx';
+        label.classList.remove('text-indigo-600');
+    }
+    
+    const container = document.getElementById('asm-quiz-preview-container');
+    if (container) container.classList.add('hidden');
+    
+    const tbody = document.getElementById('asm-quiz-preview-tbody');
+    if (tbody) tbody.innerHTML = '';
 }
 
 export async function saveAssignment() {
@@ -528,6 +762,9 @@ export async function saveAssignment() {
     
     showLoading('กำลังบันทึกและประมวลผลไฟล์...');
     
+    const quizData = document.getElementById('asm-quiz-data').value;
+    const quizShowAnswer = document.getElementById('asm-quiz-show-answer').checked ? 'true' : 'false';
+
     const id = document.getElementById('asm-id').value || generateId();
     const payload = {
         id: id,
@@ -543,7 +780,9 @@ export async function saveAssignment() {
         description: document.getElementById('asm-desc').value.trim(),
         teacherId: AppState.currentUser ? AppState.currentUser.data.id : 'unknown',
         createdAt: getISOTimestamp(),
-        deleted_flg: 'N'
+        deleted_flg: 'N',
+        quizQuestions: quizData || '',
+        quizShowAnswer: quizShowAnswer
     };
 
     // รวบรวมไฟล์
@@ -578,54 +817,65 @@ export async function saveAssignment() {
     payload.files = JSON.stringify(files); // ยัดลง Payload เตรียมส่งขึ้น Apps Script
     
     try {
-        const response = await fetch(AppState.googleSheetUrl, {
-            method: 'POST',
-            redirect: 'follow',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ action: 'createAssignmentWithFiles', payload: payload })
-        });
-        
-        const text = await response.text();
-        let result = {};
-        
-        try {
-            result = JSON.parse(text);
-        } catch (e) {
-            // ข้าม Error กรณีแปลงเป็น JSON ไม่สำเร็จ
-        }
-        
-        // 🌟 ตรวจสอบความสำเร็จแบบรอบคอบที่สุด (ดักจับทุกรูปแบบของคำว่า สำเร็จ)
-        let isError = result.status === 'error' || result.error === true;
-        const msgStr = (result.message || text || '').toLowerCase();
-        
-        if (isError && (msgStr.includes('สำเร็จ') || msgStr.includes('สําเร็จ') || msgStr.includes('success'))) {
-            isError = false; // Override กลับเป็นสำเร็จ
-        }
-
-        const isSuccess = !isError && (
-            response.ok || 
-            result.status === 'success' || 
-            result.success === true || 
-            result.id !== undefined || 
-            msgStr.includes('สำเร็จ') || msgStr.includes('สําเร็จ') || msgStr.includes('success')
-        );
-            
-        if (!isSuccess) {
-            throw new Error(result.message || text || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
-        }
-
         let finalObj = { ...payload };
-        if (result && typeof result === 'object') {
-            if (result.data) { finalObj = { ...finalObj, ...result.data }; } 
-            else if (result.id) { finalObj = { ...finalObj, ...result }; }
+        
+        if (AppState.googleSheetUrl) {
+            try {
+                const response = await fetch(AppState.googleSheetUrl, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'createAssignmentWithFiles', payload: payload })
+                });
+                
+                const text = await response.text();
+                let result = {};
+                try { result = JSON.parse(text); } catch (e) {}
+                
+                let isError = result.status === 'error' || result.error === true;
+                const msgStr = (result.message || text || '').toLowerCase();
+                
+                if (isError && (msgStr.includes('สำเร็จ') || msgStr.includes('สําเร็จ') || msgStr.includes('success'))) {
+                    isError = false; // Override กลับเป็นสำเร็จ
+                }
+        
+                const isSuccess = !isError && (
+                    response.ok || 
+                    result.status === 'success' || 
+                    result.success === true || 
+                    result.id !== undefined || 
+                    msgStr.includes('สำเร็จ') || msgStr.includes('สําเร็จ') || msgStr.includes('success')
+                );
+                    
+                if (isSuccess) {
+                    if (result.data) { 
+                        finalObj = { ...finalObj, ...result.data }; 
+                    } else if (result.files || result.id) {
+                        finalObj = { ...finalObj, ...result };
+                    }
+                }
+            } catch (errSheets) {
+                console.error("Google Sheets upload failed, falling back to Firebase only:", errSheets);
+            }
         }
         
         try {
             let filesData = finalObj.files || payload.files || '[]';
             let parsedFiles = typeof filesData === 'string' ? JSON.parse(filesData) : filesData;
             if (Array.isArray(parsedFiles)) {
-                parsedFiles = parsedFiles.map(f => ({ n: f.name || f.n, u: f.url || f.u || 'อัปโหลดสำเร็จ' }));
+                let hasMissingUrls = false;
+                parsedFiles = parsedFiles.map(f => {
+                    const urlVal = f.url || f.u;
+                    if (!urlVal || urlVal === 'อัปโหลดสำเร็จ') {
+                        hasMissingUrls = true;
+                    }
+                    return { n: f.name || f.n, u: urlVal || 'อัปโหลดสำเร็จ' };
+                });
                 finalObj.files = JSON.stringify(parsedFiles);
+                
+                if (hasMissingUrls && files.some(file => file.base64)) {
+                    console.warn("Some uploaded files are missing URLs from the backend response. Please ensure Google Apps Script is updated to the latest version.");
+                }
             }
         } catch(e) {}
         
@@ -683,8 +933,10 @@ export async function saveAssignment() {
             await saveToDB('STUDENT_ASSIGNMENTS', AppState.allStudentAssignments, 'saveStudentAssignments');
         }
         
+        AppState.checkinUnsavedChanges = false;
         hideLoading();
         closeModal('assignment-modal');
+        updateAssignmentClassFilter();
         renderAssignmentsList();
         showToast('สร้างงานมอบหมายเรียบร้อย');
         
@@ -710,6 +962,7 @@ export function deleteAssignment(id) {
             AppState.allAssignments[idx].deleted_flg = 'Y';
             AppState.allAssignments[idx].deletedAt = getISOTimestamp();
             await saveToDB('ASSIGNMENTS', AppState.allAssignments, 'saveAssignments');
+            updateAssignmentClassFilter();
             renderAssignmentsList();
             showToast('ลบงานเรียบร้อยแล้ว');
         }
@@ -794,21 +1047,63 @@ export function renderGradingTable() {
                 <input type="number" class="score-input w-full border rounded px-2 py-1.5 text-sm text-center focus:ring-green-500 focus:border-green-500" max="${asm.maxScore}" value="${sAsm.score !== null && sAsm.score !== '' ? sAsm.score : ''}" onkeydown="handleScoreEnter(event, this)" onkeyup="validateScore(this, ${asm.maxScore}); autoUpdateStatusUI(this)" onchange="validateScore(this, ${asm.maxScore}); autoUpdateStatusUI(this)">
             </td>
             <td class="px-4 py-3 text-center" data-label="ไฟล์งานนักเรียน">
-                ${asm.submitLocation === 'สอบ' ? `<span class="text-gray-400 text-xs">-</span>` : (['ส่งแล้ว', 'ตรวจแล้ว'].includes(sAsm.status)
+                ${asm.quizQuestions ? (['ส่งแล้ว', 'ตรวจแล้ว'].includes(sAsm.status)
+                    ? `<button onclick="viewStudentQuizSubmission('${stu.id}')" class="text-xs bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 px-2 py-1.5 rounded transition-colors font-bold"><i class="fas fa-eye mr-1"></i> ดูคำตอบ</button>`
+                    : `<span class="text-gray-400 text-xs">-</span>`)
+                : (asm.submitLocation === 'สอบ' ? `<span class="text-gray-400 text-xs">-</span>` : (['ส่งแล้ว', 'ตรวจแล้ว'].includes(sAsm.status)
                     ? `<button onclick="viewStudentSubmission('${stu.id}')" class="text-xs bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 px-2 py-1 rounded transition-colors font-bold"><i class="fas fa-eye mr-1"></i> ตรวจงาน</button>`
-                    : `<span class="text-gray-400 text-xs">-</span>`)}
+                    : `<span class="text-gray-400 text-xs">-</span>`))}
             </td>
             <td class="px-4 py-3 text-center" data-label="จัดการ">
-                ${asm.submitLocation !== 'สอบ' ? `<button onclick="remindAssignment('${stu.id}')" class="text-xs bg-red-500 text-white px-2 py-1.5 rounded hover:bg-red-600 transition-colors shadow-sm ${['ส่งแล้ว', 'ตรวจแล้ว'].includes(sAsm.status) ? 'hidden' : ''}"><i class="fas fa-bullhorn mr-1"></i>ทวงงาน</button>` : `<span class="text-gray-400 text-xs">-</span>`}
+                ${asm.quizQuestions ? `<span class="text-gray-400 text-xs">-</span>` : (asm.submitLocation !== 'สอบ' ? `<button onclick="remindAssignment('${stu.id}')" class="text-xs bg-red-500 text-white px-2 py-1.5 rounded hover:bg-red-600 transition-colors shadow-sm ${['ส่งแล้ว', 'ตรวจแล้ว'].includes(sAsm.status) ? 'hidden' : ''}"><i class="fas fa-bullhorn mr-1"></i>ทวงงาน</button>` : `<span class="text-gray-400 text-xs">-</span>`)}
             </td>
             <td class="px-4 py-3" data-label="หมายเหตุครู">
-                <input type="text" class="comment-input w-full border rounded px-2 py-1.5 text-sm focus:ring-green-500 focus:border-green-500" value="${sAsm.teacherComment || ''}" placeholder="ระบุหมายเหตุ...">
+                <input type="text" class="comment-input w-full border rounded px-2 py-1.5 text-sm focus:ring-green-500 focus:border-green-500" value="${sAsm.teacherComment || ''}" placeholder="ระบุหมายเหตุ..." oninput="AppState.checkinUnsavedChanges = true;">
             </td>
             <td class="px-4 py-3 text-center" data-label="สถานะ">
                 <span class="status-badge px-2.5 py-1 rounded-full text-xs font-bold whitespace-nowrap ${statusColors[sAsm.status] || 'bg-gray-100 text-gray-600'}">${sAsm.status}</span>
             </td>
         </tr>`;
     }).join('');
+}
+
+export function viewStudentQuizSubmission(studentId) {
+    const asm = AppState.allAssignments.find(a => a.id === currentGradingAssignmentId);
+    if (!asm) return;
+
+    const student = AppState.allStudents.find(s => s.id === studentId || s.studentId === studentId);
+    if (!student) return;
+
+    const sAsm = AppState.allStudentAssignments && AppState.allStudentAssignments.find(x => 
+        (String(x.assignmentId) === String(asm.id) || (x.assignmentId && asm.id && (String(x.assignmentId).startsWith(String(asm.id)) || String(asm.id).startsWith(String(x.assignmentId))))) && 
+        (String(x.studentId) === String(student.id) || String(x.studentId) === String(student.studentId)) && 
+        x.deleted_flg !== 'Y'
+    );
+    if (!sAsm) {
+        return customAlert('ไม่พบประวัติการทำข้อสอบของนักเรียนคนนี้');
+    }
+
+    if (window.renderStudentQuiz) {
+        window.renderStudentQuiz(asm, sAsm, true);
+        document.getElementById('student-quiz-modal').classList.add('show');
+        
+        // Hide submit button since teacher is only viewing
+        const submitBtn = document.getElementById('student-quiz-submit-btn');
+        if (submitBtn) submitBtn.classList.add('hidden');
+        
+        // Custom footer details for teacher review
+        const actions = document.getElementById('student-quiz-actions');
+        if (actions) {
+            actions.innerHTML = `
+                <div class="w-full flex justify-between items-center gap-2">
+                    <span class="text-xs text-gray-500 font-bold"><i class="fas fa-info-circle mr-1"></i>โหมดตรวจข้อสอบผู้เรียน: ${getStudentFullName(student)}</span>
+                    <button onclick="closeModal('student-quiz-modal')" class="px-4 py-2 sm:px-6 sm:py-2.5 text-xs sm:text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md transition-all whitespace-nowrap">ปิดหน้าต่าง</button>
+                </div>
+            `;
+        }
+    } else {
+        customAlert('ระบบขัดข้อง: ไม่สามารถดึงชุดข้อสอบผู้เรียนได้');
+    }
 }
 
 export function viewStudentSubmission(studentId) {
@@ -993,6 +1288,9 @@ export async function submitSubmissionGrading() {
 
 export function autoUpdateStatusUI(inputEl) {
     const row = inputEl.closest('.grading-row');
+    if (row) {
+        AppState.checkinUnsavedChanges = true;
+    }
     const score = inputEl.value;
     const badge = row.querySelector('.status-badge');
     const origStatus = row.getAttribute('data-orig-status');
@@ -1193,6 +1491,8 @@ export async function saveGrading(stayOpen = false, isConfirmed = false) {
         hideLoading();
     }
     
+    AppState.checkinUnsavedChanges = false;
+
     // ถ้าระบุให้เปิดหน้าต่างค้างไว้ (เช่น ถูกเรียกจากปุ่มทวงงาน) จะไม่ทำงานในส่วนนี้
     if (stayOpen !== true) {
         showToast('บันทึกข้อมูลเรียบร้อย');
@@ -1469,4 +1769,117 @@ export async function exportAssignmentsExcel() {
     if (window.showToast) showToast(`ส่งออกรายงานคะแนน ${className} - ${subName} เรียบร้อย`);
 }
 
+// Hook closeModal globally to check for unsaved changes in assignments page
+const originalCloseModal = window.closeModal;
+window.closeModal = function(modalId) {
+    if ((modalId === 'grading-modal' || modalId === 'assignment-modal') && AppState.checkinUnsavedChanges) {
+        if (window.customConfirm) {
+            window.customConfirm(
+                'ข้อมูลยังไม่ได้บันทึก',
+                'คุณมีข้อมูลการกรอกคะแนนหรืองานที่ยังไม่ได้ทำการบันทึก ต้องการปิดหน้าต่างและยอมรับการสูญเสียข้อมูลใช่หรือไม่?',
+                () => {
+                    AppState.checkinUnsavedChanges = false;
+                    if (originalCloseModal) originalCloseModal(modalId);
+                },
+                'ออกโดยไม่บันทึก',
+                'ทำงานต่อ'
+            );
+            return;
+        } else {
+            const confirmLeave = confirm('คุณมีข้อมูลที่ยังไม่ได้บันทึก ต้องการออกจากหน้านี้ใช่หรือไม่?');
+            if (!confirmLeave) return;
+        }
+    }
+    
+    AppState.checkinUnsavedChanges = false;
+    if (originalCloseModal) {
+        originalCloseModal(modalId);
+    }
+};
+
 window.exportAssignmentsExcel = exportAssignmentsExcel;
+window.parseQuizExcel = parseQuizExcel;
+window.clearQuizPreview = clearQuizPreview;
+window.viewStudentQuizSubmission = viewStudentQuizSubmission;
+
+export async function downloadQuizTemplate() {
+    try {
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('เทมเพลตข้อสอบ');
+        
+        // กำหนดคอลัมน์ตามลำดับที่ผู้ใช้กำหนด:
+        // ข้อ | คำถาม | 1 | 2 | 3 | 4 | 5 | เฉลย | คำอธิบาย (Rationale)
+        sheet.columns = [
+            { header: 'ข้อ', key: 'num', width: 8 },
+            { header: 'คำถาม', key: 'question', width: 40 },
+            { header: '1', key: 'c1', width: 20 },
+            { header: '2', key: 'c2', width: 20 },
+            { header: '3', key: 'c3', width: 20 },
+            { header: '4', key: 'c4', width: 20 },
+            { header: '5', key: 'c5', width: 20 },
+            { header: 'เฉลย', key: 'ans', width: 12 },
+            { header: 'คำอธิบาย (Rationale)', key: 'exp', width: 30 }
+        ];
+
+        // ใส่ตัวอย่างข้อมูล (Sample data row)
+        sheet.addRow({
+            num: 1,
+            question: 'ประเทศไทยมีกี่ฤดู?',
+            c1: '2 ฤดู',
+            c2: '3 ฤดู',
+            c3: '4 ฤดู',
+            c4: '5 ฤดู',
+            c5: 'ไม่มีข้อถูก',
+            ans: 'ข', // หรือ 2
+            exp: 'ประเทศไทยมี 3 ฤดู ได้แก่ ฤดูร้อน ฤดูฝน และฤดูหนาว'
+        });
+
+        sheet.addRow({
+            num: 2,
+            question: 'เมืองหลวงของประเทศไทยคือเมืองใด?',
+            c1: 'เชียงใหม่',
+            c2: 'กรุงเทพมหานคร',
+            c3: 'ภูเก็ต',
+            c4: 'ชลบุรี',
+            c5: '',
+            ans: '2',
+            exp: 'กรุงเทพมหานครเป็นเมืองหลวงและศูนย์กลางการปกครองของไทย'
+        });
+
+        // จัดสไตล์หัวตารางสวย ๆ
+        const headerRow = sheet.getRow(1);
+        headerRow.font = { name: 'Sarabun', family: 4, size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        headerRow.eachCell((cell) => {
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FF4F46E5' } // Indigo color theme matching the Quiz modal
+            };
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        });
+        
+        sheet.getRow(2).font = { name: 'Sarabun', size: 10 };
+        sheet.getRow(3).font = { name: 'Sarabun', size: 10 };
+
+        // สร้างไฟล์
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'Quiz_Template.xlsx';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        if (window.showToast) showToast('ดาวน์โหลดเทมเพลตข้อสอบเรียบร้อยแล้ว');
+    } catch (err) {
+        console.error(err);
+        if (window.customAlert) {
+            window.customAlert('ไม่สามารถสร้างไฟล์เทมเพลตได้: ' + err.message);
+        } else {
+            alert('ไม่สามารถสร้างไฟล์เทมเพลตได้: ' + err.message);
+        }
+    }
+}
+
+window.downloadQuizTemplate = downloadQuizTemplate;

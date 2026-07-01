@@ -1,0 +1,24 @@
+<section id="tab-my-club" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Club Info Card -->
+            <div class="glass-panel rounded-none sm:rounded-2xl p-6 lg:col-span-2">
+                    <h3 class="text-2xl font-bold text-green-800 mb-6 border-b pb-3"><i class="fas fa-users mr-2"></i>วิชาชุมนุมของฉัน</h3>
+                    <div id="my-club-info-container" class="space-y-4">
+                        <!-- Dynamic Info Loaded Here -->
+                    </div>
+                </div>
+                <!-- Attendance Stats Widget -->
+            <div class="glass-panel rounded-none sm:rounded-2xl p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6 border-b pb-3"><i class="fas fa-chart-pie mr-2"></i>สถิติการเข้าชุมนุม</h3>
+                    <div class="flex flex-col items-center justify-center p-4">
+                        <div class="relative w-40 h-40 flex items-center justify-center rounded-full bg-green-50 border-8 border-green-500 mb-4">
+                            <span class="text-3xl font-extrabold text-green-700" id="my-club-percent">0%</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 w-full text-center">
+                            <div class="p-2 bg-green-50 rounded"><p class="text-xs text-green-700 font-bold">เข้าเรียน (ครั้ง)</p><p class="text-xl font-bold text-green-800" id="my-club-present">0</p></div>
+                            <div class="p-2 bg-red-50 rounded"><p class="text-xs text-red-700 font-bold">ขาดเรียน (ครั้ง)</p><p class="text-xl font-bold text-red-800" id="my-club-absent">0</p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>

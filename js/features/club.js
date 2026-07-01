@@ -2,6 +2,7 @@ import { AppState } from '../core/state.js';
 import { DB_KEYS } from '../core/config.js';
 import { generateId, getStudentFullName, showToast, customAlert, customConfirm, closeModal, exportToCSV, getBangkokDate, getDefaultAcademicYearAndSemester, matchRecordYearSemester, getBangkokCurrentTime, getISOTimestamp, getCurrentUserId } from '../utils/helpers.js';
 import { saveToDB, syncDataFromServer } from '../services/api.js';
+import { saveCheckinDraft, clearCheckinDraft } from './checkin.js';
 
 // --- 1. Club Master Management ---
 export function renderClubList() {
@@ -488,14 +489,24 @@ export async function loadClubCheckinList() {
     
     AppState.activeCheckinStates = {};
     AppState.lastCheckedClubStuId = null;
+    
+    const isResumingDraft = AppState.draftCheckinAttendance !== undefined && AppState.draftCheckinAttendance !== null;
+    
     AppState.currentCheckinStudents.forEach(stu => {
         let status = '';
-        if(existRec) {
+        if (isResumingDraft) {
+            status = AppState.draftCheckinAttendance[stu.id] || '';
+        } else if(existRec) {
             const r = existRec.attendance.find(a => a.studentId === stu.id);
             if(r) status = r.status;
         }
         AppState.activeCheckinStates[stu.id] = status;
     });
+
+    if (isResumingDraft) {
+        AppState.checkinUnsavedChanges = true;
+        delete AppState.draftCheckinAttendance;
+    }
 
     if(document.getElementById('club-checkin-search')) document.getElementById('club-checkin-search').value = '';
     if(document.getElementById('club-checkin-hide-checked')) document.getElementById('club-checkin-hide-checked').checked = false;
@@ -505,6 +516,7 @@ export async function loadClubCheckinList() {
     document.getElementById('club-bulk-actions').classList.remove('hidden');
     document.getElementById('club-bulk-actions').classList.add('flex');
 
+    AppState.checkinUnsavedChanges = false;
     renderClubCheckinTable();
 }
 
@@ -576,6 +588,8 @@ export function renderClubCheckinTable() {
 export function onClubAttendanceChange(stuId, status) {
     AppState.activeCheckinStates[stuId] = status;
     AppState.lastCheckedClubStuId = stuId;
+    AppState.checkinUnsavedChanges = true;
+    saveCheckinDraft();
     renderClubCheckinTable();
 }
 
@@ -584,6 +598,8 @@ export function setAllClubAttendance(st) {
         AppState.activeCheckinStates[stu.id] = st;
     });
     AppState.lastCheckedClubStuId = null;
+    AppState.checkinUnsavedChanges = true;
+    saveCheckinDraft();
     renderClubCheckinTable();
 }
 
@@ -655,6 +671,8 @@ export async function saveClubAttendance() {
 
         await saveToDB(DB_KEYS.CLUB_RECORDS, AppState.allClubRecords, 'saveClubRecords');
         showToast('บันทึกการเข้ากิจกรรมชุมนุมเสร็จสิ้น');
+        AppState.checkinUnsavedChanges = false;
+        clearCheckinDraft();
     });
 }
 

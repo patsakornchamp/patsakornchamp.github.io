@@ -1,6 +1,6 @@
 import { AppState } from '../core/state.js';
 import { DB_KEYS } from '../core/config.js';
-import { generateId, getStudentFullName, showToast, customAlert, customConfirm, closeModal, validateThaiCitizenId, validatePhoneNumber, matchRecordYearSemester, getISOTimestamp, getCurrentUserId, showLoading, hideLoading, getBangkokDate } from '../utils/helpers.js';
+import { generateId, getStudentFullName, showToast, customAlert, customConfirm, closeModal, validateThaiCitizenId, validatePhoneNumber, matchRecordYearSemester, getISOTimestamp, getCurrentUserId, showLoading, hideLoading, getBangkokDate, getBangkokCurrentTime } from '../utils/helpers.js';
 import { saveToDB, syncDataFromServer } from '../services/api.js';
 
 // ฟังก์ชันสำหรับแปลงไฟล์เป็น Base64
@@ -329,6 +329,13 @@ export async function saveMyProfile(e) {
             
             const isSuccess = response.ok || result.success === true || result.status === 'success' || text.toLowerCase().includes('success') || text.includes('สำเร็จ');
             if (isSuccess) {
+                if (result.payload) {
+                    const studentIndex = AppState.allStudents.findIndex(std => String(std.id) === String(payload.id));
+                    if (studentIndex > -1) {
+                        AppState.allStudents[studentIndex] = { ...AppState.allStudents[studentIndex], ...result.payload };
+                        await saveToDB(DB_KEYS.STUDENTS, AppState.allStudents, 'saveStudents');
+                    }
+                }
                 showToast('บันทึกข้อมูลส่วนตัวและรูปภาพเรียบร้อยแล้ว');
                 await syncDataFromServer(true);
                 renderStudentProfile();
@@ -1404,8 +1411,10 @@ export function renderStudentAssignments() {
     const stuCode = AppState.currentUser.data.studentId ? String(AppState.currentUser.data.studentId).trim() : '';
     const stuClass = String(AppState.currentUser.data.class || '').trim();
     
-    const filterSub = document.getElementById('stu-asm-filter-sub').value;
-    const filterStatus = document.getElementById('stu-asm-filter-status').value;
+    const filterSubEl = document.getElementById('stu-asm-filter-sub');
+    const filterStatusEl = document.getElementById('stu-asm-filter-status');
+    const filterSub = filterSubEl ? filterSubEl.value : 'all';
+    const filterStatus = filterStatusEl ? filterStatusEl.value : 'all';
     
     // 1. ค้นหาประวัติ/สถานะการส่งงานของนักเรียนคนนี้จากตาราง StudentAssignments
     const mySubmissionRecords = AppState.allStudentAssignments.filter(sa => 
@@ -1463,26 +1472,47 @@ export function renderStudentAssignments() {
     const subDropdown = document.getElementById('stu-asm-filter-sub');
     let subjectScores = {};
     
+    // Calculate total values for the "All" card
+    let grandTotalMax = 0;
+    let grandMyScore = 0;
+    
     mappedData.forEach(item => {
         const subName = item.subject.name;
         if (!subjectScores[subName]) subjectScores[subName] = { subId: item.asm.subjectId, totalMax: 0, myScore: 0, count: 0 };
         
-        subjectScores[subName].totalMax += parseFloat(item.asm.maxScore || 0);
+        const maxScoreVal = parseFloat(item.asm.maxScore || 0);
+        subjectScores[subName].totalMax += maxScoreVal;
         subjectScores[subName].count++;
+        grandTotalMax += maxScoreVal;
         
         if (item.rec.status === 'ตรวจแล้ว' && item.rec.score !== null) {
-            subjectScores[subName].myScore += parseFloat(item.rec.score);
+            const scoreVal = parseFloat(item.rec.score);
+            subjectScores[subName].myScore += scoreVal;
+            grandMyScore += scoreVal;
         }
     });
 
-    let dashHtml = '';
+    const grandPct = grandTotalMax > 0 ? Math.round((grandMyScore / grandTotalMax) * 100) : 0;
+    const isAllActive = !filterSub;
+    const allBorderClass = isAllActive ? 'border-indigo-600 shadow-md ring-2 ring-indigo-100 bg-indigo-50/20' : 'border-gray-200 hover:border-indigo-400 bg-white';
+
+    let dashHtml = `
+        <div onclick="filterStudentAssignmentBySubject('')" class="cursor-pointer p-4 rounded-xl border-2 ${allBorderClass} shadow-sm flex items-center justify-center text-center transition-all hover:scale-[1.02] duration-200 min-h-[108px]">
+            <p class="font-bold text-indigo-900 text-sm"><i class="fas fa-th-large mr-1.5 text-indigo-600"></i>ทุกรายวิชา (ทั้งหมด)</p>
+        </div>
+    `;
+    
     let dropdownHtml = '<option value="">-- ทุกรายวิชา --</option>';
     
     for (const [subName, stats] of Object.entries(subjectScores)) {
         const pct = stats.totalMax > 0 ? Math.round((stats.myScore / stats.totalMax) * 100) : 0;
         dropdownHtml += `<option value="${stats.subId}">${subName}</option>`;
+        
+        const isActive = filterSub && (String(filterSub).trim() === String(stats.subId).trim() || String(filterSub).trim() === String(subName).trim());
+        const borderClass = isActive ? 'border-green-600 shadow-md ring-2 ring-green-100 bg-green-50/10' : 'border-gray-200 hover:border-green-400 bg-white';
+        
         dashHtml += `
-            <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
+            <div onclick="filterStudentAssignmentBySubject('${stats.subId}')" class="cursor-pointer p-4 rounded-xl border ${borderClass} shadow-sm flex flex-col justify-between transition-all hover:scale-[1.02] duration-200">
                 <p class="font-bold text-indigo-900 text-sm truncate mb-2" title="${subName}">${subName}</p>
                 <div>
                     <div class="flex justify-between items-end mb-1">
@@ -1616,7 +1646,17 @@ export function renderStudentAssignments() {
                 <div class="text-xs ${m.isOverdue ? 'text-red-600 font-bold' : 'text-gray-500'} flex items-center"><i class="far fa-clock w-5 text-center mr-1 ${m.isOverdue ? 'text-red-500 animate-pulse' : 'text-gray-400'}"></i>กำหนด: ${getBangkokDate(a.dueDate)} ${a.dueTime}</div>
             </div>`;
 
-        const btnLabel = a.submitLocation === 'สอบ' ? (r.status === 'ตรวจแล้ว' ? '<i class="fas fa-eye"></i> ดูผลคะแนนสอบ' : '<i class="fas fa-eye"></i> ดูรายละเอียด') : (r.status === 'ตรวจแล้ว' ? '<i class="fas fa-eye"></i> ดูผลการตรวจ' : '<i class="fas fa-paper-plane"></i> ดูรายละเอียด / ส่งงาน');
+        const hasQuiz = a.quizQuestions && a.quizQuestions.trim() !== '' && a.quizQuestions !== '[]';
+        let btnLabel = '';
+        if (hasQuiz) {
+            if (r.status === 'ตรวจแล้ว' || r.status === 'ส่งแล้ว') {
+                btnLabel = (a.quizShowAnswer === 'true' || a.quizShowAnswer === true) ? '<i class="fas fa-eye"></i> ดูเฉลยและผลคะแนน' : '<i class="fas fa-check-circle"></i> ส่งแบบทดสอบแล้ว';
+            } else {
+                btnLabel = '<i class="fas fa-puzzle-piece"></i> ทำแบบทดสอบ';
+            }
+        } else {
+            btnLabel = a.submitLocation === 'สอบ' ? (r.status === 'ตรวจแล้ว' ? '<i class="fas fa-eye"></i> ดูผลคะแนนสอบ' : '<i class="fas fa-eye"></i> ดูรายละเอียด') : (r.status === 'ตรวจแล้ว' ? '<i class="fas fa-eye"></i> ดูผลการตรวจ' : '<i class="fas fa-paper-plane"></i> ดูรายละเอียด / ส่งงาน');
+        }
 
         return `
         <div class="${cardBgClass} p-5 rounded-2xl border ${cardBorder} shadow-sm hover:shadow-lg ${shadowColor} transform hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between cursor-pointer" onclick="openStudentAssignmentModal('${a.id}')">
@@ -1723,8 +1763,9 @@ export function openStudentAssignmentModal(asmId) {
     document.getElementById('stu-asm-submit-loc').value = rec && rec.submitMethod ? rec.submitMethod : (asm.submitLocation === 'อื่นๆ' ? 'ส่งช่องทางอื่น' : asm.submitLocation);
 
     const isExam = asm.submitLocation === 'สอบ';
+    const hasQuiz = asm.quizQuestions && asm.quizQuestions.trim() !== '' && asm.quizQuestions !== '[]';
     
-    // Toggle visibility based on isExam
+    // Toggle visibility based on isExam & hasQuiz
     const assignDiv = document.getElementById('stu-asm-assign-div');
     const dueDiv = document.getElementById('stu-asm-due-div');
     const locDiv = document.getElementById('stu-asm-loc-div');
@@ -1735,8 +1776,12 @@ export function openStudentAssignmentModal(asmId) {
     if (assignDiv) assignDiv.style.display = isExam ? 'none' : '';
     if (dueDiv) dueDiv.style.display = isExam ? 'none' : '';
     if (locDiv) locDiv.style.display = isExam ? 'none' : '';
-    if (submitTitle) submitTitle.style.display = isExam ? 'none' : '';
-    if (submitForm) submitForm.style.display = isExam ? 'none' : '';
+    
+    const quizSection = document.getElementById('stu-asm-quiz-section');
+    const quizNotStarted = document.getElementById('stu-asm-quiz-not-started');
+    const quizCompleted = document.getElementById('stu-asm-quiz-completed');
+    const quizScoreDisplay = document.getElementById('stu-asm-quiz-score-display');
+    const quizReviewDiv = document.getElementById('stu-asm-quiz-review-div');
 
     // Grading State
     const btnSubmit = document.getElementById('btn-stu-asm-submit');
@@ -1745,24 +1790,57 @@ export function openStudentAssignmentModal(asmId) {
     const gradedFilesContainer = document.getElementById('stu-asm-graded-files-container');
     const uploadArea = document.getElementById('stu-asm-upload-area');
     
-    if (isExam) {
+    if (hasQuiz) {
+        if (submitTitle) submitTitle.style.display = 'none';
+        if (submitForm) submitForm.style.display = 'none';
         if (btnSubmit) btnSubmit.classList.add('hidden');
         if (uploadArea) uploadArea.classList.add('hidden');
-        if (examPending) {
-            if (rec && rec.status === 'ตรวจแล้ว') {
-                examPending.classList.add('hidden');
-                gradingResult.classList.remove('hidden');
-                document.getElementById('stu-asm-graded-score').innerText = `${rec.score !== null ? rec.score : 0}`;
-            } else {
-                examPending.classList.remove('hidden');
-                gradingResult.classList.add('hidden');
-            }
-        }
-        gradedFilesSection.classList.add('hidden');
-        gradedFilesContainer.innerHTML = '';
-    } else {
         if (examPending) examPending.classList.add('hidden');
-        if (rec && rec.status === 'ตรวจแล้ว') {
+        if (gradingResult) gradingResult.classList.add('hidden');
+        
+        if (quizSection) quizSection.classList.remove('hidden');
+        
+        const hasDoneQuiz = rec && rec.quizAnswers && rec.quizAnswers.trim() !== '' && rec.quizAnswers !== '[]';
+        if (hasDoneQuiz) {
+            if (quizNotStarted) quizNotStarted.classList.add('hidden');
+            if (quizCompleted) quizCompleted.classList.remove('hidden');
+            if (quizScoreDisplay) quizScoreDisplay.innerText = `${rec.score !== null ? rec.score : 0} / ${asm.maxScore}`;
+            
+            const showAns = asm.quizShowAnswer === 'true' || asm.quizShowAnswer === true;
+            if (quizReviewDiv) {
+                if (showAns) quizReviewDiv.classList.remove('hidden');
+                else quizReviewDiv.classList.add('hidden');
+            }
+        } else {
+            if (quizNotStarted) quizNotStarted.classList.remove('hidden');
+            if (quizCompleted) quizCompleted.classList.add('hidden');
+        }
+        
+        if (gradedFilesSection) gradedFilesSection.classList.add('hidden');
+        if (gradedFilesContainer) gradedFilesContainer.innerHTML = '';
+    } else {
+        if (quizSection) quizSection.classList.add('hidden');
+        if (submitTitle) submitTitle.style.display = isExam ? 'none' : '';
+        if (submitForm) submitForm.style.display = isExam ? 'none' : '';
+
+        if (isExam) {
+            if (btnSubmit) btnSubmit.classList.add('hidden');
+            if (uploadArea) uploadArea.classList.add('hidden');
+            if (examPending) {
+                if (rec && rec.status === 'ตรวจแล้ว') {
+                    examPending.classList.add('hidden');
+                    gradingResult.classList.remove('hidden');
+                    document.getElementById('stu-asm-graded-score').innerText = `${rec.score !== null ? rec.score : 0}`;
+                } else {
+                    examPending.classList.remove('hidden');
+                    gradingResult.classList.add('hidden');
+                }
+            }
+            gradedFilesSection.classList.add('hidden');
+            gradedFilesContainer.innerHTML = '';
+        } else {
+            if (examPending) examPending.classList.add('hidden');
+            if (rec && rec.status === 'ตรวจแล้ว') {
             btnSubmit.classList.add('hidden');
             gradingResult.classList.remove('hidden');
             if (uploadArea) uploadArea.classList.add('hidden'); // Hide upload area when graded
@@ -1823,6 +1901,7 @@ export function openStudentAssignmentModal(asmId) {
             gradedFilesSection.classList.add('hidden');
             gradedFilesContainer.innerHTML = '';
         }
+    }
     }
 
     // Render File Upload Slots
@@ -2056,13 +2135,30 @@ export async function submitStudentAssignment() {
 
         // แปลงไฟล์ตอบกลับให้อยู่ในโครงสร้างปกติ
         let finalObj = { ...payload };
-        if (result && typeof result === 'object' && result.data) { finalObj = { ...finalObj, ...result.data }; }
+        if (result && typeof result === 'object') {
+            if (result.data) {
+                finalObj = { ...finalObj, ...result.data };
+            } else if (result.files || result.id) {
+                finalObj = { ...finalObj, ...result };
+            }
+        }
         try {
             let filesData = finalObj.files || payload.files || '[]';
             let parsedFiles = typeof filesData === 'string' ? JSON.parse(filesData) : filesData;
             if (Array.isArray(parsedFiles)) {
-                parsedFiles = parsedFiles.map(f => ({ n: f.name || f.n, u: f.url || f.u || 'อัปโหลดสำเร็จ' }));
+                let hasMissingUrls = false;
+                parsedFiles = parsedFiles.map(f => {
+                    const urlVal = f.url || f.u;
+                    if (!urlVal || urlVal === 'อัปโหลดสำเร็จ') {
+                        hasMissingUrls = true;
+                    }
+                    return { n: f.name || f.n, u: urlVal || 'อัปโหลดสำเร็จ' };
+                });
                 finalObj.files = JSON.stringify(parsedFiles);
+                
+                if (hasMissingUrls && files.some(file => file.base64)) {
+                    console.warn("Some uploaded student files are missing URLs from the backend response. Please ensure Google Apps Script is updated to the latest version.");
+                }
             }
         } catch(e) {}
 
@@ -2397,11 +2493,19 @@ window.onManageClassChange = onManageClassChange;
 window.ensureStudentsLoadedForClass = ensureStudentsLoadedForClass;
 window.ensureStudentsLoadedByIds = ensureStudentsLoadedByIds;
 
-// Event listeners for profile image uploads
-document.getElementById('profile-pic-upload').addEventListener('change', (e) => previewImageForProfile(e, 'profile-pic-preview', null));
-for(let i=1; i<=3; i++) {
-    document.getElementById(`sp-home-photo${i}`).addEventListener('change', (e) => previewImageForProfile(e, `sp-home-preview${i}`, `sp-home-remove${i}`));
-}
+// Event listeners for profile image uploads using event delegation
+document.addEventListener('change', (e) => {
+    if (e.target && e.target.id === 'profile-pic-upload') {
+        previewImageForProfile(e, 'profile-pic-preview', null);
+    }
+    if (e.target && e.target.id && e.target.id.startsWith('sp-home-photo')) {
+        const match = e.target.id.match(/^sp-home-photo(\d+)$/);
+        if (match) {
+            const idx = match[1];
+            previewImageForProfile(e, `sp-home-preview${idx}`, `sp-home-remove${idx}`);
+        }
+    }
+});
 
 // ฟังก์ชันสำหรับตรวจฟอร์แมตข้อมูลส่วนตัวเรียลไทม์ (on change)
 function validateProfileInputFormat(event) {
@@ -2486,6 +2590,368 @@ window.selectManageClassOption = function(c) {
         window.onManageClassChange();
     }
 };
+
+
+export function startStudentQuizFromDetails() {
+    const asmId = document.getElementById('stu-asm-assignment-id').value;
+    const asm = AppState.allAssignments.find(a => String(a.id).trim() === String(asmId).trim());
+    if (!asm) return;
+    
+    // Hide details modal, open quiz modal
+    closeModal('student-assignment-modal');
+    
+    const stuId = String(AppState.currentUser.data.id).trim();
+    const stuCode = AppState.currentUser.data.studentId ? String(AppState.currentUser.data.studentId).trim() : '';
+    let rec = AppState.allStudentAssignments && AppState.allStudentAssignments.find(sa => 
+        String(sa.assignmentId).trim() === String(asmId).trim() && 
+        (String(sa.studentId).trim() === stuId || (stuCode && String(sa.studentId).trim() === stuCode)) && 
+        sa.deleted_flg !== 'Y'
+    );
+    
+    renderStudentQuiz(asm, rec, false);
+    document.getElementById('student-quiz-modal').classList.add('show');
+}
+
+export function startStudentQuizReview() {
+    const asmId = document.getElementById('stu-asm-assignment-id').value;
+    const asm = AppState.allAssignments.find(a => String(a.id).trim() === String(asmId).trim());
+    if (!asm) return;
+    
+    closeModal('student-assignment-modal');
+    
+    const stuId = String(AppState.currentUser.data.id).trim();
+    const stuCode = AppState.currentUser.data.studentId ? String(AppState.currentUser.data.studentId).trim() : '';
+    let rec = AppState.allStudentAssignments && AppState.allStudentAssignments.find(sa => 
+        String(sa.assignmentId).trim() === String(asmId).trim() && 
+        (String(sa.studentId).trim() === stuId || (stuCode && String(sa.studentId).trim() === stuCode)) && 
+        sa.deleted_flg !== 'Y'
+    );
+    
+    renderStudentQuiz(asm, rec, true);
+    document.getElementById('student-quiz-modal').classList.add('show');
+}
+
+export function renderStudentQuiz(asm, rec, isReviewMode) {
+    let questions = [];
+    try {
+        questions = typeof asm.quizQuestions === 'string' ? JSON.parse(asm.quizQuestions) : asm.quizQuestions;
+    } catch(e) {}
+    if (!Array.isArray(questions) || questions.length === 0) {
+        customAlert('ไม่พบชุดคำถามในระบบ');
+        return;
+    }
+    
+    let answers = [];
+    if (isReviewMode && rec && rec.quizAnswers) {
+        try {
+            answers = typeof rec.quizAnswers === 'string' ? JSON.parse(rec.quizAnswers) : rec.quizAnswers;
+        } catch(e) {}
+    }
+    
+    // Store metadata on modal container
+    const modal = document.getElementById('student-quiz-modal');
+    modal.dataset.asmId = asm.id;
+    modal.dataset.isReview = isReviewMode ? 'true' : 'false';
+    modal.dataset.qCount = questions.length;
+    
+    // Set title
+    document.getElementById('student-quiz-title').innerHTML = isReviewMode 
+        ? `<i class="fas fa-eye mr-2 text-indigo-600"></i>เฉลยคำตอบแบบทดสอบ`
+        : `<i class="fas fa-pencil-alt mr-2 text-indigo-600"></i>ทำแบบทดสอบ: ${asm.title}`;
+        
+    // Generate questions HTML
+    const content = document.getElementById('student-quiz-content');
+    content.innerHTML = questions.map((q, qIdx) => {
+        const studentAns = answers[qIdx];
+        const isCorrect = studentAns === q.ans;
+        
+        let headerStatus = '';
+        if (isReviewMode) {
+            headerStatus = isCorrect 
+                ? `<span class="ml-2 bg-green-100 text-green-800 text-[10px] px-2 py-0.5 rounded font-bold border border-green-200"><i class="fas fa-check mr-0.5"></i> ถูกต้อง</span>`
+                : `<span class="ml-2 bg-red-100 text-red-800 text-[10px] px-2 py-0.5 rounded font-bold border border-red-200"><i class="fas fa-times mr-0.5"></i> ผิด</span>`;
+        }
+        
+        const choicesHtml = q.choices.map((choice, cIdx) => {
+            const thaiLetter = ['ก', 'ข', 'ค', 'ง', 'จ'][cIdx] || (cIdx + 1);
+            let choiceClass = 'border-gray-200 hover:bg-indigo-50/50 cursor-pointer';
+            let iconClass = 'far fa-circle text-gray-400';
+            let checkedAttr = '';
+            
+            if (isReviewMode) {
+                if (cIdx === q.ans) {
+                    choiceClass = 'border-green-400 bg-green-50 text-green-900 font-semibold';
+                    iconClass = 'fas fa-check-circle text-green-600';
+                } else if (cIdx === studentAns) {
+                    choiceClass = 'border-red-400 bg-red-50 text-red-900';
+                    iconClass = 'fas fa-times-circle text-red-600';
+                } else {
+                    choiceClass = 'border-gray-200 opacity-60 pointer-events-none';
+                }
+            } else {
+                // Interactive selection
+                checkedAttr = `onclick="selectQuizChoice(${qIdx}, ${cIdx})"`;
+            }
+            
+            return `
+                <div ${checkedAttr} id="quiz-q${qIdx}-c${cIdx}" class="quiz-choice flex items-center gap-3 p-3.5 border rounded-xl transition-all duration-200 ${choiceClass}">
+                    <i class="quiz-choice-icon ${iconClass} text-lg"></i>
+                    <span class="text-xs font-bold text-gray-700">${thaiLetter}.</span>
+                    <span class="text-sm text-gray-700">${choice}</span>
+                </div>
+            `;
+        }).join('');
+        
+        let explanationHtml = '';
+        if (isReviewMode && q.exp) {
+            explanationHtml = `
+                <div class="bg-indigo-50 border border-indigo-100 p-3.5 rounded-xl text-xs text-indigo-900 mt-3 flex items-start gap-2">
+                    <i class="fas fa-info-circle mt-0.5 text-indigo-500"></i>
+                    <div>
+                        <span class="font-bold block mb-0.5 text-indigo-950">คำอธิบาย/เฉลย:</span>
+                        ${q.exp}
+                    </div>
+                </div>
+            `;
+        }
+        
+        return `
+            <div class="quiz-question-card bg-white p-5 rounded-2xl border border-gray-200 shadow-sm text-left" data-q-idx="${qIdx}" data-selected-choice="${isReviewMode ? studentAns : ''}">
+                <div class="flex justify-between items-start mb-4 border-b border-gray-100 pb-3">
+                    <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">คำถามข้อที่ ${qIdx + 1}</span>
+                    ${headerStatus}
+                </div>
+                <h5 class="font-bold text-gray-800 text-base mb-4 leading-relaxed">${q.q}</h5>
+                <div class="space-y-2.5">
+                    ${choicesHtml}
+                </div>
+                ${explanationHtml}
+            </div>
+        `;
+    }).join('');
+    
+    // Set footer actions dynamically
+    const actions = document.getElementById('student-quiz-actions');
+    if (actions) {
+        if (isReviewMode) {
+            actions.innerHTML = `
+                <div class="w-full flex justify-between items-center gap-2">
+                    <span id="student-quiz-progress-text" class="text-xs text-gray-500 font-bold">ทบทวนคำตอบ</span>
+                    <button onclick="closeModal('student-quiz-modal')" class="px-4 py-2 sm:px-6 sm:py-2.5 text-xs sm:text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md transition-all whitespace-nowrap">ปิดหน้าต่าง</button>
+                </div>
+            `;
+        } else {
+            actions.innerHTML = `
+                <span id="student-quiz-progress-text" class="text-xs text-gray-500 font-bold">มีคำถามทั้งหมด ${questions.length} ข้อ</span>
+                <div class="flex gap-3">
+                    <button onclick="closeModal('student-quiz-modal')" class="px-5 py-2 border rounded-lg hover:bg-gray-100 font-bold text-gray-600 transition-colors">ยกเลิก</button>
+                    <button id="student-quiz-submit-btn" onclick="submitStudentQuiz()" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold shadow-md transition-colors"><i class="fas fa-paper-plane mr-2"></i> ส่งคำตอบ</button>
+                </div>
+            `;
+        }
+    }
+}
+
+export function selectQuizChoice(qIdx, cIdx) {
+    const card = document.querySelector(`.quiz-question-card[data-q-idx="${qIdx}"]`);
+    if (!card) return;
+    
+    // Reset other choices in this card
+    card.querySelectorAll('.quiz-choice').forEach(choice => {
+        choice.className = 'quiz-choice flex items-center gap-3 p-3.5 border rounded-xl transition-all duration-200 border-gray-200 hover:bg-indigo-50/50 cursor-pointer';
+        const icon = choice.querySelector('.quiz-choice-icon');
+        if (icon) icon.className = 'quiz-choice-icon far fa-circle text-gray-400';
+    });
+    
+    // Set active choice
+    const activeChoice = document.getElementById(`quiz-q${qIdx}-c${cIdx}`);
+    if (activeChoice) {
+        activeChoice.className = 'quiz-choice flex items-center gap-3 p-3.5 border rounded-xl transition-all duration-200 border-indigo-500 bg-indigo-50 text-indigo-900 font-semibold cursor-pointer';
+        const icon = activeChoice.querySelector('.quiz-choice-icon');
+        if (icon) icon.className = 'quiz-choice-icon fas fa-check-circle text-indigo-600';
+    }
+    
+    card.dataset.selectedChoice = cIdx;
+}
+
+export async function submitStudentQuiz() {
+    const modal = document.getElementById('student-quiz-modal');
+    const asmId = modal.dataset.asmId;
+    const qCount = parseInt(modal.dataset.qCount);
+    
+    const asm = AppState.allAssignments.find(a => String(a.id).trim() === String(asmId).trim());
+    if (!asm) return;
+    
+    const answers = [];
+    let allAnswered = true;
+    
+    for (let i = 0; i < qCount; i++) {
+        const card = document.querySelector(`.quiz-question-card[data-q-idx="${i}"]`);
+        const sel = card ? card.dataset.selectedChoice : '';
+        if (sel === '' || sel === undefined || sel === null) {
+            allAnswered = false;
+            break;
+        }
+        answers.push(parseInt(sel));
+    }
+    
+    if (!allAnswered) {
+        return customAlert('กรุณาตอบคำถามให้ครบทุกข้อก่อนส่งคำตอบ');
+    }
+    
+    customConfirm('ยืนยันการส่งคำตอบ', 'คุณต้องการส่งคำตอบแบบทดสอบนี้ใช่หรือไม่? หลังจากส่งแล้วจะไม่สามารถกลับมาแก้ไขได้', async () => {
+        showLoading('กำลังตรวจและบันทึกคะแนน...');
+        try {
+            let questions = [];
+            try {
+                questions = typeof asm.quizQuestions === 'string' ? JSON.parse(asm.quizQuestions) : asm.quizQuestions;
+            } catch(e) {}
+            
+            // Calculate correct answers
+            let correctCount = 0;
+            questions.forEach((q, idx) => {
+                if (answers[idx] === q.ans) correctCount++;
+            });
+            
+            // Calculate score divided equally and rounded up
+            const scorePerQ = parseFloat(asm.maxScore) / questions.length;
+            const finalScore = Math.ceil(correctCount * scorePerQ);
+            
+            const stuId = String(AppState.currentUser.data.id).trim();
+            const stuName = getStudentFullName(AppState.currentUser.data);
+            const stuNum = AppState.currentUser.data.number;
+            const stuClass = AppState.currentUser.data.class;
+            
+            const recordId = generateId();
+            const payload = {
+                id: recordId,
+                assignmentId: asm.id,
+                studentId: stuId,
+                studentName: stuName,
+                studentNumber: stuNum,
+                studentClass: stuClass,
+                status: 'ตรวจแล้ว', // Auto-graded quiz is marked as 'ตรวจแล้ว'
+                submitMethod: 'ส่ง Online',
+                submitDate: getBangkokDate(new Date()),
+                submitTime: getBangkokCurrentTime().substring(0, 5),
+                score: finalScore,
+                quizAnswers: JSON.stringify(answers),
+                deleted_flg: 'N',
+                createdAt: getISOTimestamp()
+            };
+            
+            if (AppState.googleSheetUrl) {
+                try {
+                    const response = await fetch(AppState.googleSheetUrl, {
+                        method: 'POST',
+                        redirect: 'follow',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ action: 'submitAssignment', payload: payload })
+                    });
+                    const result = await response.json();
+                } catch (errSheets) {
+                    console.error("Google Sheets save skipped/failed, fallback to Firebase only:", errSheets);
+                }
+            }
+            
+            // Save locally
+            if (!AppState.allStudentAssignments) AppState.allStudentAssignments = [];
+            
+            // Remove any existing record for this assignment & student (if any)
+            AppState.allStudentAssignments = AppState.allStudentAssignments.filter(sa => 
+                !(sa.assignmentId === asm.id && sa.studentId === stuId)
+            );
+            AppState.allStudentAssignments.push(payload);
+            
+            // Save to Firebase Realtime Database
+            await saveToDB('STUDENT_ASSIGNMENTS', AppState.allStudentAssignments, 'saveStudentAssignments');
+            
+            // Render results inside student-quiz-modal instead of closing and alerting!
+            const quizContent = document.getElementById('student-quiz-content');
+            const quizActions = document.getElementById('student-quiz-actions');
+            
+            // Set header title
+            document.getElementById('student-quiz-title').innerHTML = `<i class="fas fa-check-circle text-green-500 mr-2 animate-pulse"></i>ผลลัพธ์การส่งแบบทดสอบ`;
+            
+            // Render beautiful result card
+            quizContent.innerHTML = `
+                <div class="flex flex-col items-center text-center p-6 bg-gradient-to-br from-indigo-50/50 to-violet-50/50 rounded-3xl border border-indigo-100/70 shadow-inner max-w-md mx-auto my-4 animate-[fadeIn_0.5s_ease-out]">
+                    <div class="w-20 h-20 bg-gradient-to-tr from-indigo-600 to-violet-600 rounded-full flex items-center justify-center text-white text-3xl mb-4 shadow-lg shadow-indigo-200 animate-bounce">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    
+                    <h3 class="text-2xl font-black text-indigo-900 mb-1">ส่งคำตอบเรียบร้อย!</h3>
+                    <p class="text-xs text-gray-500 mb-6">ระบบได้ตรวจข้อสอบแบบเรียลไทม์และบันทึกคะแนนให้เรียบร้อยแล้ว</p>
+                    
+                    <!-- Score Details -->
+                    <div class="grid grid-cols-2 gap-4 w-full mb-6">
+                        <div class="bg-white p-4 rounded-2xl border border-indigo-100 shadow-sm flex flex-col justify-center">
+                            <span class="text-[10px] font-bold text-gray-400 block mb-1 uppercase tracking-wider">ตอบถูกทั้งหมด</span>
+                            <span class="text-2xl font-black text-indigo-600">${correctCount} <span class="text-xs font-semibold text-gray-400">/ ${questions.length} ข้อ</span></span>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl border border-indigo-100 shadow-sm flex flex-col justify-center">
+                            <span class="text-[10px] font-bold text-gray-400 block mb-1 uppercase tracking-wider">คะแนนสอบที่ได้</span>
+                            <span class="text-2xl font-black text-emerald-600">${finalScore} <span class="text-xs font-semibold text-gray-400">/ ${asm.maxScore} คะแนน</span></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden mb-2">
+                        <div class="bg-gradient-to-r from-indigo-500 to-violet-600 h-full rounded-full" style="width: ${(correctCount / questions.length) * 100}%"></div>
+                    </div>
+                    <span class="text-xs font-bold text-indigo-700">คิดเป็นความถูกต้อง ${Math.round((correctCount / questions.length) * 100)}%</span>
+                </div>
+            `;
+            
+            // Set beautiful footer buttons
+            const reviewButtonHtml = asm.quizShowAnswer === 'true' 
+                ? `<button onclick="renderStudentQuiz(AppState.allAssignments.find(a => String(a.id).trim() === '${asm.id}'), AppState.allStudentAssignments.find(sa => sa.assignmentId === '${asm.id}' && String(sa.studentId).trim() === '${stuId}'), true)" class="px-4 py-2 sm:px-6 sm:py-2.5 text-xs sm:text-sm bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"><i class="fas fa-eye"></i>ดูเฉลยทันที</button>`
+                : '';
+                
+            quizActions.innerHTML = `
+                <div class="w-full flex justify-between items-center gap-2">
+                    <span class="text-[10px] text-gray-400 font-medium"><i class="fas fa-info-circle mr-1"></i>ส่งเมื่อ: ${payload.submitDate} ${payload.submitTime} น.</span>
+                    <div class="flex gap-2 shrink-0">
+                        ${reviewButtonHtml}
+                        <button onclick="closeModal('student-quiz-modal')" class="px-4 py-2 sm:px-6 sm:py-2.5 text-xs sm:text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md transition-all whitespace-nowrap">ปิดหน้าต่าง</button>
+                    </div>
+                </div>
+            `;
+            
+            hideLoading();
+            
+            // Refresh student assignment list
+            renderStudentAssignments();
+            
+            // Auto refresh details view if open
+            setTimeout(() => {
+                const detModal = document.getElementById('student-assignment-modal');
+                if (detModal && detModal.classList.contains('show')) {
+                    openStudentAssignmentModal(asm.id);
+                }
+            }, 500);
+        } catch (err) {
+            console.error(err);
+            hideLoading();
+            customAlert(err.message || 'เกิดข้อผิดพลาดในการส่งคำตอบ โปรดลองใหม่อีกครั้ง');
+        }
+    });
+}
+
+export function filterStudentAssignmentBySubject(subId) {
+    const subDropdown = document.getElementById('stu-asm-filter-sub');
+    if (subDropdown) {
+        subDropdown.value = subId || '';
+        renderStudentAssignments();
+    }
+}
+
+window.startStudentQuizFromDetails = startStudentQuizFromDetails;
+window.startStudentQuizReview = startStudentQuizReview;
+window.selectQuizChoice = selectQuizChoice;
+window.submitStudentQuiz = submitStudentQuiz;
+window.renderStudentQuiz = renderStudentQuiz;
+window.filterStudentAssignmentBySubject = filterStudentAssignmentBySubject;
 
 // Close dropdown when clicking outside
 document.addEventListener('click', function(e) {

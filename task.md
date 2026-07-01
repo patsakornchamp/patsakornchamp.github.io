@@ -1,0 +1,2 @@
+- [x] ปรับปรุง JS ใน js/features/ ให้รองรับ Dynamic Load / Event Delegation
+- [x] Part 3: Refactor api.js to use Firebase Realtime Database and create backup script.

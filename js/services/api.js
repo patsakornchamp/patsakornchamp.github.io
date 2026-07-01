@@ -1,90 +1,92 @@
-import { DB_KEYS } from '../core/config.js';
+import { DB_KEYS, firebaseConfig } from '../core/config.js';
 import { AppState } from '../core/state.js';
 import { loginSuccess } from '../features/auth.js';
 import { showLoading, hideLoading, showToast } from '../utils/helpers.js';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getDatabase, ref, get, set, update } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
 export function loadFromLocalStorage() {
-    AppState.allStudents = JSON.parse(localStorage.getItem(DB_KEYS.STUDENTS) || '[]');
-    AppState.allRecords = JSON.parse(localStorage.getItem(DB_KEYS.RECORDS) || '[]');
-    AppState.allSubjects = JSON.parse(localStorage.getItem(DB_KEYS.SUBJECTS) || '[]');
-    AppState.allTeachers = JSON.parse(localStorage.getItem(DB_KEYS.TEACHERS) || '[]');
-    AppState.allClasses = JSON.parse(localStorage.getItem(DB_KEYS.CLASSES) || '[]').sort((a, b) => (a.className || '').localeCompare(b.className || '', 'th', { numeric: true }));
-    AppState.allClubs = JSON.parse(localStorage.getItem(DB_KEYS.CLUBS) || '[]');
-    AppState.allClubEnrollments = JSON.parse(localStorage.getItem(DB_KEYS.CLUB_ENROLLMENTS) || '[]');
-    AppState.allClubRecords = JSON.parse(localStorage.getItem(DB_KEYS.CLUB_RECORDS) || '[]');
-    AppState.allAssignments = JSON.parse(localStorage.getItem('ASSIGNMENTS') || '[]');
-    AppState.allStudentAssignments = JSON.parse(localStorage.getItem('STUDENT_ASSIGNMENTS') || '[]');
-    AppState.allPrNews = JSON.parse(localStorage.getItem(DB_KEYS.PR_NEWS) || '[]');
+    AppState.allStudents = JSON.parse(localStorage.getItem(DB_KEYS.STUDENTS) || '[]').filter(Boolean);
+    AppState.allRecords = JSON.parse(localStorage.getItem(DB_KEYS.RECORDS) || '[]').filter(Boolean);
+    AppState.allSubjects = JSON.parse(localStorage.getItem(DB_KEYS.SUBJECTS) || '[]').filter(Boolean);
+    AppState.allTeachers = JSON.parse(localStorage.getItem(DB_KEYS.TEACHERS) || '[]').filter(Boolean);
+    AppState.allClasses = JSON.parse(localStorage.getItem(DB_KEYS.CLASSES) || '[]').filter(Boolean);
+    AppState.allClasses.sort((a, b) => (a && a.className || '').localeCompare(b && b.className || '', 'th', { numeric: true }));
+    AppState.allClubs = JSON.parse(localStorage.getItem(DB_KEYS.CLUBS) || '[]').filter(Boolean);
+    AppState.allClubEnrollments = JSON.parse(localStorage.getItem(DB_KEYS.CLUB_ENROLLMENTS) || '[]').filter(Boolean);
+    AppState.allClubRecords = JSON.parse(localStorage.getItem(DB_KEYS.CLUB_RECORDS) || '[]').filter(Boolean);
+    AppState.allAssignments = JSON.parse(localStorage.getItem('ASSIGNMENTS') || '[]').filter(Boolean);
+    AppState.allStudentAssignments = JSON.parse(localStorage.getItem('STUDENT_ASSIGNMENTS') || '[]').filter(Boolean);
+    AppState.allPrNews = JSON.parse(localStorage.getItem(DB_KEYS.PR_NEWS) || '[]').filter(Boolean);
     AppState.schoolSettings = JSON.parse(localStorage.getItem(DB_KEYS.SCHOOL_SETTINGS) || '{}');
 }
 
-// ในไฟล์ test/js/services/api.js
 export async function syncDataFromServer(silent = false) {
-    if (!AppState.googleSheetUrl) {
-        loadFromLocalStorage();
-        hideLoading(); // Ensure loading is hidden even if no URL
-        return false;
-    }
-    showLoading('กำลังดึงข้อมูลจากฐานข้อมูล...');
+    showLoading('กำลังเชื่อมต่อฐานข้อมูล Firebase...');
 
-    // อ่านข้อมูล session ที่มีอยู่จาก localStorage ก่อน
     AppState.currentUser = JSON.parse(localStorage.getItem(DB_KEYS.SESSION));
+    
     try {
-        const res = await fetch(`${AppState.googleSheetUrl}?action=getData&t=${new Date().getTime()}`, { cache: 'no-store' });
-        const data = await res.json();
+        const dbRef = ref(db, '/');
+        const snapshot = await get(dbRef);
+        const data = snapshot.val() || {};
         
-        if(data.status === 'success') {
-            // 🌟 แก้ไขตรงนี้: ต้องรับข้อมูลให้ครบทุกชีต ห้ามย่อ
-            if (data.Students && data.Students.length > 0) {
-                AppState.allStudents = data.Students;
-            }
-            AppState.allRecords = data.Records || [];
-            AppState.allSubjects = data.Subjects || [];
-            AppState.allTeachers = data.Teachers || [];
-            AppState.allClasses = (data.Classes || []).sort((a, b) => (a.className || '').localeCompare(b.className || '', 'th', { numeric: true }));
-            AppState.allClubs = data.Clubs || [];
-            AppState.allClubEnrollments = data.ClubEnrollments || [];
-            AppState.allClubRecords = data.ClubRecords || [];
-            AppState.allAssignments = data.Assignments || [];
-            AppState.allStudentAssignments = data.StudentAssignments || [];
-            AppState.allPrNews = data.PRNews || [];
-            
-            // Extract the first row of Settings
-            if (data.Settings && data.Settings.length > 0) {
-                AppState.schoolSettings = data.Settings[0];
+        if (data.Students) {
+            AppState.allStudents = (Array.isArray(data.Students) ? data.Students : Object.values(data.Students)).filter(Boolean);
+        }
+        AppState.allRecords = data.Records ? (Array.isArray(data.Records) ? data.Records : Object.values(data.Records)).filter(Boolean) : [];
+        AppState.allSubjects = data.Subjects ? (Array.isArray(data.Subjects) ? data.Subjects : Object.values(data.Subjects)).filter(Boolean) : [];
+        AppState.allTeachers = data.Teachers ? (Array.isArray(data.Teachers) ? data.Teachers : Object.values(data.Teachers)).filter(Boolean) : [];
+        AppState.allClasses = data.Classes ? (Array.isArray(data.Classes) ? data.Classes : Object.values(data.Classes)).filter(Boolean) : [];
+        AppState.allClasses.sort((a, b) => (a && a.className || '').localeCompare(b && b.className || '', 'th', { numeric: true }));
+        AppState.allClubs = data.Clubs ? (Array.isArray(data.Clubs) ? data.Clubs : Object.values(data.Clubs)).filter(Boolean) : [];
+        AppState.allClubEnrollments = data.ClubEnrollments ? (Array.isArray(data.ClubEnrollments) ? data.ClubEnrollments : Object.values(data.ClubEnrollments)).filter(Boolean) : [];
+        AppState.allClubRecords = data.ClubRecords ? (Array.isArray(data.ClubRecords) ? data.ClubRecords : Object.values(data.ClubRecords)).filter(Boolean) : [];
+        AppState.allAssignments = data.Assignments ? (Array.isArray(data.Assignments) ? data.Assignments : Object.values(data.Assignments)).filter(Boolean) : [];
+        AppState.allStudentAssignments = data.StudentAssignments ? (Array.isArray(data.StudentAssignments) ? data.StudentAssignments : Object.values(data.StudentAssignments)).filter(Boolean) : [];
+        AppState.allPrNews = data.PRNews ? (Array.isArray(data.PRNews) ? data.PRNews : Object.values(data.PRNews)).filter(Boolean) : [];
+        
+        if (data.Settings) {
+            const settingsArr = Array.isArray(data.Settings) ? data.Settings : Object.values(data.Settings);
+            if (settingsArr.length > 0) {
+                AppState.schoolSettings = settingsArr[0];
             } else {
                 AppState.schoolSettings = {};
             }
-            
-            // Save to LocalStorage เพื่อสำรองตอนเน็ตหลุด
-            localStorage.setItem(DB_KEYS.STUDENTS, JSON.stringify(AppState.allStudents));
-            localStorage.setItem(DB_KEYS.RECORDS, JSON.stringify(AppState.allRecords));
-            localStorage.setItem(DB_KEYS.SUBJECTS, JSON.stringify(AppState.allSubjects));
-            localStorage.setItem(DB_KEYS.TEACHERS, JSON.stringify(AppState.allTeachers));
-            localStorage.setItem(DB_KEYS.CLASSES, JSON.stringify(AppState.allClasses));
-            localStorage.setItem(DB_KEYS.CLUBS, JSON.stringify(AppState.allClubs));
-            localStorage.setItem(DB_KEYS.CLUB_ENROLLMENTS, JSON.stringify(AppState.allClubEnrollments));
-            localStorage.setItem(DB_KEYS.CLUB_RECORDS, JSON.stringify(AppState.allClubRecords));
-            localStorage.setItem('ASSIGNMENTS', JSON.stringify(AppState.allAssignments));
-            localStorage.setItem('STUDENT_ASSIGNMENTS', JSON.stringify(AppState.allStudentAssignments));
-            localStorage.setItem(DB_KEYS.PR_NEWS, JSON.stringify(AppState.allPrNews));
-            localStorage.setItem(DB_KEYS.SCHOOL_SETTINGS, JSON.stringify(AppState.schoolSettings));
-            
-            // อัปเดตข้อมูลผู้ใช้ปัจจุบัน (currentUser)
-            if (AppState.currentUser) { // ตรวจสอบข้อมูล user ที่ล็อกอินค้างไว้กับข้อมูลใหม่
-                if (AppState.currentUser.role === 'student') {
-                    const updatedUser = AppState.allStudents.find(s => s.id === AppState.currentUser.data.id && s.deleted_flg !== 'Y');
-                    if (updatedUser) AppState.currentUser.data = updatedUser;
-                } else if (AppState.currentUser.role === 'teacher') {
-                    const updatedUser = AppState.allTeachers.find(t => t.id === AppState.currentUser.data.id && t.deleted_flg !== 'Y');
-                    if (updatedUser) AppState.currentUser.data = updatedUser;
-                }
-                localStorage.setItem(DB_KEYS.SESSION, JSON.stringify(AppState.currentUser));
-            }
-            return true;
+        } else {
+            AppState.schoolSettings = {};
         }
-    } catch (e) {
-        console.error('Sync error:', e);
+
+        // Save to LocalStorage
+        localStorage.setItem(DB_KEYS.STUDENTS, JSON.stringify(AppState.allStudents));
+        localStorage.setItem(DB_KEYS.RECORDS, JSON.stringify(AppState.allRecords));
+        localStorage.setItem(DB_KEYS.SUBJECTS, JSON.stringify(AppState.allSubjects));
+        localStorage.setItem(DB_KEYS.TEACHERS, JSON.stringify(AppState.allTeachers));
+        localStorage.setItem(DB_KEYS.CLASSES, JSON.stringify(AppState.allClasses));
+        localStorage.setItem(DB_KEYS.CLUBS, JSON.stringify(AppState.allClubs));
+        localStorage.setItem(DB_KEYS.CLUB_ENROLLMENTS, JSON.stringify(AppState.allClubEnrollments));
+        localStorage.setItem(DB_KEYS.CLUB_RECORDS, JSON.stringify(AppState.allClubRecords));
+        localStorage.setItem('ASSIGNMENTS', JSON.stringify(AppState.allAssignments));
+        localStorage.setItem('STUDENT_ASSIGNMENTS', JSON.stringify(AppState.allStudentAssignments));
+        localStorage.setItem(DB_KEYS.PR_NEWS, JSON.stringify(AppState.allPrNews));
+        localStorage.setItem(DB_KEYS.SCHOOL_SETTINGS, JSON.stringify(AppState.schoolSettings));
+        
+        if (AppState.currentUser) {
+            if (AppState.currentUser.role === 'student') {
+                const updatedUser = AppState.allStudents.find(s => s.id === AppState.currentUser.data.id && s.deleted_flg !== 'Y');
+                if (updatedUser) AppState.currentUser.data = updatedUser;
+            } else if (AppState.currentUser.role === 'teacher') {
+                const updatedUser = AppState.allTeachers.find(t => t.id === AppState.currentUser.data.id && t.deleted_flg !== 'Y');
+                if (updatedUser) AppState.currentUser.data = updatedUser;
+            }
+            localStorage.setItem(DB_KEYS.SESSION, JSON.stringify(AppState.currentUser));
+        }
+        return true;
+    } catch (error) {
+        console.error('Firebase sync error:', error);
         if (!silent) showToast('ไม่สามารถดึงข้อมูลล่าสุดได้ ระบบกำลังใช้ข้อมูลเดิม');
         loadFromLocalStorage();
         return false;
@@ -99,24 +101,27 @@ export async function saveToDB(key, data, action) {
     } catch (e) {
         console.warn('LocalStorage limit exceeded, skipping local cache for this save:', e);
     }
-    if (AppState.googleSheetUrl && action) {
-        showLoading('กำลังบันทึกข้อมูล...'); 
+    if (action) {
+        showLoading('กำลังบันทึกข้อมูลลง Firebase...'); 
         try {
-            const res = await fetch(AppState.googleSheetUrl, { 
-                method: 'POST', 
-                redirect: 'follow', 
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-                body: JSON.stringify({ action: action, data: data }) 
-            });
-            const text = await res.text();
-            try {
-                const result = JSON.parse(text);
-                if (result.status === 'error') throw new Error(result.message || 'Server Data Error');
-                return true;
-            } catch(err) {
-                if (res.ok) return true; // ทริคแก้บั๊กตอน Google Sheet บันทึกผ่านแต่ไม่ยอมพ่น JSON
-                throw new Error('HTTP ' + res.status);
+            let path = '';
+            if (action === 'saveStudents') path = 'Students';
+            else if (action === 'saveRecords') path = 'Records';
+            else if (action === 'saveSubjects') path = 'Subjects';
+            else if (action === 'saveTeachers') path = 'Teachers';
+            else if (action === 'saveClasses') path = 'Classes';
+            else if (action === 'saveClubs') path = 'Clubs';
+            else if (action === 'saveClubEnrollments') path = 'ClubEnrollments';
+            else if (action === 'saveClubRecords') path = 'ClubRecords';
+            else if (action === 'saveAssignments') path = 'Assignments';
+            else if (action === 'saveStudentAssignments') path = 'StudentAssignments';
+            else if (action === 'savePRNews') path = 'PRNews';
+            else if (action === 'saveSettings') path = 'Settings';
+            
+            if (path) {
+                await set(ref(db, path), data);
             }
+            return true;
         } catch(e) { 
             console.error(e); 
             showToast('บันทึกลงฐานข้อมูลล้มเหลว: ' + e.message);
@@ -126,4 +131,28 @@ export async function saveToDB(key, data, action) {
         }
     }
     return true;
+}
+
+export async function uploadFileToDrive(fileBase64, action = 'uploadFile', extraPayload = {}) {
+    if (!AppState.googleSheetUrl) return null;
+    showLoading('กำลังอัปโหลดไฟล์...');
+    try {
+        const payload = { ...extraPayload, fileBase64 };
+        const res = await fetch(AppState.googleSheetUrl, {
+            method: 'POST',
+            redirect: 'follow',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: action, payload: payload })
+        });
+        const text = await res.text();
+        const result = JSON.parse(text);
+        if (result.status === 'error' || result.success === false) throw new Error(result.message || 'Upload Error');
+        return result;
+    } catch (e) {
+        console.error(e);
+        showToast('อัปโหลดล้มเหลว: ' + e.message);
+        return null;
+    } finally {
+        hideLoading();
+    }
 }

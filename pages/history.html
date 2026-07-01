@@ -1,0 +1,41 @@
+<section id="tab-history" class="tab-content">
+            <div class="glass-panel rounded-none sm:rounded-2xl p-6 md:p-8">
+                <h3 class="text-2xl font-bold text-green-800 mb-6 border-b pb-3"><i class="fas fa-calendar-alt mr-2"></i>ประวัติการเช็คชื่อผู้เรียน</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-6 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm w-full relative z-20">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทการเข้าเรียน</label>
+                        <select id="history-type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500" onchange="onHistoryTypeChange()">
+                            <option value="regular">วิชาเรียนปกติ</option>
+                            <option value="club">กิจกรรมวิชาชุมนุม</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">วันที่ <span class="text-xs text-gray-400">(เว้นว่างเพื่อดูทั้งเทอม)</span></label>
+                        <input type="date"  id="history-date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500" onchange="renderHistory()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ปีการศึกษา</label>
+                        <select id="history-year" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500" onchange="onHistoryYearSemesterChange()"></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ภาคเรียน</label>
+                        <select id="history-semester" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500" onchange="onHistoryYearSemesterChange()">
+                            <option value="1">1</option><option value="2">2</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1" id="lbl-history-class-or-club">ชั้นเรียน</label>
+                        <select id="history-class" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500" onchange="if(window.onHistoryClassChange) window.onHistoryClassChange()"><option value="">ทุกชั้นเรียน</option></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1" id="lbl-history-sub">วิชา</label>
+                        <select id="history-subject" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500"><option value="">ทุกวิชา</option></select>
+                    </div>
+                    <div class="flex items-end gap-2 sm:col-span-2 lg:col-span-1">
+                        <button onclick="searchHistory()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md font-medium transition-colors text-sm whitespace-nowrap"><i class="fas fa-search mr-1"></i> ค้นหา</button>
+                        <button onclick="exportHistoryCSV()" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md font-medium transition-colors text-sm whitespace-nowrap" title="ส่งออกเป็นไฟล์ CSV"><i class="fas fa-file-csv mr-1"></i> ส่งออก</button>
+                    </div>
+                </div>
+                <div class="space-y-4 w-full" id="history-records-container"></div>
+            </div>
+        </section>

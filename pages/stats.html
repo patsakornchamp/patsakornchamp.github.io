@@ -1,0 +1,69 @@
+<section id="tab-stats" class="tab-content">
+            <div class="glass-panel rounded-none sm:rounded-2xl p-6 md:p-8">
+                <h3 class="text-2xl font-bold text-green-800 mb-6 border-b pb-3"><i class="fas fa-chart-bar mr-2"></i>สถิติและรายงานผลสัมฤทธิ์เวลาเรียน</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm w-full relative z-20">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทการเข้าเรียน</label>
+                        <select id="stats-type" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="onStatsTypeChange()">
+                            <option value="regular">วิชาเรียนปกติ</option>
+                            <option value="club">วิชาชุมนุม</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ปีการศึกษา</label>
+                        <select id="stats-year" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500" onchange="onStatsYearSemesterChange()"></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ภาคเรียน</label>
+                        <select id="stats-semester" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500" onchange="onStatsYearSemesterChange()">
+                            <option value="1">1</option><option value="2">2</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1" id="lbl-stats-class-or-club">ชั้นเรียน</label>
+                        <select id="stats-class" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500" onchange="if(window.onStatsClassChange) window.onStatsClassChange()"><option value="">-- เลือกชั้นเรียน --</option></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1" id="lbl-stats-sub">วิชา</label>
+                        <select id="stats-subject" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-green-500"><option value="">-- เลือกวิชา --</option></select>
+                    </div>
+                    <div class="flex flex-col sm:flex-row items-end gap-2 sm:col-span-2 lg:col-span-1">
+                        <button onclick="renderStats()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md font-medium transition-colors text-sm whitespace-nowrap"><i class="fas fa-search mr-1"></i> ค้นหา</button>
+                        <div id="export-btn-container" class="flex-1 hidden flex-row gap-1 w-full">
+                            <button onclick="exportStatsCSV()" class="w-full bg-gray-600 hover:bg-gray-700 text-white px-2 py-2 rounded-md font-medium transition-colors text-xs whitespace-nowrap" title="ส่งออกเป็นไฟล์ CSV"><i class="fas fa-file-csv"></i> CSV</button>
+                            <button onclick="exportStatsExcel()" class="w-full bg-green-600 hover:bg-green-700 text-white px-2 py-2 rounded-md font-medium transition-colors text-xs whitespace-nowrap" title="ส่งออกเป็นไฟล์ Excel พร้อมสูตร"><i class="fas fa-file-excel"></i> Excel</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="stats-empty-msg" class="text-center py-8 text-gray-500 w-full">
+                    <i class="fas fa-chart-line text-4xl mb-3 text-gray-300 block"></i> กรุณาเลือกเงื่อนไขให้ครบเพื่อดูสถิติเวลาเรียน
+                </div>
+                <div id="stats-content" class="hidden w-full">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                        <div class="bg-green-50/60 backdrop-blur-sm rounded-xl p-4 border border-green-200/50 text-center shadow-sm"><h4 class="text-sm font-medium text-green-800 mb-1">มาเรียน</h4><p class="text-3xl font-bold text-green-600" id="stat-total-present">0</p></div>
+                        <div class="bg-yellow-50/60 backdrop-blur-sm rounded-xl p-4 border border-yellow-200/50 text-center shadow-sm"><h4 class="text-sm font-medium text-yellow-800 mb-1">มาสาย</h4><p class="text-3xl font-bold text-yellow-600" id="stat-total-late">0</p></div>
+                        <div class="bg-blue-50/60 backdrop-blur-sm rounded-xl p-4 border border-blue-200/50 text-center shadow-sm"><h4 class="text-sm font-medium text-blue-800 mb-1">ลา</h4><p class="text-3xl font-bold text-blue-600" id="stat-total-leave">0</p></div>
+                        <div class="bg-red-50/60 backdrop-blur-sm rounded-xl p-4 border border-red-200/50 text-center shadow-sm"><h4 class="text-sm font-medium text-red-800 mb-1">ขาดเรียน</h4><p class="text-3xl font-bold text-red-600" id="stat-total-absent">0</p></div>
+                    </div>
+                    
+                    <div class="mb-2 text-xs text-blue-800 bg-blue-50 p-2 rounded"><i class="fas fa-info-circle"></i> เคล็ดลับ: คุณสามารถคลิกที่ชื่อของนักเรียนเพื่อดูประวัติเวลาเข้าเรียนแบบเจาะลึกเฉพาะรายบุคคล (Drill-Down Detail)</div>
+                    
+                    <div class="overflow-x-auto bg-white/40 border border-white/50 backdrop-blur-md rounded-xl shadow-sm w-full">
+                        <table class="min-w-full divide-y divide-gray-200 mobile-card-table">
+                            <thead class="bg-white/50">
+                                <tr>
+                                    <th class="hidden md:table-cell px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase" id="lbl-th-class">ชั้น/เลขที่</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ชื่อ - นามสกุล</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-green-600 uppercase">มา</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-yellow-600 uppercase">สาย</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-blue-600 uppercase">ลา</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-red-600 uppercase">ขาด</th>
+                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">% เข้าเรียน</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200" id="stats-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>

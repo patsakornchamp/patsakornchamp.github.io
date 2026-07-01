@@ -1,0 +1,79 @@
+<section id="tab-club-checkin" class="tab-content">
+            <div class="glass-panel rounded-none sm:rounded-2xl p-4 sm:p-6 md:p-8">
+                <h3 class="text-xl sm:text-2xl font-bold text-green-800 mb-4 border-b pb-3"><i class="fas fa-users-cog mr-2"></i>บันทึกการเข้ากิจกรรมชุมนุม</h3>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm relative z-20">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">วันที่ทำกิจกรรม</label>
+                        <input type="date" id="club-checkin-date" class="w-full px-3 py-2 border rounded focus:ring-green-500 shadow-sm" required onchange="resetClubCheckinTable()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">ปีการศึกษา</label>
+                        <select id="club-checkin-year" class="w-full px-3 py-2 border rounded focus:ring-green-500 shadow-sm" onchange="onClubCheckinYearSemesterChange()"></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">ภาคเรียน</label>
+                        <select id="club-checkin-semester" class="w-full px-3 py-2 border rounded focus:ring-green-500 shadow-sm" onchange="onClubCheckinYearSemesterChange()">
+                            <option value="1">1</option><option value="2">2</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                            ชุมนุม
+                            <span class="tooltip-container text-gray-400 hover:text-green-600">
+                                <i class="fas fa-info-circle text-xs"></i>
+                                <span class="tooltip-text">เลือกกิจกรรมชุมนุมที่คุณเป็นครูผู้ดูแลเพื่อเข้าเช็คชื่อนักเรียนที่สมัครเรียนชุมนุมนั้นๆ</span>
+                            </span>
+                        </label>
+                        <select id="club-checkin-id" class="w-full px-3 py-2 border rounded focus:ring-green-500 shadow-sm" onchange="resetClubCheckinTable()"><option value="">-- เลือกชุมนุม --</option></select>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3 w-full">
+                    <button onclick="loadClubCheckinList()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors shadow-sm"><i class="fas fa-search mr-2"></i> โหลดรายชื่อผู้ลงทะเบียน</button>
+                    <div id="club-bulk-actions" class="hidden items-center w-full sm:w-auto justify-between sm:justify-end flex-wrap gap-2">
+                        <span class="text-sm font-medium text-gray-600 whitespace-nowrap">เช็คทั้งหมด:</span>
+                        <div class="flex gap-1">
+                            <button onclick="setAllClubAttendance('มา')" class="text-xs bg-green-100 text-green-800 hover:bg-green-200 px-3 py-2 rounded-full font-bold">มา</button>
+                            <button onclick="setAllClubAttendance('สาย')" class="text-xs bg-yellow-100 text-yellow-800 hover:bg-yellow-200 px-3 py-2 rounded-full font-bold">สาย</button>
+                            <button onclick="setAllClubAttendance('ลา')" class="text-xs bg-blue-100 text-blue-800 hover:bg-blue-200 px-3 py-2 rounded-full font-bold">ลา</button>
+                            <button onclick="setAllClubAttendance('ขาด')" class="text-xs bg-red-100 text-red-800 hover:bg-red-200 px-3 py-2 rounded-full font-bold">ขาด</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="club-checkin-alert" class="hidden bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4 text-yellow-700 text-sm"><p><i class="fas fa-exclamation-triangle mr-2"></i>กรุณาเลือกเงื่อนไขให้ครบเพื่อโหลดรายชื่อชุมนุม</p></div>
+                <div id="club-no-students-alert" class="hidden bg-blue-50 border-l-4 border-blue-400 p-4 mb-4 text-blue-700 text-sm"><p><i class="fas fa-info-circle mr-2"></i>ไม่พบนักเรียนลงทะเบียนในชุมนุมนี้สำหรับภาคเรียนนี้</p></div>
+
+            <div class="w-full bg-white/40 backdrop-blur-md rounded-xl border border-white/50 shadow-sm hidden" id="club-student-list-container">
+                    <div class="p-3 sm:p-4 bg-green-50/50 border-b border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div class="relative w-full md:w-80">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"><i class="fas fa-search"></i></span>
+                            <input type="text" id="club-checkin-search" onkeyup="renderClubCheckinTable()" placeholder="ค้นหา ชั้นเรียน, เลขที่, รหัส หรือชื่อ..." class="w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-green-500 focus:border-green-500 text-sm">
+                        </div>
+                        <div class="flex items-center w-full md:w-auto">
+                            <label class="inline-flex items-center text-sm font-medium text-gray-700 cursor-pointer select-none">
+                                <input type="checkbox" id="club-checkin-hide-checked" onchange="renderClubCheckinTable()" class="rounded border-gray-300 text-green-600 focus:ring-green-500 mr-2 w-5 h-5"> แสดงเฉพาะคนที่ยังไม่เช็คชื่อ
+                            </label>
+                        </div>
+                    </div>
+                    <!-- Table with Mobile Responsive Classes -->
+                    <table class="min-w-full divide-y divide-gray-200 mobile-card-table">
+                        <thead class="bg-white/50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">ชั้น/เลขที่</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">รหัสประจำตัว</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อ - นามสกุล</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider md:w-72">สถานะ</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200" id="club-checkin-table-body"></tbody>
+                    </table>
+                </div>
+
+                <div class="mt-8 flex flex-col sm:flex-row justify-end gap-3 hidden" id="club-save-btn-container">
+                    <button onclick="exportClubCheckinCSV()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold text-lg shadow-md transition-colors"><i class="fas fa-file-csv mr-2"></i> ส่งออก CSV</button>
+                    <button onclick="saveClubAttendance()" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold text-lg shadow-md transition-colors"><i class="fas fa-save mr-2"></i> บันทึกการเข้าชุมนุม</button>
+                </div>
+            </div>
+        </section>

@@ -58,6 +58,13 @@ export function initHomeVisitTab() {
     if (tbody) {
         tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-500">กรุณาเลือกชั้นเรียนและกดปุ่มค้นหาเพื่อแสดงข้อมูล</td></tr>';
     }
+
+    const hvModal = document.getElementById('home-visit-modal');
+    if (hvModal && !hvModal.dataset.listenerAttached) {
+        hvModal.addEventListener('input', () => { AppState.checkinUnsavedChanges = true; });
+        hvModal.addEventListener('change', () => { AppState.checkinUnsavedChanges = true; });
+        hvModal.dataset.listenerAttached = 'true';
+    }
 }
 
 export async function searchHomeVisit() {
@@ -916,6 +923,26 @@ function initImageViewerControls() {
         if (modalId === 'image-viewer-modal') {
             resetZoom();
         }
+        if (modalId === 'home-visit-modal' && AppState.checkinUnsavedChanges) {
+            if (window.customConfirm) {
+                window.customConfirm(
+                    'ข้อมูลยังไม่ได้บันทึก',
+                    'คุณมีข้อมูลการเยี่ยมบ้านนักเรียนที่ยังไม่ได้ทำการบันทึก ต้องการปิดหน้าต่างและยอมรับการสูญเสียข้อมูลใช่หรือไม่?',
+                    () => {
+                        AppState.checkinUnsavedChanges = false;
+                        if (originalCloseModal) originalCloseModal(modalId);
+                    },
+                    'ออกโดยไม่บันทึก',
+                    'ทำงานต่อ'
+                );
+                return;
+            } else {
+                const confirmLeave = confirm('คุณมีข้อมูลที่ยังไม่ได้บันทึก ต้องการออกจากหน้านี้ใช่หรือไม่?');
+                if (!confirmLeave) return;
+            }
+        }
+        
+        AppState.checkinUnsavedChanges = false;
         if (originalCloseModal) {
             originalCloseModal(modalId);
         }
@@ -1079,6 +1106,7 @@ export async function submitHomeVisit() {
                 AppState.allStudents[sIdx].updatedAt = getISOTimestamp();
                 await saveToDB(DB_KEYS.STUDENTS, AppState.allStudents, 'saveStudents');
             }
+            AppState.checkinUnsavedChanges = false;
             document.getElementById('home-visit-modal').classList.remove('show');
             renderHomeVisitList();
             showToast('บันทึกข้อมูลเยี่ยมบ้านเรียบร้อย');

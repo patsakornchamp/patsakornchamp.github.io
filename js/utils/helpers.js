@@ -78,7 +78,7 @@ export function customAlert(msg) {
     if(modal) modal.classList.add('show');
 }
 
-export function customConfirm(title, msg, callback) {
+export function customConfirm(title, msg, callback, okText = 'ยืนยัน', cancelText = 'ยกเลิก', cancelCallback = null) {
     const titleEl = document.getElementById('confirm-title');
     const msgEl = document.getElementById('confirm-message');
     if(titleEl) titleEl.innerText = title;
@@ -86,13 +86,23 @@ export function customConfirm(title, msg, callback) {
 
     const modal = document.getElementById('custom-confirm-modal');
     const okBtn = document.getElementById('confirm-ok-btn');
+    const cancelBtn = document.getElementById('confirm-cancel-btn');
     
+    if(okBtn) okBtn.innerText = okText;
+    if(cancelBtn) cancelBtn.innerText = cancelText;
+
     if(modal && okBtn) {
         modal.classList.add('show');
         okBtn.onclick = () => {
             closeModal('custom-confirm-modal');
             if (callback) callback();
         };
+        if (cancelBtn) {
+            cancelBtn.onclick = () => {
+                closeModal('custom-confirm-modal');
+                if (cancelCallback) cancelCallback();
+            };
+        }
     }
 }
 

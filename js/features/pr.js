@@ -117,7 +117,7 @@ export function clearPRImagePreview() {
 }
 
 export function editPRNewsItem(id) {
-    const pr = (AppState.allPrNews || []).find(x => x.id === id && x.deleted_flg !== 'Y');
+    const pr = (AppState.allPrNews || []).find(x => String(x.id) === String(id) && x.deleted_flg !== 'Y');
     if (!pr) return;
 
     document.getElementById('pr-id').value = pr.id;
@@ -240,7 +240,7 @@ export async function savePRNewsItem() {
             const savedItem = result.data;
             if (!AppState.allPrNews) AppState.allPrNews = [];
             
-            const idx = AppState.allPrNews.findIndex(x => x.id === id);
+            const idx = AppState.allPrNews.findIndex(x => String(x.id) === String(id));
             if (idx > -1) {
                 AppState.allPrNews[idx] = savedItem;
             } else {
@@ -265,7 +265,7 @@ export async function savePRNewsItem() {
 
 export function deletePRNewsItem(id) {
     customConfirm('ยืนยันการลบข่าวประชาสัมพันธ์', 'คุณต้องการลบข่าวประชาสัมพันธ์นี้ใช่หรือไม่?', async () => {
-        const itemIdx = (AppState.allPrNews || []).findIndex(x => x.id === id);
+        const itemIdx = (AppState.allPrNews || []).findIndex(x => String(x.id) === String(id));
         if (itemIdx > -1) {
             AppState.allPrNews[itemIdx].deleted_flg = 'Y';
             AppState.allPrNews[itemIdx].deletedAt = getISOTimestamp();

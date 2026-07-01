@@ -1,6 +1,6 @@
-﻿import { AppState } from '../core/state.js';
+import { AppState } from '../core/state.js';
 import { DB_KEYS } from '../core/config.js';
-import { getStudentFullName, showLoading, hideLoading, customAlert, closeModal } from '../utils/helpers.js';
+import { getStudentFullName, showLoading, hideLoading, customAlert, closeModal, bufferToBase64, base64ToBuffer } from '../utils/helpers.js';
 import { syncDataFromServer } from '../services/api.js';
 
 export function switchLoginTab(type) {
@@ -119,9 +119,20 @@ export function loginSuccess(userObj) {
         if(mobNameEl) mobNameEl.innerText = sName; 
         if(mobRoleEl) mobRoleEl.innerText = sRole;
     }
-
+    
     updateMenuVisibility();
+    
+    // Redirect to default tab based on user role
+    if (AppState.currentUser) {
+        if (AppState.currentUser.role === 'student') {
+            window.location.hash = '#/my-assignments';
+        } else {
+            window.location.hash = '#/checkin';
+        }
+    }
+
     if(window.updateAllDropdowns) window.updateAllDropdowns();
+    if(window.checkAndPromptDraft) window.checkAndPromptDraft();
 
     // Show dynamic PR announcements on login/refresh
     if (window.showPRAnnouncementIfActive) {
@@ -144,12 +155,24 @@ export function logout() {
     document.getElementById('app-main').classList.add('hidden');
     document.getElementById('form-login-student').reset();
     document.getElementById('form-login-teacher').reset();
+    
+    const studentMobileNav = document.getElementById('student-mobile-nav');
+    if (studentMobileNav) studentMobileNav.classList.add('hidden');
 }
 
 export function updateMenuVisibility() {
     ['menu-my-profile', 'menu-my-club', 'menu-academic', 'menu-my-assignments', 'menu-student-qr', 'menu-checkin', 'menu-club-checkin', 'menu-history', 'menu-stats', 'menu-master', 'menu-settings', 'menu-home-visit', 'menu-assignments'].forEach(id => {
         document.getElementById(id).classList.add('hidden');
     });
+
+    const studentMobileNav = document.getElementById('student-mobile-nav');
+    if (studentMobileNav) {
+        if (AppState.currentUser && AppState.currentUser.role === 'student') {
+            studentMobileNav.classList.remove('hidden');
+        } else {
+            studentMobileNav.classList.add('hidden');
+        }
+    }
 
     const periodSelect = document.getElementById('checkin-period');
 
@@ -356,10 +379,36 @@ export function promptBiometricEnrollment() {
     }
 }
 
+export function updateBiometricButtons() {
+    const cred = localStorage.getItem('BIOMETRIC_CRED');
+    const enableBtn = document.getElementById('btn-biometric-enable');
+    const disableBtn = document.getElementById('btn-biometric-disable');
+    
+    if (enableBtn && disableBtn) {
+        if (cred) {
+            enableBtn.classList.add('hidden');
+            disableBtn.classList.remove('hidden');
+        } else {
+            enableBtn.classList.remove('hidden');
+            disableBtn.classList.add('hidden');
+        }
+    }
+}
+
+export function disableBiometricSetting() {
+    localStorage.removeItem('BIOMETRIC_CRED');
+    localStorage.removeItem('BIOMETRIC_DISMISSED');
+    if (window.showToast) window.showToast("ยกเลิกการจดจำ Biometric เรียบร้อยแล้ว", "success");
+    updateBiometricButtons();
+    checkBiometricAvailability();
+}
+
 window.checkBiometricAvailability = checkBiometricAvailability;
 window.enableBiometric = enableBiometric;
 window.loginWithBiometric = loginWithBiometric;
 window.promptBiometricEnrollment = promptBiometricEnrollment;
+window.updateBiometricButtons = updateBiometricButtons;
+window.disableBiometricSetting = disableBiometricSetting;
 
 
 

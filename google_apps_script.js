@@ -236,8 +236,10 @@ function createAssignmentWithFiles(ss, payload) {
       for (let i = 0; i < parsedFiles.length; i++) {
         const file = parsedFiles[i];
         if (file.base64) {
-          const url = uploadImageToDrive(file.base64, `[Asm]_${payload.id}_${file.name}`, file.mimeType, DRIVE_FOLDER_ASSIGNMENTS);
-          uploadedFiles.push({ n: file.name, u: url });
+          const url = uploadImageToDrive(file.base64, `[Asm]_${payload.id}_${file.name || file.n}`, file.mimeType, DRIVE_FOLDER_ASSIGNMENTS);
+          uploadedFiles.push({ n: file.name || file.n, u: url });
+        } else if (file.u || file.url) {
+          uploadedFiles.push({ n: file.n || file.name, u: file.u || file.url });
         }
       }
     }

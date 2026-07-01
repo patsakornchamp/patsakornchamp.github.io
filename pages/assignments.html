@@ -1,0 +1,61 @@
+<section id="tab-assignments" class="tab-content">
+            <div class="glass-panel rounded-none sm:rounded-2xl p-6 md:p-8">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-3 gap-3">
+                    <h3 class="text-2xl font-bold text-green-800"><i class="fas fa-clipboard-list mr-2"></i>จัดการงานและคะแนน</h3>
+                    <button onclick="openAssignmentModal()" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm whitespace-nowrap"><i class="fas fa-plus mr-2"></i> มอบหมายงานใหม่</button>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm w-full relative z-20">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ค้นหาชื่องาน</label>
+                        <input type="text" id="asm-filter-title" placeholder="พิมพ์ชื่องาน..." class="w-full px-3 py-2 border rounded focus:ring-green-500" onkeyup="renderAssignmentsList()">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">กรองตามชั้นเรียน</label>
+                        <select id="asm-filter-class" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="onAsmFilterClassChange()"><option value="">-- ทุกชั้นเรียน --</option></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">กรองตามวิชา</label>
+                        <select id="asm-filter-subject" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="renderAssignmentsList()"><option value="">-- ทุกวิชา --</option></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">สถานะการส่งงาน</label>
+                        <select id="asm-filter-progress" class="w-full px-3 py-2 border rounded focus:ring-green-500" onchange="renderAssignmentsList()">
+                            <option value="">-- ทั้งหมด --</option>
+                            <option value="complete">ส่งครบแล้ว</option>
+                            <option value="incomplete">ยังส่งไม่ครบ</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="searchAssignments()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm"><i class="fas fa-search mr-2"></i> ค้นหา</button>
+                    </div>
+                </div>
+
+                <!-- Export Button (แสดงเฉพาะเมื่อเลือกชั้นเรียน+วิชาแล้ว) -->
+                <div id="asm-export-btn-container" class="hidden mb-4 flex justify-end">
+                    <button onclick="exportAssignmentsExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg font-bold shadow-md transition-colors flex items-center gap-2">
+                        <i class="fas fa-file-excel text-lg"></i> ส่งออกรายงานคะแนน (Excel)
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto bg-white/40 border border-white/50 backdrop-blur-md rounded-xl shadow-sm w-full">
+                    <table class="min-w-full divide-y divide-gray-200 mobile-card-table">
+                        <thead class="bg-white/50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชื่องาน</th>
+                                <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 whitespace-nowrap">ชั้นเรียน</th>
+                                <th class="hidden md:table-cell px-4 py-3 text-left text-xs font-medium text-gray-500 whitespace-nowrap">วิชา</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 whitespace-nowrap">วันที่สั่งงาน</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 whitespace-nowrap">กำหนดส่ง</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 whitespace-nowrap">ส่งงาน</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 whitespace-nowrap">ตรวจงาน</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 whitespace-nowrap">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-assignments" class="divide-y divide-gray-200">
+                            <!-- Load Dynamic Assignments -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>

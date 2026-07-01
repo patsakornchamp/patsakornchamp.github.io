@@ -1,0 +1,171 @@
+<section id="tab-my-profile" class="tab-content">
+            <div class="glass-panel rounded-none sm:rounded-2xl p-6 md:p-8">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 border-b pb-4 gap-4">
+                    <div class="flex items-center w-full md:flex-1 min-w-0">
+                        <div class="bg-green-100 p-4 rounded-full text-green-600 mr-4 shrink-0"><i class="fas fa-user-graduate text-3xl"></i></div>
+                        <div class="min-w-0 flex-1">
+                            <h3 class="text-xl sm:text-2xl font-bold text-gray-800 break-words" id="profile-fullname">ชื่อ - นามสกุล</h3>
+                            <p class="text-gray-500" id="profile-studentid">รหัสประจำตัว: </p>
+                        </div>
+                    </div>
+                    <div id="profile-badges" class="flex flex-col items-start md:items-end gap-2 shrink-0 w-full md:w-auto"></div>
+                </div>
+                
+                <!-- Student Profile Picture -->
+                <div class="flex justify-center mb-6">
+                    <div class="relative">
+                        <img id="profile-pic-preview" src="https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg" class="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg bg-gray-200">
+                        <label for="profile-pic-upload" id="profile-pic-edit-button" class="hidden absolute -bottom-2 -right-2 bg-blue-600 hover:bg-blue-700 text-white w-10 h-10 rounded-full items-center justify-center cursor-pointer shadow-md border-2 border-white transition-transform hover:scale-110">
+                            <i class="fas fa-camera"></i>
+                        </label>
+                        <input type="file" id="profile-pic-upload" class="hidden" accept="image/*">
+                    </div>
+                </div>
+
+                <form id="student-self-form" onsubmit="saveMyProfile(event)">
+                    <!-- ข้อมูลส่วนตัว (จัด Layout เต็มแถว) -->
+                    <div class="mb-6">
+                        <h4 class="font-bold text-lg text-green-700 mb-4 border-b pb-2"><i class="fas fa-info-circle mr-2"></i>ข้อมูลส่วนตัว</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                            <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-sm font-medium text-gray-700 flex items-center gap-1">
+                                        เลข ปชช. (13 หลัก) *
+                                        <span class="tooltip-container text-gray-400 hover:text-green-600">
+                                            <i class="fas fa-info-circle text-xs"></i>
+                                            <span class="tooltip-text">ใช้สำหรับยืนยันตัวตนในระบบ และระบบจะเช็คไม่ให้เลขประจำตัวประชาชนซ้ำกับนักเรียนคนอื่น</span>
+                                        </span>
+                                    </label>
+                                    <input type="text" id="sp-citizenid" maxlength="13" required class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500">
+                                </div>
+                                <div><label class="text-sm font-medium text-gray-700">ชื่อเล่น</label><input type="text" id="sp-nickname" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                                <div><label class="text-sm font-medium text-gray-500">ชั้นเรียน</label><input type="text" id="sp-class" readonly class="w-full px-3 py-2 border rounded bg-gray-100 text-gray-500"></div>
+                                <div><label class="text-sm font-medium text-gray-500">เลขที่</label><input type="text" id="sp-number" readonly class="w-full px-3 py-2 border rounded bg-gray-100 text-gray-500"></div>
+                                <div><label class="text-sm font-medium text-gray-700">วันเกิด *</label><input type="date" id="sp-dob" required class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                                <div>
+                                    <label class="text-sm font-medium text-gray-700 flex items-center gap-1">
+                                        เบอร์โทรศัพท์ส่วนตัว *
+                                        <span class="tooltip-container text-gray-400 hover:text-green-600">
+                                            <i class="fas fa-info-circle text-xs"></i>
+                                            <span class="tooltip-text">ระบุเบอร์โทรศัพท์ส่วนตัวของนักเรียน 9-10 หลัก (เฉพาะตัวเลข เช่น 0812345678)</span>
+                                        </span>
+                                    </label>
+                                    <input type="text" id="sp-phone" required placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500">
+                                </div>
+                                <div class="sm:col-span-2"><label class="text-sm font-medium text-gray-700">อีเมลส่วนตัว</label><input type="email" id="sp-email" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                            </div>
+                            <div class="md:col-span-1">
+                                <label class="text-sm font-medium text-gray-700">ที่อยู่ปัจจุบัน *</label>
+                                <textarea id="sp-address" required rows="7" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500 h-[calc(100%-24px)]"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- ข้อมูลครอบครัว (บิดา -> มารดา -> ผู้ปกครอง) -->
+                    <div class="mt-8 border-t pt-6">
+                        <h4 class="font-bold text-lg text-blue-700 mb-4 border-b pb-2"><i class="fas fa-male mr-2"></i>ข้อมูลบิดา</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
+                            <div><label class="text-sm font-medium text-gray-700">ชื่อบิดา</label><input type="text" id="sp-f-fname" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                            <div><label class="text-sm font-medium text-gray-700">นามสกุล</label><input type="text" id="sp-f-lname" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                            <div><label class="text-sm font-medium text-gray-700">อายุ (ปี)</label><input type="number" id="sp-f-age" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                            <div><label class="text-sm font-medium text-gray-700">อาชีพ</label><input type="text" id="sp-f-job" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                            <div><label class="text-sm font-medium text-gray-700">เบอร์โทรศัพท์</label><input type="text" id="sp-f-phone" placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                        </div>
+                        
+                        <h4 class="font-bold text-lg text-pink-700 mb-4 border-b pb-2 mt-4"><i class="fas fa-female mr-2"></i>ข้อมูลมารดา</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
+                            <div><label class="text-sm font-medium text-gray-700">ชื่อมารดา</label><input type="text" id="sp-m-fname" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                            <div><label class="text-sm font-medium text-gray-700">นามสกุล</label><input type="text" id="sp-m-lname" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                            <div><label class="text-sm font-medium text-gray-700">อายุ (ปี)</label><input type="number" id="sp-m-age" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                            <div><label class="text-sm font-medium text-gray-700">อาชีพ</label><input type="text" id="sp-m-job" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                            <div><label class="text-sm font-medium text-gray-700">เบอร์โทรศัพท์</label><input type="text" id="sp-m-phone" placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                        </div>
+
+                        <!-- ข้อมูลผู้ปกครอง (ย้ายมาไว้หลัง บิดา-มารดา) -->
+                        <div class="mt-6 pt-4 border-t">
+                            <div class="flex flex-wrap items-center justify-between mb-4 border-b pb-2 gap-2">
+                                <h4 class="font-bold text-lg text-indigo-700 flex items-center gap-1">
+                                    <i class="fas fa-user-shield mr-2"></i>ข้อมูลผู้ปกครอง
+                                    <span class="tooltip-container text-gray-400 hover:text-indigo-600">
+                                        <i class="fas fa-info-circle text-xs"></i>
+                                        <span class="tooltip-text">ระบุข้อมูลผู้ปกครองหลักที่สามารถติดต่อได้ ในกรณีที่ใช้ข้อมูลร่วมกับบิดาหรือมารดา สามารถกดคัดลอกได้ทันทีทางด้านขวา</span>
+                                    </span>
+                                </h4>
+                                    <span class="text-xs text-gray-500 font-bold">ใช้ข้อมูลเดียวกันกับ:</span>
+                                    <label class="flex items-center space-x-1.5 cursor-pointer">
+                                        <input type="radio" name="sp-copy-parent" value="father" onclick="copyParentInfoToGuardian('father')" class="text-indigo-600 focus:ring-indigo-500">
+                                        <span>บิดา</span>
+                                    </label>
+                                    <label class="flex items-center space-x-1.5 cursor-pointer">
+                                        <input type="radio" name="sp-copy-parent" value="mother" onclick="copyParentInfoToGuardian('mother')" class="text-indigo-600 focus:ring-indigo-500">
+                                        <span>มารดา</span>
+                                    </label>
+                                    <button type="button" onclick="clearCopiedGuardianInfo()" id="sp-btn-clear-copy" class="hidden text-xs text-red-500 hover:text-red-700 font-bold ml-1"><i class="fas fa-times-circle"></i> ยกเลิกเลือก</button>
+                                </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                                <div><label class="text-sm font-medium text-gray-700">คำนำหน้า *</label>
+                                    <select id="sp-p-title" class="w-full px-3 py-2 border rounded focus:ring-green-500"><option value="นาย">นาย</option><option value="นาง">นาง</option><option value="นางสาว">นางสาว</option></select>
+                                </div>
+                                <div><label class="text-sm font-medium text-gray-700">ชื่อผู้ปกครอง *</label><input type="text" id="sp-p-fname" required class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                                <div><label class="text-sm font-medium text-gray-700">นามสกุลผู้ปกครอง *</label><input type="text" id="sp-p-lname" required class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                                <div><label class="text-sm font-medium text-gray-700">ความสัมพันธ์ *</label>
+                                    <select id="sp-p-rel" class="w-full px-3 py-2 border rounded focus:ring-green-500">
+                                        <option value="บิดา">บิดา</option><option value="มารดา">มารดา</option><option value="ปู่/ย่า/ตา/ยาย">ปู่/ย่า/ตา/ยาย</option><option value="ลุง/ป้า/น้า/อา">ลุง/ป้า/น้า/อา</option><option value="พี่/น้อง">พี่/น้อง</option><option value="อื่นๆ">อื่นๆ</option>
+                                    </select>
+                                </div>
+                                <div class="sm:col-span-4"><label class="text-sm font-medium text-gray-700">เบอร์โทรศัพท์ผู้ปกครอง *</label><input type="text" id="sp-p-phone" required placeholder="08XXXXXXXX" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Home Information Section -->
+                    <div class="mt-8 border-t pt-6">
+                        <h4 class="font-bold text-lg text-green-700 mb-4 border-b pb-2 flex items-center gap-1">
+                            <i class="fas fa-map-marker-alt mr-2"></i>ข้อมูลที่พักอาศัย
+                            <span class="tooltip-container text-gray-400 hover:text-green-600">
+                                <i class="fas fa-info-circle text-xs"></i>
+                                <span class="tooltip-text">ประกอบด้วยพิกัด GPS บ้าน และรูปถ่ายบ้าน 3 มุมมองเพื่อใช้ประกอบการประเมินโครงการเยี่ยมบ้านนักเรียน</span>
+                            </span>
+                        </h4>
+                        
+                        <div class="border p-4 rounded mb-6 bg-gray-50">
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-bold flex items-center gap-1">
+                                    พิกัด GPS บ้านนักเรียน
+                                    <span class="tooltip-container text-gray-400 hover:text-green-600">
+                                        <i class="fas fa-info-circle text-xs"></i>
+                                        <span class="tooltip-text">กดปุ่ม 'ดึงพิกัดปัจจุบัน' เพื่อขอละติจูดและลองจิจูดจากอุปกรณ์ของคุณ หรือนำลิงก์พิกัดมาใส่เพื่อใช้นำทาง</span>
+                                    </span>
+                                </label>
+                                <div class="flex gap-2">
+                                    <a id="sp-map-link" href="#" target="_blank" class="hidden bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-bold items-center shadow-sm"><i class="fas fa-map-marked-alt mr-1"></i> ดูบนแผนที่</a>
+                                    <button type="button" id="sp-gps-btn" onclick="getGPSLocationForProfile()" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs shadow-sm whitespace-nowrap"><i class="fas fa-map-marker-alt"></i> ดึงพิกัดปัจจุบัน</button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label class="text-xs text-gray-500">ละติจูด (Latitude)</label><input type="text" id="sp-home-lat" readonly class="w-full px-3 py-1 border rounded bg-gray-100 text-sm"></div>
+                                <div><label class="text-xs text-gray-500">ลองจิจูด (Longitude)</label><input type="text" id="sp-home-lng" readonly class="w-full px-3 py-1 border rounded bg-gray-100 text-sm"></div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div class="border rounded p-3 text-center bg-gray-50 flex flex-col"><label class="text-xs font-bold block mb-2">รูปถ่ายบ้าน (ภาพที่ 1)</label><label for="sp-home-photo1" class="sp-photo-label cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 px-4 rounded border border-blue-200 text-sm w-full transition-colors mb-2 flex items-center justify-center"><i class="fas fa-camera mr-2"></i> เลือกรูปภาพ</label><input type="file" id="sp-home-photo1" accept="image/*" class="hidden sp-photo-input"><div class="relative w-full flex-grow mt-2"><img id="sp-home-preview1" class="hidden w-full h-32 object-cover rounded border cursor-pointer" onclick="viewLargeImage(this.src)"><button type="button" id="sp-home-remove1" onclick="removeImageForProfile(1)" class="hidden sp-remove-btn absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-full shadow-md items-center justify-center"><i class="fas fa-times"></i></button></div></div>
+                            <div class="border rounded p-3 text-center bg-gray-50 flex flex-col"><label class="text-xs font-bold block mb-2">รูปถ่ายบ้าน (ภาพที่ 2)</label><label for="sp-home-photo2" class="sp-photo-label cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 px-4 rounded border border-blue-200 text-sm w-full transition-colors mb-2 flex items-center justify-center"><i class="fas fa-camera mr-2"></i> เลือกรูปภาพ</label><input type="file" id="sp-home-photo2" accept="image/*" class="hidden sp-photo-input"><div class="relative w-full flex-grow mt-2"><img id="sp-home-preview2" class="hidden w-full h-32 object-cover rounded border cursor-pointer" onclick="viewLargeImage(this.src)"><button type="button" id="sp-home-remove2" onclick="removeImageForProfile(2)" class="hidden sp-remove-btn absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-full shadow-md items-center justify-center"><i class="fas fa-times"></i></button></div></div>
+                            <div class="border rounded p-3 text-center bg-gray-50 flex flex-col"><label class="text-xs font-bold block mb-2">รูปถ่ายบ้าน (ภาพที่ 3)</label><label for="sp-home-photo3" class="sp-photo-label cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 px-4 rounded border border-blue-200 text-sm w-full transition-colors mb-2 flex items-center justify-center"><i class="fas fa-camera mr-2"></i> เลือกรูปภาพ</label><input type="file" id="sp-home-photo3" accept="image/*" class="hidden sp-photo-input"><div class="relative w-full flex-grow mt-2"><img id="sp-home-preview3" class="hidden w-full h-32 object-cover rounded border cursor-pointer" onclick="viewLargeImage(this.src)"><button type="button" id="sp-home-remove3" onclick="removeImageForProfile(3)" class="hidden sp-remove-btn absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white w-7 h-7 rounded-full shadow-md items-center justify-center"><i class="fas fa-times"></i></button></div></div>
+                        </div>
+
+                        <div>
+                            <label class="text-sm font-medium text-gray-700">รายละเอียด/จุดสังเกตการเดินทาง</label>
+                            <textarea id="sp-home-directions" rows="2" class="w-full px-3 py-2 border rounded focus:ring-green-500 focus:border-green-500"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 text-center border-t pt-6 flex flex-col md:flex-row justify-center gap-3" id="profile-action-buttons">
+                        <button type="button" id="btn-edit-profile" onclick="toggleProfileEditMode(true)" class="w-full md:w-auto bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-8 rounded-lg shadow-md transition duration-200"><i class="fas fa-edit mr-2"></i> แก้ไขข้อมูล</button>
+                        <button type="button" id="btn-cancel-profile" onclick="renderStudentProfile()" class="hidden w-full md:w-auto bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-8 rounded-lg shadow-md transition duration-200"><i class="fas fa-times mr-2"></i> ยกเลิก</button>
+                        <button type="submit" id="btn-save-profile" class="hidden w-full md:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition duration-200"><i class="fas fa-save mr-2"></i> บันทึกข้อมูลประวัติ</button>
+                    </div>
+                </form>
+            </div>
+        </section>
