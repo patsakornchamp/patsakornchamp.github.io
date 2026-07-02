@@ -8,6 +8,26 @@ export function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
+export function isAssignmentIdMatch(id1, id2) {
+    if (id1 === undefined || id1 === null || id2 === undefined || id2 === null) return false;
+    const s1 = String(id1).trim();
+    const s2 = String(id2).trim();
+    if (s1 === s2) return true;
+    
+    // If one of them is purely numeric, require exact match (prevents '1' matching '10', '11', etc.)
+    if (/^\d+$/.test(s1) || /^\d+$/.test(s2)) {
+        return s1 === s2;
+    }
+    
+    // For non-numeric legacy IDs, support prefix matching but only if they are long enough to avoid false matches
+    if (s1.length >= 8 && s2.length >= 8) {
+        return s1.startsWith(s2) || s2.startsWith(s1);
+    }
+    
+    return false;
+}
+
+
 export function getStudentFullName(s) {
     if(!s) return '';
     const nick = s.nickname ? ` (${s.nickname})` : '';

@@ -1,6 +1,6 @@
 import { AppState } from '../core/state.js';
 import { saveToDB, syncDataFromServer } from '../services/api.js';
-import { getBangkokDate, getBangkokCurrentTime, getISOTimestamp, getCurrentUserId, showToast, customAlert, customConfirm, closeModal, getStudentFullName, showLoading, hideLoading, generateId } from '../utils/helpers.js';
+import { getBangkokDate, getBangkokCurrentTime, getISOTimestamp, getCurrentUserId, showToast, customAlert, customConfirm, closeModal, getStudentFullName, showLoading, hideLoading, generateId, isAssignmentIdMatch } from '../utils/helpers.js';
 
 // ฟังก์ชันสำหรับแปลงไฟล์ให้เป็น Base64
 const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -558,7 +558,7 @@ export function editAssignment(id) {
 
     // เช็คว่ามีเด็กคนไหนที่ทำแบบทดสอบไปแล้วหรือยัง เพื่อล็อกการแก้ไข
     const hasSubmissions = AppState.allStudentAssignments && AppState.allStudentAssignments.some(sa => 
-        (sa.assignmentId === asm.id || (sa.assignmentId && asm.id && (sa.assignmentId.startsWith(asm.id) || asm.id.startsWith(sa.assignmentId)))) && 
+        isAssignmentIdMatch(sa.assignmentId, asm.id) && 
         sa.quizAnswers && 
         sa.deleted_flg !== 'Y'
     );
@@ -895,9 +895,7 @@ export async function saveAssignment() {
 
         AppState.allStudentAssignments.forEach(sa => {
             // รองรับทั้งกรณี ID ตรงกันเป๊ะ หรือเป็น ID เก่าที่เป็น prefix ของ ID ปัจจุบัน
-            const isMatch = sa.assignmentId === finalId || 
-                            sa.assignmentId === id ||
-                            (sa.assignmentId && finalId && (sa.assignmentId.startsWith(finalId) || finalId.startsWith(sa.assignmentId)));
+            const isMatch = isAssignmentIdMatch(sa.assignmentId, finalId) || isAssignmentIdMatch(sa.assignmentId, id);
             if (isMatch) {
                 const isSelected = selectedStudentIds.includes(String(sa.studentId));
                 // หากเอาเครื่องหมายติ๊กออกและนักเรียนคนนั้นยังไม่ได้ส่งงาน (สถานะ รอส่ง) ให้ลบข้อมูลออก
@@ -912,7 +910,7 @@ export async function saveAssignment() {
 
         selectedStudentIds.forEach(stuId => {
             const existing = AppState.allStudentAssignments.find(sa => 
-                (sa.assignmentId === finalId || sa.assignmentId === id || (sa.assignmentId && finalId && (sa.assignmentId.startsWith(finalId) || finalId.startsWith(sa.assignmentId)))) && 
+                (isAssignmentIdMatch(sa.assignmentId, finalId) || isAssignmentIdMatch(sa.assignmentId, id)) && 
                 String(sa.studentId) === String(stuId)
             );
             if (!existing) {
@@ -948,7 +946,7 @@ export async function saveAssignment() {
 
 export function deleteAssignment(id) {
     const hasSubmission = AppState.allStudentAssignments && AppState.allStudentAssignments.some(s => 
-        s.assignmentId === id && 
+        isAssignmentIdMatch(s.assignmentId, id) && 
         (s.status === 'ส่งแล้ว' || s.status === 'ตรวจแล้ว' || (s.score !== null && s.score !== undefined && s.score !== '')) && 
         s.deleted_flg !== 'Y'
     );
@@ -1000,7 +998,7 @@ export function renderGradingTable() {
     let stus = AppState.allStudents.filter(s => s.class === (cls ? cls.className : '') && s.status !== 'ลาออก' && s.deleted_flg !== 'Y');
     
     const assignedRecords = AppState.allStudentAssignments ? AppState.allStudentAssignments.filter(sa => 
-        (sa.assignmentId === asm.id || (sa.assignmentId && asm.id && (sa.assignmentId.startsWith(asm.id) || asm.id.startsWith(sa.assignmentId)))) && 
+        isAssignmentIdMatch(sa.assignmentId, asm.id) && 
         sa.deleted_flg !== 'Y'
     ) : [];
     const targetStudents = assignedRecords.map(sa => String(sa.studentId));
@@ -1009,7 +1007,7 @@ export function renderGradingTable() {
     // จับคู่ข้อมูลนักเรียนและสถานะงาน
     let mappedStus = stus.map(stu => {
         const sAsm = AppState.allStudentAssignments && AppState.allStudentAssignments.find(x => 
-            (String(x.assignmentId) === String(asm.id) || (x.assignmentId && asm.id && (String(x.assignmentId).startsWith(String(asm.id)) || String(asm.id).startsWith(String(x.assignmentId))))) && 
+            isAssignmentIdMatch(x.assignmentId, asm.id) && 
             (String(x.studentId) === String(stu.id) || String(x.studentId) === String(stu.studentId)) && 
             x.deleted_flg !== 'Y'
         ) || { status: 'รอส่ง', score: '', teacherComment: '' };
@@ -1075,7 +1073,7 @@ export function viewStudentQuizSubmission(studentId) {
     if (!student) return;
 
     const sAsm = AppState.allStudentAssignments && AppState.allStudentAssignments.find(x => 
-        (String(x.assignmentId) === String(asm.id) || (x.assignmentId && asm.id && (String(x.assignmentId).startsWith(String(asm.id)) || String(asm.id).startsWith(String(x.assignmentId))))) && 
+        isAssignmentIdMatch(x.assignmentId, asm.id) && 
         (String(x.studentId) === String(student.id) || String(x.studentId) === String(student.studentId)) && 
         x.deleted_flg !== 'Y'
     );
@@ -1115,7 +1113,7 @@ export function viewStudentSubmission(studentId) {
     if (!student) return;
 
     const sAsm = AppState.allStudentAssignments && AppState.allStudentAssignments.find(x => 
-        (String(x.assignmentId) === String(asm.id) || (x.assignmentId && asm.id && (String(x.assignmentId).startsWith(String(asm.id)) || String(asm.id).startsWith(String(x.assignmentId))))) && 
+        isAssignmentIdMatch(x.assignmentId, asm.id) && 
         (String(x.studentId) === String(studentId) || String(x.studentId) === String(student.studentId)) && 
         x.deleted_flg !== 'Y'
     );
@@ -1245,7 +1243,7 @@ export async function submitSubmissionGrading() {
     const stuCode = student.studentId || '';
 
     let sAsm = AppState.allStudentAssignments.find(x => 
-        (String(x.assignmentId) === String(currentGradingAssignmentId) || (x.assignmentId && currentGradingAssignmentId && (String(x.assignmentId).startsWith(String(currentGradingAssignmentId)) || String(currentGradingAssignmentId).startsWith(String(x.assignmentId))))) && 
+        isAssignmentIdMatch(x.assignmentId, currentGradingAssignmentId) && 
         (String(x.studentId) === String(currentGradingStudentId) || String(x.studentId) === String(stuCode)) && 
         x.deleted_flg !== 'Y');
 
@@ -1451,7 +1449,7 @@ export async function saveGrading(stayOpen = false, isConfirmed = false) {
         const stuCode = stu ? stu.studentId : '';
 
         let sAsm = AppState.allStudentAssignments.find(x => 
-            (String(x.assignmentId) === String(currentGradingAssignmentId) || (x.assignmentId && currentGradingAssignmentId && (String(x.assignmentId).startsWith(String(currentGradingAssignmentId)) || String(currentGradingAssignmentId).startsWith(String(x.assignmentId))))) && 
+            isAssignmentIdMatch(x.assignmentId, currentGradingAssignmentId) && 
             (String(x.studentId) === String(stuId) || String(x.studentId) === String(stuCode)) && 
             x.deleted_flg !== 'Y');
         
@@ -1642,8 +1640,7 @@ export async function exportAssignmentsExcel() {
     const assignedStudentMap = {};
     assignments.forEach(a => {
         const sas = allSA.filter(sa =>
-            sa.assignmentId === a.id ||
-            (sa.assignmentId && a.id && (sa.assignmentId.startsWith(a.id) || a.id.startsWith(sa.assignmentId)))
+            isAssignmentIdMatch(sa.assignmentId, a.id)
         );
         assignedStudentMap[a.id] = new Set(sas.map(sa => String(sa.studentId)));
     });
@@ -1689,8 +1686,7 @@ export async function exportAssignmentsExcel() {
 
             // หา SA record
             const sa = allSA.find(s => {
-                const asmMatch = s.assignmentId === a.id ||
-                    (s.assignmentId && a.id && (s.assignmentId.startsWith(a.id) || a.id.startsWith(s.assignmentId)));
+                const asmMatch = isAssignmentIdMatch(s.assignmentId, a.id);
                 const stuMatch = String(s.studentId) === stuIdStr || String(s.studentId) === stuStudentIdStr;
                 return asmMatch && stuMatch;
             });

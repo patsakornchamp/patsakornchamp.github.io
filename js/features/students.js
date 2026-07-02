@@ -1,6 +1,6 @@
 import { AppState } from '../core/state.js';
 import { DB_KEYS } from '../core/config.js';
-import { generateId, getStudentFullName, showToast, customAlert, customConfirm, closeModal, validateThaiCitizenId, validatePhoneNumber, matchRecordYearSemester, getISOTimestamp, getCurrentUserId, showLoading, hideLoading, getBangkokDate, getBangkokCurrentTime } from '../utils/helpers.js';
+import { generateId, getStudentFullName, showToast, customAlert, customConfirm, closeModal, validateThaiCitizenId, validatePhoneNumber, matchRecordYearSemester, getISOTimestamp, getCurrentUserId, showLoading, hideLoading, getBangkokDate, getBangkokCurrentTime, isAssignmentIdMatch } from '../utils/helpers.js';
 import { saveToDB, syncDataFromServer } from '../services/api.js';
 
 // ฟังก์ชันสำหรับแปลงไฟล์เป็น Base64
@@ -1431,9 +1431,7 @@ export function renderStudentAssignments() {
         if (a.deleted_flg === 'Y') return false;
         
         const isDirectlyAssigned = assignedIdsFromRecords.some(saId => 
-            saId === String(a.id).trim() || 
-            saId.startsWith(String(a.id).trim()) || 
-            String(a.id).trim().startsWith(saId)
+            isAssignmentIdMatch(saId, a.id)
         );
         const isClassAssigned = myClassId && (String(a.classId).trim() === myClassId || String(a.classId).trim() === stuClass);
         
@@ -1448,9 +1446,7 @@ export function renderStudentAssignments() {
         if (!sub) sub = { name: a.subjectId || 'ไม่ระบุวิชา' };
         
         let record = mySubmissionRecords.find(sa => {
-            const saId = String(sa.assignmentId).trim();
-            const aId = String(a.id).trim();
-            return saId === aId || saId.startsWith(aId) || aId.startsWith(saId);
+            return isAssignmentIdMatch(sa.assignmentId, a.id);
         });
         
         // ถ้ายังไม่มี Record ใน DB ให้ถือว่าสถานะ = รอส่ง
