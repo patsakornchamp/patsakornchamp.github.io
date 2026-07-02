@@ -31,7 +31,14 @@
                     </div>
                 </div>
 
+                <!-- หมายเหตุอธิบายการ Export -->
+                <div class="mb-4 text-xs sm:text-sm text-indigo-700 bg-indigo-50/80 border border-indigo-100 rounded-xl p-3.5 flex items-start sm:items-center gap-2.5 shadow-sm">
+                    <i class="fas fa-info-circle text-indigo-500 text-lg mt-0.5 sm:mt-0"></i>
+                    <span><strong>คำแนะนำ:</strong> หากต้องการส่งออกรายงานคะแนนรวม (Excel) กรุณาเลือกตัวกรอง <strong>"กรองตามชั้นเรียน"</strong> และ <strong>"กรองตามวิชา"</strong> ก่อน ปุ่มส่งออก Excel จึงจะแสดงขึ้นมา</span>
+                </div>
+
                 <!-- Export Button (แสดงเฉพาะเมื่อเลือกชั้นเรียน+วิชาแล้ว) -->
+
                 <div id="asm-export-btn-container" class="hidden mb-4 flex justify-end">
                     <button onclick="exportAssignmentsExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg font-bold shadow-md transition-colors flex items-center gap-2">
                         <i class="fas fa-file-excel text-lg"></i> ส่งออกรายงานคะแนน (Excel)

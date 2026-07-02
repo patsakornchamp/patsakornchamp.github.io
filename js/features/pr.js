@@ -189,8 +189,8 @@ export async function savePRNewsItem() {
     const statusActive = document.getElementById('pr-status-active').value === 'true';
     const note = document.getElementById('pr-note').value.trim();
 
-    if (!activityName || !startDate || !endDate) {
-        return customAlert('กรุณากรอกชื่อกิจกรรม วันเริ่มต้นแสดงผล และวันสิ้นสุดแสดงผล ให้ครบถ้วน');
+    if (!startDate || !endDate) {
+        return customAlert('กรุณากรอกวันเริ่มต้นแสดงผล และวันสิ้นสุดแสดงผล ให้ครบถ้วน');
     }
 
     const fileInput = document.getElementById('pr-image-file');
@@ -234,10 +234,24 @@ export async function savePRNewsItem() {
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ action: 'savePRItem', payload: payload })
         });
-        const result = await response.json();
+        const text = await response.text();
+        let result = {};
+        try {
+            result = JSON.parse(text);
+        } catch (e) {}
 
-        if (result.success && result.data) {
-            const savedItem = result.data;
+        if (result.success || result.status === 'success') {
+            const finalImageUrl = result.imageUrl || result.data?.image_url || imageUrl;
+            const savedItem = {
+                ...payload,
+                image_url: finalImageUrl
+            };
+            
+            // ลบ base64 metadata ออกก่อนบันทึกใน client state/db
+            delete savedItem.image_base64;
+            delete savedItem.image_mime;
+            delete savedItem.image_name;
+
             if (!AppState.allPrNews) AppState.allPrNews = [];
             
             const idx = AppState.allPrNews.findIndex(x => String(x.id) === String(id));
@@ -247,13 +261,13 @@ export async function savePRNewsItem() {
                 AppState.allPrNews.push(savedItem);
             }
 
-            // Sync to local cache
-            localStorage.setItem(DB_KEYS.PR_NEWS, JSON.stringify(AppState.allPrNews));
+            // Sync to local cache and Firebase
+            await saveToDB(DB_KEYS.PR_NEWS, AppState.allPrNews, 'savePRNews');
             closeModal('pr-news-modal');
             renderPRNewsData();
             showToast('บันทึกข่าวประชาสัมพันธ์สำเร็จ');
         } else {
-            customAlert('เกิดข้อผิดพลาด: ' + (result.message || 'ไม่สามารถบันทึกข้อมูลได้'));
+            customAlert('เกิดข้อผิดพลาด: ' + (result.message || text || 'ไม่สามารถบันทึกข้อมูลได้'));
         }
     } catch(e) {
         console.error(e);
