@@ -42,8 +42,8 @@ export function renderHistory() {
     if (type === 'regular') {
         let recs = AppState.allRecords.filter(r => 
             r.deleted_flg !== 'Y' && 
-            AppState.allClasses.some(c => (r.classId ? c.id === r.classId : c.className === r.class) && c.deleted_flg !== 'Y') &&
-            AppState.allSubjects.some(s => (r.subjectId ? s.id === r.subjectId : s.name === r.subject) && s.deleted_flg !== 'Y')
+            (!r.class || AppState.allClasses.some(c => (c.id === r.classId || c.className === r.class) && c.deleted_flg !== 'Y')) &&
+            (!r.subject || AppState.allSubjects.some(s => (s.id === r.subjectId || s.name === r.subject) && s.deleted_flg !== 'Y'))
         ); 
 
         const clsObj = AppState.allClasses.find(c => c.id === classOrClubId);
@@ -57,8 +57,8 @@ export function renderHistory() {
                 return recordDate === d;
             });
         }
-        if(classOrClubId) recs=recs.filter(r => r.classId === classOrClubId || (!r.classId && r.class === clsName)); 
-        if(subId) recs=recs.filter(r => r.subjectId === subId || (!r.subjectId && r.subject === subName));
+        if(classOrClubId) recs=recs.filter(r => r.classId === classOrClubId || r.class === clsName); 
+        if(subId) recs=recs.filter(r => r.subjectId === subId || r.subject === subName);
         if(yr && sem) recs=recs.filter(r => matchRecordYearSemester(r, yr, sem));
 
         if (AppState.currentUser && AppState.currentUser.role === 'teacher') {
@@ -72,7 +72,14 @@ export function renderHistory() {
 
         recs.forEach(r => {
             let stat={มา:0,สาย:0,ลา:0,ขาด:0}; 
-            r.attendance.forEach(a => {
+            let attList = r.attendance || [];
+            if (typeof attList === 'string') {
+                try { attList = JSON.parse(attList); } catch(e) { attList = []; }
+            }
+            if (attList && typeof attList === 'object' && !Array.isArray(attList)) {
+                attList = Object.values(attList);
+            }
+            attList.forEach(a => {
                 if (stat[a.status] !== undefined) {
                     stat[a.status]++;
                 }
@@ -120,7 +127,14 @@ export function renderHistory() {
 
         recs.forEach(r => {
             let stat={มา:0,สาย:0,ลา:0,ขาด:0}; 
-            r.attendance.forEach(a => {
+            let attList = r.attendance || [];
+            if (typeof attList === 'string') {
+                try { attList = JSON.parse(attList); } catch(e) { attList = []; }
+            }
+            if (attList && typeof attList === 'object' && !Array.isArray(attList)) {
+                attList = Object.values(attList);
+            }
+            attList.forEach(a => {
                 if (stat[a.status] !== undefined) {
                     stat[a.status]++;
                 }

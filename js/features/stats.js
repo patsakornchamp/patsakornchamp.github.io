@@ -70,7 +70,12 @@ export async function renderStats(skipSync = false) {
         const subName = subObj ? subObj.name : statsSubId;
 
         const stus = AppState.allStudents.filter(x=>x.class===className && x.status !== 'ลาออก' && x.deleted_flg !== 'Y').sort((a,b)=>a.number-b.number);
-        let recs = AppState.allRecords.filter(x=>(x.classId === statsClassOrClubId || (!x.classId && x.class===className)) && (statsSubId === 'all' || x.subjectId === statsSubId || (!x.subjectId && x.subject===subName)) && matchRecordYearSemester(x, yr, sem) && x.deleted_flg !== 'Y');
+        let recs = AppState.allRecords.filter(x => 
+            (x.classId === statsClassOrClubId || x.class === className) && 
+            (statsSubId === 'all' || x.subjectId === statsSubId || x.subject === subName) && 
+            matchRecordYearSemester(x, yr, sem) && 
+            x.deleted_flg !== 'Y'
+        );
         
         let summary = {มา:0,สาย:0,ลา:0,ขาด:0}; 
         const tbody = document.getElementById('stats-table-body'); 
@@ -79,7 +84,17 @@ export async function renderStats(skipSync = false) {
         
         stus.forEach(stu => {
             let mstat = {มา:0,สาย:0,ลา:0,ขาด:0};
-            recs.forEach(r => { const a=r.attendance.find(x=>x.studentId===stu.id); if(a) mstat[a.status]++; else mstat['ขาด']++; });
+            recs.forEach(r => {
+                let attList = r.attendance || [];
+                if (typeof attList === 'string') {
+                    try { attList = JSON.parse(attList); } catch(e) { attList = []; }
+                }
+                if (attList && typeof attList === 'object' && !Array.isArray(attList)) {
+                    attList = Object.values(attList);
+                }
+                const a = attList.find(x => String(x.studentId) === String(stu.id));
+                if(a) mstat[a.status]++; else mstat['ขาด']++;
+            });
             ['มา','สาย','ลา','ขาด'].forEach(k=>summary[k]+=mstat[k]);
             const pct = recs.length===0 ? 0 : Math.round(((mstat['มา']+mstat['สาย'])/recs.length)*100);
             tbody.innerHTML += `<tr>
@@ -135,7 +150,17 @@ export async function renderStats(skipSync = false) {
 
         stus.forEach(stu => {
             let mstat = {มา:0,สาย:0,ลา:0,ขาด:0};
-            recs.forEach(r => { const a=r.attendance.find(x=>x.studentId===stu.id); if(a) mstat[a.status]++; else mstat['ขาด']++; });
+            recs.forEach(r => {
+                let attList = r.attendance || [];
+                if (typeof attList === 'string') {
+                    try { attList = JSON.parse(attList); } catch(e) { attList = []; }
+                }
+                if (attList && typeof attList === 'object' && !Array.isArray(attList)) {
+                    attList = Object.values(attList);
+                }
+                const a = attList.find(x => String(x.studentId) === String(stu.id));
+                if(a) mstat[a.status]++; else mstat['ขาด']++;
+            });
             ['มา','สาย','ลา','ขาด'].forEach(k=>summary[k]+=mstat[k]);
             const pct = recs.length===0 ? 0 : Math.round(((mstat['มา']+mstat['สาย'])/recs.length)*100);
             
@@ -179,7 +204,12 @@ export function exportStatsCSV() {
         const subName = subObj ? subObj.name : statsSubId;
 
         stus = AppState.allStudents.filter(x=>x.class===className && x.status !== 'ลาออก' && x.deleted_flg !== 'Y').sort((a,b)=>a.number-b.number);
-        textRecs = AppState.allRecords.filter(x=>(x.classId === statsClassOrClubId || (!x.classId && x.class === className)) && (statsSubId === 'all' || x.subjectId === statsSubId || (!x.subjectId && x.subject === subName)) && matchRecordYearSemester(x, yr, sem) && x.deleted_flg !== 'Y');
+        textRecs = AppState.allRecords.filter(x => 
+            (x.classId === statsClassOrClubId || x.class === className) && 
+            (statsSubId === 'all' || x.subjectId === statsSubId || x.subject === subName) && 
+            matchRecordYearSemester(x, yr, sem) && 
+            x.deleted_flg !== 'Y'
+        );
         fileName = `สถิติปกติ_${className}_${statsSubId === 'all' ? 'รวมทุกวิชา' : subName}.csv`;
     } else {
         const enrollments = AppState.allClubEnrollments.filter(e => e.clubId === statsClassOrClubId && e.year == yr && e.semester == sem && e.deleted_flg !== 'Y');
@@ -210,7 +240,14 @@ export function exportStatsCSV() {
         let mstat = {มา:0, ขาด:0, ลา:0, สาย:0};
         
         textRecs.forEach(r => {
-            const att = r.attendance.find(x => x.studentId === stu.id);
+            let attList = r.attendance || [];
+            if (typeof attList === 'string') {
+                try { attList = JSON.parse(attList); } catch(e) { attList = []; }
+            }
+            if (attList && typeof attList === 'object' && !Array.isArray(attList)) {
+                attList = Object.values(attList);
+            }
+            const att = attList.find(x => String(x.studentId) === String(stu.id));
             let val = 'ข'; // ค่าเริ่มต้นถ้าไม่มีข้อมูล
             if(att) {
                 if(att.status === 'มา') { val = 'ม'; mstat['มา']++; }
@@ -247,7 +284,12 @@ export async function exportStatsExcel() {
         const subName = subObj ? subObj.name : statsSubId;
 
         stus = AppState.allStudents.filter(x=>x.class===className && x.status !== 'ลาออก' && x.deleted_flg !== 'Y').sort((a,b)=>a.number-b.number);
-        textRecs = AppState.allRecords.filter(x=>(x.classId === statsClassOrClubId || (!x.classId && x.class === className)) && (statsSubId === 'all' || x.subjectId === statsSubId || (!x.subjectId && x.subject === subName)) && matchRecordYearSemester(x, yr, sem) && x.deleted_flg !== 'Y');
+        textRecs = AppState.allRecords.filter(x => 
+            (x.classId === statsClassOrClubId || x.class === className) && 
+            (statsSubId === 'all' || x.subjectId === statsSubId || x.subject === subName) && 
+            matchRecordYearSemester(x, yr, sem) && 
+            x.deleted_flg !== 'Y'
+        );
         fileName = `สถิติปกติ_${className}_${statsSubId === 'all' ? 'รวมทุกวิชา' : subName}.xlsx`;
     } else {
         const enrollments = AppState.allClubEnrollments.filter(e => e.clubId === statsClassOrClubId && e.year == yr && e.semester == sem && e.deleted_flg !== 'Y');
@@ -300,7 +342,14 @@ export async function exportStatsExcel() {
         const rowData = [stu.number, stu.studentId, getStudentFullName(stu)];
         
         textRecs.forEach(s => {
-            const att = s.attendance.find(a => a.studentId === stu.id);
+            let attList = s.attendance || [];
+            if (typeof attList === 'string') {
+                try { attList = JSON.parse(attList); } catch(e) { attList = []; }
+            }
+            if (attList && typeof attList === 'object' && !Array.isArray(attList)) {
+                attList = Object.values(attList);
+            }
+            const att = attList.find(a => String(a.studentId) === String(stu.id));
             let val = 'ข'; // ค่าเริ่มต้น ขาดเรียน
             if (att) {
                 if (att.status === 'มา') val = 'ม';
@@ -375,9 +424,15 @@ export function openDrilldownModal(stuId, type, filterValue, academicYear, acade
         
         const recs = AppState.allRecords.filter(r => (filterValue === 'all' || r.subjectId === filterValue || (!r.subjectId && r.subject === subName)) && matchRecordYearSemester(r, academicYear, academicSemester) && r.deleted_flg !== 'Y');
         recs.sort((a,b) => new Date(a.date) - new Date(b.date));
-        
         recs.forEach(r => {
-            const myAtt = r.attendance.find(a => a.studentId === stuId);
+            let attList = r.attendance || [];
+            if (typeof attList === 'string') {
+                try { attList = JSON.parse(attList); } catch(e) { attList = []; }
+            }
+            if (attList && typeof attList === 'object' && !Array.isArray(attList)) {
+                attList = Object.values(attList);
+            }
+            const myAtt = attList.find(a => String(a.studentId) === String(stuId));
             if (!myAtt) return; // ข้ามคาบที่ไม่ได้มีการเช็คชื่อนักเรียนคนนี้
             const statusVal = myAtt.status;
             const colorMap = { 'มา': 'text-green-600', 'สาย': 'text-yellow-600', 'ลา': 'text-blue-600', 'ขาด': 'text-red-600' };
@@ -397,7 +452,14 @@ export function openDrilldownModal(stuId, type, filterValue, academicYear, acade
         recs.sort((a,b) => new Date(a.date) - new Date(b.date));
         
         recs.forEach(r => {
-            const myAtt = r.attendance.find(a => a.studentId === stuId);
+            let attList = r.attendance || [];
+            if (typeof attList === 'string') {
+                try { attList = JSON.parse(attList); } catch(e) { attList = []; }
+            }
+            if (attList && typeof attList === 'object' && !Array.isArray(attList)) {
+                attList = Object.values(attList);
+            }
+            const myAtt = attList.find(a => String(a.studentId) === String(stuId));
             if (!myAtt) return; // ข้ามคาบที่ไม่ได้มีการเช็คชื่อนักเรียนคนนี้
             const statusVal = myAtt.status;
             const colorMap = { 'มา': 'text-green-600', 'สาย': 'text-yellow-600', 'ลา': 'text-blue-600', 'ขาด': 'text-red-600' };
@@ -447,15 +509,18 @@ export async function openSessionDrilldownModal(recordId, type) {
         document.querySelectorAll('#sd-session-meta').forEach(el => el.innerText = `ชุมนุม: ${club ? club.name : 'ไม่พบข้อมูลชุมนุม'}`);
         
         if (record.attendance && typeof window.ensureStudentsLoadedByIds === 'function') {
-            const studentIds = record.attendance.map(a => a.studentId);
+            const att = (typeof record.attendance === 'string' ? JSON.parse(record.attendance) : record.attendance) || [];
+            const studentIds = att.map(a => a.studentId);
             await window.ensureStudentsLoadedByIds(studentIds);
         }
     }
 
     const badgeColorMap = { 'มา': 'bg-green-100 text-green-800', 'สาย': 'bg-yellow-100 text-yellow-800', 'ลา': 'bg-blue-100 text-blue-800', 'ขาด': 'bg-red-100 text-red-800' };
     const attendanceDetails = [];
-    record.attendance.forEach(a => {
-        const stu = AppState.allStudents.find(s => s.id === a.studentId);
+    const attList = (typeof record.attendance === 'string' ? JSON.parse(record.attendance) : record.attendance) || [];
+    
+    attList.forEach(a => {
+        const stu = AppState.allStudents.find(s => String(s.id) === String(a.studentId));
         if (stu) {
             const isInactive = stu.deleted_flg === 'Y' || stu.status === 'ลาออก';
             const nameSuffix = isInactive ? ' <span class="text-xs text-red-500 font-normal ml-1">(พ้นสภาพ)</span>' : '';

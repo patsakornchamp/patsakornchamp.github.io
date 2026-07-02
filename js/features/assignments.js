@@ -948,8 +948,8 @@ export async function saveAssignment() {
 
 export function deleteAssignment(id) {
     const hasSubmission = AppState.allStudentAssignments && AppState.allStudentAssignments.some(s => 
-        (s.assignmentId === id || (s.assignmentId && id && (s.assignmentId.startsWith(id) || id.startsWith(s.assignmentId)))) && 
-        (s.status === 'ส่งแล้ว' || s.status === 'ตรวจแล้ว' || s.score !== null) && 
+        s.assignmentId === id && 
+        (s.status === 'ส่งแล้ว' || s.status === 'ตรวจแล้ว' || (s.score !== null && s.score !== undefined && s.score !== '')) && 
         s.deleted_flg !== 'Y'
     );
     if (hasSubmission) {
