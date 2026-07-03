@@ -95,7 +95,31 @@ export async function syncDataFromServer(silent = false) {
     }
 }
 
+export function loadKeyFromLocalStorage(key) {
+    const raw = localStorage.getItem(key);
+    if (key === DB_KEYS.SCHOOL_SETTINGS) {
+        AppState.schoolSettings = JSON.parse(raw || '{}');
+        return;
+    }
+    const val = JSON.parse(raw || '[]').filter(Boolean);
+    if (key === DB_KEYS.STUDENTS) AppState.allStudents = val;
+    else if (key === DB_KEYS.RECORDS) AppState.allRecords = val;
+    else if (key === DB_KEYS.SUBJECTS) AppState.allSubjects = val;
+    else if (key === DB_KEYS.TEACHERS) AppState.allTeachers = val;
+    else if (key === DB_KEYS.CLASSES) {
+        AppState.allClasses = val;
+        AppState.allClasses.sort((a, b) => (a && a.className || '').localeCompare(b && b.className || '', 'th', { numeric: true }));
+    }
+    else if (key === DB_KEYS.CLUBS) AppState.allClubs = val;
+    else if (key === DB_KEYS.CLUB_ENROLLMENTS) AppState.allClubEnrollments = val;
+    else if (key === DB_KEYS.CLUB_RECORDS) AppState.allClubRecords = val;
+    else if (key === 'ASSIGNMENTS') AppState.allAssignments = val;
+    else if (key === 'STUDENT_ASSIGNMENTS') AppState.allStudentAssignments = val;
+    else if (key === DB_KEYS.PR_NEWS) AppState.allPrNews = val;
+}
+
 export async function saveToDB(key, data, action) {
+    const previousValue = localStorage.getItem(key);
     try {
         localStorage.setItem(key, JSON.stringify(data));
     } catch (e) {
@@ -124,7 +148,16 @@ export async function saveToDB(key, data, action) {
             return true;
         } catch(e) { 
             console.error(e); 
-            showToast('บันทึกลงฐานข้อมูลล้มเหลว: ' + e.message);
+            // Rollback local storage
+            if (previousValue !== null) {
+                localStorage.setItem(key, previousValue);
+            } else {
+                localStorage.removeItem(key);
+            }
+            // Revert AppState memory
+            loadKeyFromLocalStorage(key);
+            
+            showToast('บันทึกลงฐานข้อมูลล้มเหลว: ระบบได้ยกเลิกการเปลี่ยนแปลงในเครื่องเพื่อป้องกันข้อมูลคลาดเคลื่อน ' + e.message);
             return false;
         } finally { 
             hideLoading(); 

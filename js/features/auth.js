@@ -148,7 +148,7 @@ export function loginSuccess(userObj) {
 
 export function logout() {
     AppState.currentUser = null;
-    localStorage.removeItem(DB_KEYS.SESSION);
+    localStorage.clear();
     
     document.getElementById('login-screen').classList.remove('hidden');
     document.getElementById('app-header').classList.add('hidden');

@@ -2,9 +2,86 @@
 const urlParams = new URLSearchParams(window.location.search);
 let schoolParam = urlParams.get('school');
 if (schoolParam) {
-    localStorage.setItem('SELECTED_SCHOOL', schoolParam);
+    sessionStorage.setItem('SELECTED_SCHOOL', schoolParam);
 } else {
-    schoolParam = localStorage.getItem('SELECTED_SCHOOL') || '';
+    schoolParam = sessionStorage.getItem('SELECTED_SCHOOL') || '';
+}
+
+// Block and show error if no valid school is specified in the URL or session
+if (schoolParam !== 'rnn' && schoolParam !== 'cpw') {
+    document.addEventListener('DOMContentLoaded', () => {
+        document.body.innerHTML = `
+            <div style="
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+                font-family: 'Sarabun', 'Inter', sans-serif;
+                padding: 20px;
+                text-align: center;
+                box-sizing: border-box;
+            ">
+                <div style="
+                    background: rgba(255, 255, 255, 0.85);
+                    backdrop-filter: blur(10px);
+                    -webkit-backdrop-filter: blur(10px);
+                    border: 1px solid rgba(255, 255, 255, 0.3);
+                    border-radius: 24px;
+                    padding: 40px 30px;
+                    max-width: 500px;
+                    width: 100%;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+                ">
+                    <div style="
+                        font-size: 50px;
+                        color: #e53e3e;
+                        margin-bottom: 20px;
+                    ">
+                        ⚠️
+                    </div>
+                    <h2 style="
+                        font-size: 22px;
+                        font-weight: 800;
+                        color: #2d3748;
+                        margin-bottom: 10px;
+                    ">ไม่พบข้อมูลโรงเรียน</h2>
+                    <p style="
+                        font-size: 15px;
+                        color: #718096;
+                        line-height: 1.6;
+                        margin-bottom: 30px;
+                    ">ลิงก์นี้ไม่ถูกต้อง หรือไม่ระบุรหัสโรงเรียนใน URL พารามิเตอร์<br>กรุณาเข้าใช้งานผ่านลิงก์เฉพาะของโรงเรียนท่าน</p>
+                    <div style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 12px;
+                    ">
+                        <a href="?school=rnn" style="
+                            background: #3182ce;
+                            color: white;
+                            text-decoration: none;
+                            padding: 12px 24px;
+                            border-radius: 12px;
+                            font-weight: bold;
+                            transition: background 0.2s;
+                        ">เข้าใช้งานโรงเรียน RNN</a>
+                        <a href="?school=cpw" style="
+                            background: #38a169;
+                            color: white;
+                            text-decoration: none;
+                            padding: 12px 24px;
+                            border-radius: 12px;
+                            font-weight: bold;
+                            transition: background 0.2s;
+                        ">เข้าใช้งานโรงเรียน CPW</a>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    throw new Error('School parameter is missing or invalid.');
 }
 
 // Environment configuration mapping

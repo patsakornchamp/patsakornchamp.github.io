@@ -883,7 +883,11 @@ export async function saveAssignment() {
         if (existIdx > -1) { AppState.allAssignments[existIdx] = finalObj; }
         else { AppState.allAssignments.push(finalObj); }
         
-        await saveToDB('ASSIGNMENTS', AppState.allAssignments, 'saveAssignments');
+        const saved = await saveToDB('ASSIGNMENTS', AppState.allAssignments, 'saveAssignments');
+        if (!saved) {
+            hideLoading();
+            return;
+        }
         
         // อัปเดต StudentAssignments ตามรายชื่อนักเรียนที่ถูกเลือก
         const finalId = finalObj.id || id;
@@ -915,20 +919,42 @@ export async function saveAssignment() {
             );
             if (!existing) {
                 AppState.allStudentAssignments.push({
-                    id: generateId(), assignmentId: finalId, studentId: stuId, status: 'รอส่ง', score: null, teacherComment: '', files: '[]',
-                    createdAt: now, createdBy: userId, updatedAt: now, updatedBy: userId, deleted_flg: 'N'
+                    id: generateId(),
+                    assignmentId: finalId,
+                    studentId: stuId,
+                    status: 'รอส่ง',
+                    score: '',
+                    teacherComment: '',
+                    studentNote: '',
+                    submitMethod: '',
+                    files: '[]',
+                    createdAt: now,
+                    createdBy: userId,
+                    updatedAt: now,
+                    updatedBy: userId,
+                    deleted_flg: 'N',
+                    deletedAt: '',
+                    deletedBy: ''
                 });
                 studentAssignmentsUpdated = true;
             } else if (existing.deleted_flg === 'Y') {
                 // กู้คืนหากเคยถูกลบไป
-                existing.deleted_flg = 'N'; existing.deletedAt = null; existing.deletedBy = null; existing.updatedAt = now; existing.updatedBy = userId;
+                existing.deleted_flg = 'N';
+                existing.deletedAt = '';
+                existing.deletedBy = '';
+                existing.updatedAt = now;
+                existing.updatedBy = userId;
                 existing.assignmentId = finalId; // อัปเดตให้เป็น ID ที่ถูกต้องจาก Server
                 studentAssignmentsUpdated = true;
             }
         });
 
         if (studentAssignmentsUpdated) {
-            await saveToDB('STUDENT_ASSIGNMENTS', AppState.allStudentAssignments, 'saveStudentAssignments');
+            const savedStu = await saveToDB('STUDENT_ASSIGNMENTS', AppState.allStudentAssignments, 'saveStudentAssignments');
+            if (!savedStu) {
+                hideLoading();
+                return;
+            }
         }
         
         AppState.checkinUnsavedChanges = false;
@@ -959,10 +985,12 @@ export function deleteAssignment(id) {
         if (idx > -1) {
             AppState.allAssignments[idx].deleted_flg = 'Y';
             AppState.allAssignments[idx].deletedAt = getISOTimestamp();
-            await saveToDB('ASSIGNMENTS', AppState.allAssignments, 'saveAssignments');
-            updateAssignmentClassFilter();
-            renderAssignmentsList();
-            showToast('ลบงานเรียบร้อยแล้ว');
+            const saved = await saveToDB('ASSIGNMENTS', AppState.allAssignments, 'saveAssignments');
+            if (saved) {
+                updateAssignmentClassFilter();
+                renderAssignmentsList();
+                showToast('ลบงานเรียบร้อยแล้ว');
+            }
         }
     });
 }
@@ -1247,11 +1275,11 @@ export async function submitSubmissionGrading() {
         (String(x.studentId) === String(currentGradingStudentId) || String(x.studentId) === String(stuCode)) && 
         x.deleted_flg !== 'Y');
 
-    const scoreNum = scoreVal !== '' ? parseFloat(scoreVal) : null;
+    const scoreNum = scoreVal !== '' ? parseFloat(scoreVal) : '';
     let newStatus = sAsm ? sAsm.status : 'รอส่ง';
-    if (scoreNum !== null) {
+    if (scoreNum !== '') {
         newStatus = 'ตรวจแล้ว';
-    } else if (sAsm && sAsm.status === 'ตรวจแล้ว' && scoreNum === null) {
+    } else if (sAsm && sAsm.status === 'ตรวจแล้ว' && scoreNum === '') {
         newStatus = 'ส่งแล้ว';
     }
 
@@ -1263,19 +1291,34 @@ export async function submitSubmissionGrading() {
         sAsm.updatedBy = userId;
     } else {
         sAsm = {
-            id: generateId(), assignmentId: currentGradingAssignmentId, studentId: currentGradingStudentId,
-            status: newStatus, score: scoreNum, teacherComment: commentVal, files: '[]',
-            createdAt: now, createdBy: userId, updatedAt: now, updatedBy: userId, deleted_flg: 'N'
+            id: generateId(),
+            assignmentId: currentGradingAssignmentId,
+            studentId: currentGradingStudentId,
+            status: newStatus,
+            score: scoreNum,
+            teacherComment: commentVal,
+            studentNote: '',
+            submitMethod: '',
+            files: '[]',
+            createdAt: now,
+            createdBy: userId,
+            updatedAt: now,
+            updatedBy: userId,
+            deleted_flg: 'N',
+            deletedAt: '',
+            deletedBy: ''
         };
         AppState.allStudentAssignments.push(sAsm);
     }
 
     showLoading('กำลังบันทึกคะแนน...');
     try {
-        await saveToDB('STUDENT_ASSIGNMENTS', AppState.allStudentAssignments, 'saveStudentAssignments');
-        showToast('บันทึกคะแนนเรียบร้อยแล้ว');
-        closeModal('view-student-submission-modal');
-        renderGradingTable();
+        const saved = await saveToDB('STUDENT_ASSIGNMENTS', AppState.allStudentAssignments, 'saveStudentAssignments');
+        if (saved) {
+            showToast('บันทึกคะแนนเรียบร้อยแล้ว');
+            closeModal('view-student-submission-modal');
+            renderGradingTable();
+        }
     } catch (e) {
         console.error(e);
         customAlert('บันทึกคะแนนล้มเหลว กรุณาลองอีกครั้ง');
@@ -1462,10 +1505,16 @@ export async function saveGrading(stayOpen = false, isConfirmed = false) {
             newStatus = 'ส่งแล้ว';
         }
 
+        const newScoreVal = score !== '' ? parseFloat(score) : '';
+
         if (sAsm) {
-            if (sAsm.status !== newStatus || sAsm.score !== (score !== '' ? parseFloat(score) : null) || sAsm.teacherComment !== comment) {
+            // Ensure fields exist to avoid undefined comparison issues
+            if (sAsm.teacherComment === undefined) sAsm.teacherComment = '';
+            if (sAsm.score === undefined) sAsm.score = '';
+
+            if (sAsm.status !== newStatus || sAsm.score !== newScoreVal || sAsm.teacherComment !== comment) {
                 sAsm.status = newStatus;
-                sAsm.score = score !== '' ? parseFloat(score) : null;
+                sAsm.score = newScoreVal;
                 sAsm.teacherComment = comment;
                 sAsm.updatedAt = now;
                 sAsm.updatedBy = userId;
@@ -1474,9 +1523,22 @@ export async function saveGrading(stayOpen = false, isConfirmed = false) {
         } else {
             if (newStatus !== 'รอส่ง' || score !== '' || comment !== '') {
                 AppState.allStudentAssignments.push({
-                    id: generateId(), assignmentId: currentGradingAssignmentId, studentId: stuId,
-                    status: newStatus, score: score !== '' ? parseFloat(score) : null, teacherComment: comment, files: '[]',
-                    createdAt: now, createdBy: userId, updatedAt: now, updatedBy: userId, deleted_flg: 'N'
+                    id: generateId(),
+                    assignmentId: currentGradingAssignmentId,
+                    studentId: stuId,
+                    status: newStatus,
+                    score: newScoreVal,
+                    teacherComment: comment,
+                    studentNote: '',
+                    submitMethod: '',
+                    files: '[]',
+                    createdAt: now,
+                    createdBy: userId,
+                    updatedAt: now,
+                    updatedBy: userId,
+                    deleted_flg: 'N',
+                    deletedAt: '',
+                    deletedBy: ''
                 });
                 updatedCount++;
             }
@@ -1485,8 +1547,12 @@ export async function saveGrading(stayOpen = false, isConfirmed = false) {
     
     if (updatedCount > 0) {
         showLoading('กำลังบันทึกข้อมูล...');
-        await saveToDB('STUDENT_ASSIGNMENTS', AppState.allStudentAssignments, 'saveStudentAssignments');
+        const saved = await saveToDB('STUDENT_ASSIGNMENTS', AppState.allStudentAssignments, 'saveStudentAssignments');
         hideLoading();
+        if (!saved) {
+            renderGradingTable();
+            return;
+        }
     }
     
     AppState.checkinUnsavedChanges = false;
