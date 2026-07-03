@@ -2074,13 +2074,15 @@ export async function submitStudentAssignment() {
             studentNote: studentNote,
             status: 'ส่งแล้ว',
             files: JSON.stringify(files),
-            score: null, 
+            score: '', 
             teacherComment: '', // ครูเป็นคนอัปเดตช่องนี้
             createdAt: now,
             createdBy: stuId,
             updatedAt: now,
             updatedBy: stuId,
-            deleted_flg: 'N'
+            deleted_flg: 'N',
+            deletedAt: '',
+            deletedBy: ''
         };
 
         // ตั้งค่าตัวเลียนแบบเปอร์เซ็นต์ความคืบหน้า (Simulated Progress)
@@ -2833,7 +2835,15 @@ export async function submitStudentQuiz() {
                 score: finalScore,
                 quizAnswers: JSON.stringify(answers),
                 deleted_flg: 'N',
-                createdAt: getISOTimestamp()
+                createdAt: getISOTimestamp(),
+                createdBy: stuId,
+                updatedAt: getISOTimestamp(),
+                updatedBy: stuId,
+                deletedAt: '',
+                deletedBy: '',
+                studentNote: '',
+                teacherComment: '',
+                files: '[]'
             };
             
             if (AppState.googleSheetUrl) {

@@ -424,7 +424,7 @@ export function applySchoolSettings() {
 
 export function updateDynamicManifest() {
     const urlParams = new URLSearchParams(window.location.search);
-    let schoolParam = urlParams.get('school') || localStorage.getItem('SELECTED_SCHOOL') || '';
+    let schoolParam = urlParams.get('school') || sessionStorage.getItem('SELECTED_SCHOOL') || '';
     
     let manifestFile = 'manifest.json';
     if (schoolParam === 'rnn') {
