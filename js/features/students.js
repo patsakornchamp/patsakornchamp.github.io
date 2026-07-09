@@ -1098,13 +1098,7 @@ export async function ensureStudentsLoadedForClass(className) {
     if (!hasStudents) {
         showLoading(`กำลังโหลดรายชื่อนักเรียนชั้น ${className}...`);
         try {
-            const res = await fetch(`${AppState.googleSheetUrl}?action=getStudentsByClass&class=${encodeURIComponent(className)}`);
-            const json = await res.json();
-            if (json.status === 'success' && json.Students) {
-                AppState.allStudents = AppState.allStudents.filter(s => s.class !== className);
-                AppState.allStudents.push(...json.Students);
-                localStorage.setItem(DB_KEYS.STUDENTS, JSON.stringify(AppState.allStudents));
-            }
+            await syncDataFromServer(true);
         } catch(e) {
             console.error("Error loading students by class:", e);
             showToast("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้", true);
@@ -1120,21 +1114,7 @@ export async function ensureStudentsLoadedByIds(studentIds) {
     if (missingIds.length > 0) {
         showLoading(`กำลังโหลดรายชื่อนักเรียนเพิ่มเติม...`);
         try {
-            const res = await fetch(AppState.googleSheetUrl, {
-                method: 'POST',
-                redirect: 'follow',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({
-                    action: 'getStudentsByIds',
-                    payload: JSON.stringify({ ids: missingIds })
-                })
-            });
-            const text = await res.text();
-            const json = JSON.parse(text);
-            if (json.status === 'success' && json.Students) {
-                AppState.allStudents.push(...json.Students);
-                localStorage.setItem(DB_KEYS.STUDENTS, JSON.stringify(AppState.allStudents));
-            }
+            await syncDataFromServer(true);
         } catch(e) {
             console.error("Error loading students by IDs:", e);
         } finally {
@@ -1152,24 +1132,13 @@ export async function onManageClassChange() {
 }
 
 export async function searchManageStudents() {
-    const className = document.getElementById('manage-filter-class').value;
-    if (className) {
-        showLoading(`กำลังรีเฟรชข้อมูลนักเรียนชั้น ${className}...`);
-        try {
-            const res = await fetch(`${AppState.googleSheetUrl}?action=getStudentsByClass&class=${encodeURIComponent(className)}`);
-            const json = await res.json();
-            if (json.status === 'success' && json.Students) {
-                AppState.allStudents = AppState.allStudents.filter(s => s.class !== className);
-                AppState.allStudents.push(...json.Students);
-                localStorage.setItem(DB_KEYS.STUDENTS, JSON.stringify(AppState.allStudents));
-            }
-        } catch(e) {
-            console.error(e);
-        } finally {
-            hideLoading();
-        }
-    } else {
-        await syncDataFromServer();
+    showLoading(`กำลังดึงข้อมูลนักเรียนจากเซิร์ฟเวอร์...`);
+    try {
+        await syncDataFromServer(true);
+    } catch(e) {
+        console.error(e);
+    } finally {
+        hideLoading();
     }
     renderManageStudents();
 }
@@ -2845,20 +2814,6 @@ export async function submitStudentQuiz() {
                 teacherComment: '',
                 files: '[]'
             };
-            
-            if (AppState.googleSheetUrl) {
-                try {
-                    const response = await fetch(AppState.googleSheetUrl, {
-                        method: 'POST',
-                        redirect: 'follow',
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({ action: 'submitAssignment', payload: payload })
-                    });
-                    const result = await response.json();
-                } catch (errSheets) {
-                    console.error("Google Sheets save skipped/failed, fallback to Firebase only:", errSheets);
-                }
-            }
             
             // Save locally
             if (!AppState.allStudentAssignments) AppState.allStudentAssignments = [];

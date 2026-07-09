@@ -20,7 +20,9 @@ export const AppState = {
     // Temporary States
     currentCheckinStudents: [],
     activeCheckinStates: {},
+    activeCheckinNotes: {},
     lastCheckedStuId: null,
     checkinUnsavedChanges: false,
-    draftPrompted: false
+    draftPrompted: false,
+    backupViewerData: null
 };

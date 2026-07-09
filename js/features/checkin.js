@@ -1,7 +1,7 @@
 import { AppState } from '../core/state.js';
 import { DB_KEYS, ENVIRONMENT } from '../core/config.js';
 import { generateId, getStudentFullName, showToast, matchRecordYearSemester, getBangkokDate, getBangkokCurrentTime, exportToCSV, getISOTimestamp, getCurrentUserId, customConfirm, showLoading, hideLoading, customAlert } from '../utils/helpers.js';
-import { syncDataFromServer, saveToDB } from '../services/api.js';
+import { syncDataFromServer, saveToDB, firebaseStudentSelfCheckin, firebaseGetStudentCheckIns, firebaseUpdateStudentCheckInsStatus } from '../services/api.js';
 
 export function resetCheckinTable() {
     document.getElementById('student-list-container').classList.add('hidden');
@@ -10,7 +10,7 @@ export function resetCheckinTable() {
     document.getElementById('checkin-table-body').innerHTML = '';
     AppState.currentCheckinStudents = [];
     AppState.activeCheckinStates = {};
-    AppState.lastCheckedStuId = null;
+    AppState.activeCheckinNotes = {};
     AppState.lastCheckedStuId = null;
     AppState.pendingSyncIds = [];
     AppState.checkinUnsavedChanges = false;
@@ -64,24 +64,32 @@ export async function loadCheckinList() {
     const existRec = AppState.allRecords.find(r => getBangkokDate(r.date)===date && String(r.period||'')===String(period||'') && (r.classId === clsId || (!r.classId && r.class===clsName)) && (r.subjectId === subId || (!r.subjectId && r.subject===subName)) && matchRecordYearSemester(r, yr, sem) && r.deleted_flg !== 'Y');
     
     AppState.activeCheckinStates = {};
+    AppState.activeCheckinNotes = {};
     AppState.lastCheckedStuId = null;
     
     const isResumingDraft = AppState.draftCheckinAttendance !== undefined && AppState.draftCheckinAttendance !== null;
     
     AppState.currentCheckinStudents.forEach(stu => {
         let status = ''; 
+        let note = '';
         if (isResumingDraft) {
             status = AppState.draftCheckinAttendance[stu.id] || '';
+            note = AppState.draftCheckinNotes ? (AppState.draftCheckinNotes[stu.id] || '') : '';
         } else if(existRec) { 
             const r = existRec.attendance.find(a=>a.studentId===stu.id); 
-            if(r) status = r.status; 
+            if(r) {
+                status = r.status; 
+                note = r.note || '';
+            }
         }
         AppState.activeCheckinStates[stu.id] = status;
+        AppState.activeCheckinNotes[stu.id] = note;
     });
 
     if (isResumingDraft) {
         AppState.checkinUnsavedChanges = true;
         delete AppState.draftCheckinAttendance;
+        delete AppState.draftCheckinNotes;
     }
 
     if(document.getElementById('checkin-search')) document.getElementById('checkin-search').value = '';
@@ -141,6 +149,7 @@ export function renderCheckinTable() {
 
     filteredStudents.forEach(stu => {
         const status = AppState.activeCheckinStates[stu.id] || '';
+        const note = AppState.activeCheckinNotes[stu.id] || '';
         const radioHtml = ['มา','สาย','ลา','ขาด'].map(st => `
             <input type="radio" id="a_${stu.id}_${st}" name="a_${stu.id}" value="${st}" ${status===st?'checked':''} onchange="onAttendanceChange('${stu.id}', '${st}')">
              <label for="a_${stu.id}_${st}">${st}</label>
@@ -158,6 +167,9 @@ export function renderCheckinTable() {
             <td class="px-6 py-4 text-center td-actions whitespace-nowrap" data-label="สถานะ">
                 <div class="attendance-radio">${radioHtml}</div>
             </td>
+            <td class="px-6 py-4 text-left" data-label="หมายเหตุ">
+                <input type="text" id="note_${stu.id}" value="${note}" placeholder="พิมพ์หมายเหตุ..." class="w-full px-2.5 py-1 border border-gray-300 rounded-lg text-xs focus:ring-green-500 focus:border-green-500" oninput="onAttendanceNoteChange('${stu.id}', this.value)">
+            </td>
         </tr>`;
     });
 }
@@ -168,6 +180,12 @@ export function onAttendanceChange(stuId, status) {
     AppState.checkinUnsavedChanges = true;
     saveCheckinDraft();
     renderCheckinTable(); 
+}
+
+export function onAttendanceNoteChange(stuId, note) {
+    AppState.activeCheckinNotes[stuId] = note;
+    AppState.checkinUnsavedChanges = true;
+    saveCheckinDraft();
 }
 
 export function setAllAttendance(st) { 
@@ -233,7 +251,8 @@ export async function saveAttendance() {
 
         const att = AppState.currentCheckinStudents.map(stu => ({ 
             studentId: stu.id, 
-            status: AppState.activeCheckinStates[stu.id] || 'ขาด'
+            status: AppState.activeCheckinStates[stu.id] || 'ขาด',
+            note: AppState.activeCheckinNotes[stu.id] || ''
         }));
 
         const existRecIdx = AppState.allRecords.findIndex(r => getBangkokDate(r.date)===date && String(r.period||'')===String(period||'') && (r.classId === clsId || (!r.classId && r.class===clsName)) && (r.subjectId === subId || (!r.subjectId && r.subject===subName)) && matchRecordYearSemester(r, yr, sem) && r.deleted_flg !== 'Y');
@@ -260,17 +279,10 @@ export async function saveAttendance() {
         // Sync pending QR check-ins if any
         if (AppState.pendingSyncIds && AppState.pendingSyncIds.length > 0) {
             try {
-                const apiUrl = AppState.googleSheetUrl;
-                await fetch(apiUrl, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        action: 'updateStudentCheckInsStatus',
-                        payload: { ids: AppState.pendingSyncIds.map(String), status: 'SYNCED' }
-                    })
-                });
+                await firebaseUpdateStudentCheckInsStatus(AppState.pendingSyncIds.map(String), 'SYNCED');
                 AppState.pendingSyncIds = [];
             } catch (err) {
-                console.error("Failed to update sync status", err);
+                console.error("Failed to update sync status in Firebase", err);
             }
         }
         
@@ -312,6 +324,7 @@ window.resetCheckinTable = resetCheckinTable;
 window.loadCheckinList = loadCheckinList;
 window.renderCheckinTable = renderCheckinTable;
 window.onAttendanceChange = onAttendanceChange;
+window.onAttendanceNoteChange = onAttendanceNoteChange;
 window.setAllAttendance = setAllAttendance;
 window.saveAttendance = saveAttendance;
 window.exportCheckinCSV = exportCheckinCSV;
@@ -672,12 +685,7 @@ export async function pullStudentCheckIns() {
     const btn = document.getElementById('pull-qr-btn');
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> ดึงข้อมูล...';
     try {
-        const apiUrl = AppState.googleSheetUrl;
-        const res = await fetch(apiUrl, {
-            method: 'POST',
-            body: JSON.stringify({ action: 'getStudentCheckIns' })
-        });
-        const json = await res.json();
+        const json = await firebaseGetStudentCheckIns();
         if (json.status === 'success' && json.StudentCheckIns) {
             const date = document.getElementById('checkin-date').value; 
             const period = document.getElementById('checkin-period').value;
@@ -857,32 +865,24 @@ export async function submitStudentAttendance() {
     btn.innerHTML = 'กำลังบันทึก...';
     try {
         const payload = {
-            action: 'studentSelfCheckin',
-            payload: {
-                studentId: (AppState.currentUser.data?.studentId || AppState.currentUser.data?.id || AppState.currentUser.id),
-                classId: currentQrData.clsId,
-                subjectId: currentQrData.subId,
-                teacherId: currentQrData.tId,
-                period: currentQrData.period, // Not exact col, but let's pass it
-                latitude: currentQrData.lat,
-                longitude: currentQrData.lon,
-                scanTime: new Date().toISOString()
-            }
+            studentId: (AppState.currentUser.data?.studentId || AppState.currentUser.data?.id || AppState.currentUser.id),
+            classId: currentQrData.clsId,
+            subjectId: currentQrData.subId,
+            teacherId: currentQrData.tId,
+            period: currentQrData.period,
+            latitude: currentQrData.lat,
+            longitude: currentQrData.lon,
+            scanTime: new Date().toISOString()
         };
-        const apiUrl = AppState.googleSheetUrl;
-        const res = await fetch(apiUrl, {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        });
-        const json = await res.json();
-        if (json.status === 'success' || json.success === true) {
+        const result = await firebaseStudentSelfCheckin(payload);
+        if (result.success) {
             showToast("เช็คชื่อสำเร็จแล้ว!");
             document.getElementById('qr-scan-confirm-modal').classList.remove('show');
         } else {
-            showToast("เกิดข้อผิดพลาด: " + json.message, true);
+            showToast("เกิดข้อผิดพลาด: " + result.message, true);
         }
     } catch(e) {
-        showToast("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้", true);
+        showToast("ไม่สามารถบันทึกข้อมูลการเข้าเรียนลง Firebase ได้", true);
     }
     btn.disabled = false;
     btn.innerHTML = 'ยืนยันการเข้าเรียน';
@@ -988,7 +988,8 @@ export function saveCheckinDraft() {
         teacherId,
         yr,
         sem,
-        attendance: AppState.activeCheckinStates
+        attendance: AppState.activeCheckinStates,
+        notes: AppState.activeCheckinNotes
     };
     const key = (ENVIRONMENT ? ENVIRONMENT.keyPrefix : '') + 'checkin_draft';
     localStorage.setItem(key, JSON.stringify(draft));
@@ -1022,6 +1023,7 @@ export function resumeCheckinDraft(draft) {
         if (dateEl) dateEl.value = draft.date;
 
         AppState.draftCheckinAttendance = draft.attendance;
+        AppState.draftCheckinNotes = draft.notes || {};
         if (window.loadClubCheckinList) {
             window.loadClubCheckinList();
         }
@@ -1069,6 +1071,7 @@ export function resumeCheckinDraft(draft) {
         }
         
         AppState.draftCheckinAttendance = draft.attendance;
+        AppState.draftCheckinNotes = draft.notes || {};
         if (window.loadCheckinList) {
             window.loadCheckinList();
         }

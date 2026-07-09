@@ -343,6 +343,18 @@ export async function searchAssignments() {
     renderAssignmentsList();
 }
 
+export async function refreshGradingData() {
+    showLoading('กำลังดึงข้อมูลล่าสุดจากเซิร์ฟเวอร์...');
+    try {
+        await syncDataFromServer(true);
+    } catch (e) {
+        console.error('Error syncing assignments data:', e);
+    }
+    hideLoading();
+    renderGradingTable();
+    showToast('อัปเดตข้อมูลคะแนนล่าสุดเรียบร้อย');
+}
+
 export function openAssignmentModal() {
     document.getElementById('asm-modal-title').innerHTML = '<i class="fas fa-tasks mr-2"></i>มอบหมายงาน';
     // โหลดรายชื่อชั้นเรียนใหม่และกรองตามสิทธิ์ครู (เฉพาะชั้นที่ตนเองสอนหรือเป็นที่ปรึกษา)
@@ -1649,6 +1661,7 @@ window.filterAsmStudents = filterAsmStudents;
 window.previewAsmFile = previewAsmFile;
 window.removeAsmFile = removeAsmFile;
 window.searchAssignments = searchAssignments;
+window.refreshGradingData = refreshGradingData;
 window.viewStudentSubmission = viewStudentSubmission;
 window.submitSubmissionGrading = submitSubmissionGrading;
 // ========== EXPORT ASSIGNMENTS EXCEL ==========

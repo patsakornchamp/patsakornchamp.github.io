@@ -459,7 +459,7 @@ export async function openSessionDrilldownModal(recordId, type) {
         if (stu) {
             const isInactive = stu.deleted_flg === 'Y' || stu.status === 'ลาออก';
             const nameSuffix = isInactive ? ' <span class="text-xs text-red-500 font-normal ml-1">(พ้นสภาพ)</span>' : '';
-            attendanceDetails.push({ number: stu.number || 999, name: getStudentFullName(stu) + nameSuffix, status: a.status });
+            attendanceDetails.push({ number: stu.number || 999, name: getStudentFullName(stu) + nameSuffix, status: a.status, note: a.note || '' });
         }
     });
 
@@ -470,11 +470,13 @@ export async function openSessionDrilldownModal(recordId, type) {
     attendanceDetails.forEach(a => {
         if (summary[a.status] !== undefined) summary[a.status]++; else summary['ขาด']++;
         const badgeClass = badgeColorMap[a.status] || 'bg-gray-100 text-gray-800';
+        const noteHtml = a.note ? `<p class="text-xs text-blue-600 font-semibold mt-1"><i class="far fa-sticky-note mr-1"></i>${a.note}</p>` : '';
         listHtml += `
             <div class="bg-white p-3 rounded-lg border flex justify-between items-center gap-4">
                 <div>
                     <p class="font-bold text-gray-800 text-sm">${a.name}</p>
                     <p class="text-xs text-gray-500 mt-1">เลขที่: ${a.number === 999 ? '-' : a.number}</p>
+                    ${noteHtml}
                 </div>
                 <span class="px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${badgeClass}">${a.status}</span>
             </div>

@@ -189,3 +189,65 @@ export async function uploadFileToDrive(fileBase64, action = 'uploadFile', extra
         hideLoading();
     }
 }
+
+export async function firebaseStudentSelfCheckin(payload) {
+    try {
+        const id = payload.id || new Date().getTime().toString() + '_' + Math.random().toString(36).substr(2, 9);
+        const checkinRef = ref(db, `StudentCheckIns/${id}`);
+        const checkinData = {
+            id: id,
+            studentId: payload.studentId || '',
+            classId: payload.classId || '',
+            subjectId: payload.subjectId || '',
+            teacherId: payload.teacherId || '',
+            period: payload.period || '',
+            latitude: payload.latitude || '',
+            longitude: payload.longitude || '',
+            scanTime: payload.scanTime || new Date().toISOString(),
+            status: 'PENDING'
+        };
+        await set(checkinRef, checkinData);
+        return { success: true, message: 'เช็คชื่อสำเร็จแล้ว' };
+    } catch (error) {
+        console.error("Firebase student checkin error:", error);
+        return { success: false, message: error.toString() };
+    }
+}
+
+export async function firebaseGetStudentCheckIns() {
+    try {
+        const dbRef = ref(db, 'StudentCheckIns');
+        const snapshot = await get(dbRef);
+        const data = snapshot.val() || {};
+        const list = (Array.isArray(data) ? data : Object.values(data)).filter(Boolean);
+        return { status: 'success', StudentCheckIns: list };
+    } catch (error) {
+        console.error("Firebase get checkins error:", error);
+        return { status: 'error', message: error.toString() };
+    }
+}
+
+export async function firebaseUpdateStudentCheckInsStatus(ids, status = 'SYNCED') {
+    try {
+        const updates = {};
+        for (const id of ids) {
+            updates[`StudentCheckIns/${id}/status`] = status;
+        }
+        await update(ref(db, '/'), updates);
+        return { success: true };
+    } catch (error) {
+        console.error("Firebase update checkins status error:", error);
+        return { success: false, message: error.toString() };
+    }
+}
+
+export async function firebaseClearStudentCheckIns() {
+    try {
+        const checkinRef = ref(db, 'StudentCheckIns');
+        await set(checkinRef, null);
+        return true;
+    } catch (error) {
+        console.error("Firebase clear checkins error:", error);
+        return false;
+    }
+}
