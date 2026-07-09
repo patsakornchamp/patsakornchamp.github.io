@@ -2,7 +2,10 @@
             <div class="glass-panel rounded-none sm:rounded-2xl p-6 md:p-8">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-3 gap-3">
                     <h3 class="text-2xl font-bold text-green-800"><i class="fas fa-clipboard-list mr-2"></i>จัดการงานและคะแนน</h3>
-                    <button onclick="openAssignmentModal()" class="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm whitespace-nowrap"><i class="fas fa-plus mr-2"></i> มอบหมายงานใหม่</button>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button onclick="searchAssignments()" class="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm whitespace-nowrap flex items-center justify-center gap-1.5"><i class="fas fa-sync-alt"></i> ดึงข้อมูลล่าสุด</button>
+                        <button onclick="openAssignmentModal()" class="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium transition-colors shadow-sm whitespace-nowrap flex items-center justify-center gap-1.5"><i class="fas fa-plus"></i> มอบหมายงานใหม่</button>
+                    </div>
                 </div>
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6 bg-white/40 border border-white/50 backdrop-blur-md p-4 rounded-xl shadow-sm w-full relative z-20">

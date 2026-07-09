@@ -28,7 +28,60 @@ export async function searchHistory() {
     renderHistory();
 }
 
-export function renderHistory() {
+let currentHistoryPage = 1;
+const recordsPerPage = 20;
+
+export function changeHistoryPage(page) {
+    currentHistoryPage = page;
+    renderHistory(false);
+}
+
+function renderPaginationControls(containerId, totalPages, currentPage, callbackName) {
+    const cont = document.getElementById(containerId);
+    if (!cont) return;
+
+    let html = `<div class="flex flex-wrap items-center justify-center gap-1.5 mt-6 border-t pt-4">`;
+
+    const prevDisabled = currentPage === 1 ? 'disabled opacity-50 cursor-not-allowed' : '';
+    html += `<button ${prevDisabled} onclick="${callbackName}(${currentPage - 1})" class="px-3 py-1.5 bg-white border text-gray-700 rounded-lg hover:bg-gray-50 text-xs font-bold transition shadow-sm flex items-center gap-1"><i class="fas fa-chevron-left"></i> ก่อนหน้า</button>`;
+
+    const range = 2;
+    let startPage = Math.max(1, currentPage - range);
+    let endPage = Math.min(totalPages, currentPage + range);
+
+    if (startPage > 1) {
+        html += `<button onclick="${callbackName}(1)" class="px-3 py-1.5 bg-white border text-gray-700 rounded-lg hover:bg-gray-50 text-xs font-bold transition shadow-sm">1</button>`;
+        if (startPage > 2) {
+            html += `<span class="text-gray-400 px-1 text-xs">...</span>`;
+        }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        const activeClass = i === currentPage ? 'bg-blue-600 border-blue-600 text-white hover:bg-blue-700' : 'bg-white text-gray-700 border hover:bg-gray-50';
+        html += `<button onclick="${callbackName}(${i})" class="px-3 py-1.5 ${activeClass} rounded-lg text-xs font-bold transition shadow-sm">${i}</button>`;
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            html += `<span class="text-gray-400 px-1 text-xs">...</span>`;
+        }
+        html += `<button onclick="${callbackName}(${totalPages})" class="px-3 py-1.5 bg-white border text-gray-700 rounded-lg hover:bg-gray-50 text-xs font-bold transition shadow-sm">${totalPages}</button>`;
+    }
+
+    const nextDisabled = currentPage === totalPages ? 'disabled opacity-50 cursor-not-allowed' : '';
+    html += `<button ${nextDisabled} onclick="${callbackName}(${currentPage + 1})" class="px-3 py-1.5 bg-white border text-gray-700 rounded-lg hover:bg-gray-50 text-xs font-bold transition shadow-sm flex items-center gap-1">ถัดไป <i class="fas fa-chevron-right"></i></button>`;
+
+    html += `</div>`;
+    html += `<div class="text-center text-xs text-gray-500 mt-2 font-medium">หน้า ${currentPage} จากทั้งหมด ${totalPages} หน้า</div>`;
+
+    cont.innerHTML += html;
+}
+
+export function renderHistory(resetPage = true) {
+    if (resetPage === true) {
+        currentHistoryPage = 1;
+    }
+
     const type = document.getElementById('history-type').value;
     const d = document.getElementById('history-date').value;
     const classOrClubId = document.getElementById('history-class').value;
@@ -70,7 +123,24 @@ export function renderHistory() {
         recs.sort((a,b)=>new Date(b.date)-new Date(a.date));
         if(recs.length===0) return cont.innerHTML='<div class="text-center py-10 text-gray-500">ไม่พบประวัติการเช็คชื่อปกติ</div>';
 
-        recs.forEach(r => {
+        // Pre-create Maps for O(1) lookups
+        const classMap = {};
+        AppState.allClasses.forEach(c => { classMap[c.id] = c; });
+        const subjectMap = {};
+        AppState.allSubjects.forEach(s => { subjectMap[s.id] = s; });
+        const teacherMap = {};
+        AppState.allTeachers.forEach(t => { teacherMap[t.id] = t; });
+
+        // Calculate pages
+        const totalPages = Math.ceil(recs.length / recordsPerPage);
+        if (currentHistoryPage > totalPages) {
+            currentHistoryPage = totalPages || 1;
+        }
+
+        const pageRecords = recs.slice((currentHistoryPage - 1) * recordsPerPage, currentHistoryPage * recordsPerPage);
+        const htmlArray = [];
+
+        pageRecords.forEach(r => {
             let stat={มา:0,สาย:0,ลา:0,ขาด:0}; 
             let attList = r.attendance || [];
             if (typeof attList === 'string') {
@@ -86,16 +156,16 @@ export function renderHistory() {
             });
             const rYr = r.year !== undefined ? r.year : getYearSemesterFromDate(r.date).year;
             const rSem = r.semester !== undefined ? r.semester : getYearSemesterFromDate(r.date).semester;
-            const rClassName = r.classId ? (AppState.allClasses.find(c=>c.id===r.classId)?.className || r.class) : r.class;
-            const rSubName = r.subjectId ? (AppState.allSubjects.find(s=>s.id===r.subjectId)?.name || r.subject) : r.subject;
-            const rTeacherName = r.teacherId ? (() => { const t = AppState.allTeachers.find(t=>t.id===r.teacherId); return t ? `${t.firstName} ${t.lastName}` : r.teacher; })() : r.teacher;
+            const rClassName = r.classId ? (classMap[r.classId]?.className || r.class) : r.class;
+            const rSubName = r.subjectId ? (subjectMap[r.subjectId]?.name || r.subject) : r.subject;
+            const rTeacherName = r.teacherId ? (() => { const t = teacherMap[r.teacherId]; return t ? `${t.firstName} ${t.lastName}` : r.teacher; })() : r.teacher;
             
             let deleteBtnHtml = '';
             if (AppState.currentUser && (AppState.currentUser.role === 'admin' || AppState.currentUser.role === 'teacher')) {
                 deleteBtnHtml = `<button onclick="event.stopPropagation(); deleteSessionRecord('${r.id}', 'regular')" class="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-100 transition-colors shrink-0" title="ลบประวัตินี้"><i class="fas fa-trash-alt"></i></button>`;
             }
 
-            cont.innerHTML += `<div class="bg-white border rounded-lg shadow-sm mb-4 cursor-pointer hover:border-blue-400 hover:shadow-md transition-all duration-200" onclick="openSessionDrilldownModal('${r.id}', 'regular')">
+            htmlArray.push(`<div class="bg-white border rounded-lg shadow-sm mb-4 cursor-pointer hover:border-blue-400 hover:shadow-md transition-all duration-200" onclick="openSessionDrilldownModal('${r.id}', 'regular')">
                 <div class="bg-gray-50 hover:bg-blue-50/50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 transition-colors">
                     <div class="flex-1">
                         <h4 class="font-bold text-gray-800">${getBangkokDate(r.date)} (คาบ: ${r.period || '-'} | ปีการศึกษา ${rYr} ภาคเรียน ${rSem})</h4>
@@ -106,8 +176,14 @@ export function renderHistory() {
                         ${deleteBtnHtml}
                     </div>
                 </div>
-            </div>`;
+            </div>`);
         });
+
+        cont.innerHTML = htmlArray.join('');
+
+        if (totalPages > 1) {
+            renderPaginationControls('history-records-container', totalPages, currentHistoryPage, 'changeHistoryPage');
+        }
     } else {
         let recs = AppState.allClubRecords.filter(r => 
             r.deleted_flg !== 'Y' && 
@@ -125,7 +201,20 @@ export function renderHistory() {
         recs.sort((a,b) => new Date(b.date) - new Date(a.date));
         if(recs.length===0) return cont.innerHTML='<div class="text-center py-10 text-gray-500">ไม่พบประวัติการเข้าเรียนกิจกรรมชุมนุม</div>';
 
-        recs.forEach(r => {
+        // Pre-create Maps for O(1) lookups
+        const clubMap = {};
+        AppState.allClubs.forEach(c => { clubMap[c.id] = c; });
+
+        // Calculate pages
+        const totalPages = Math.ceil(recs.length / recordsPerPage);
+        if (currentHistoryPage > totalPages) {
+            currentHistoryPage = totalPages || 1;
+        }
+
+        const pageRecords = recs.slice((currentHistoryPage - 1) * recordsPerPage, currentHistoryPage * recordsPerPage);
+        const htmlArray = [];
+
+        pageRecords.forEach(r => {
             let stat={มา:0,สาย:0,ลา:0,ขาด:0}; 
             let attList = r.attendance || [];
             if (typeof attList === 'string') {
@@ -139,7 +228,7 @@ export function renderHistory() {
                     stat[a.status]++;
                 }
             });
-            const club = AppState.allClubs.find(c => c.id === r.clubId && c.deleted_flg !== 'Y');
+            const club = clubMap[r.clubId];
             
             const rYr = r.year !== undefined ? r.year : getYearSemesterFromDate(r.date).year;
             const rSem = r.semester !== undefined ? r.semester : getYearSemesterFromDate(r.date).semester;
@@ -149,7 +238,7 @@ export function renderHistory() {
                 deleteBtnHtml = `<button onclick="event.stopPropagation(); deleteSessionRecord('${r.id}', 'club')" class="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-red-100 transition-colors shrink-0" title="ลบประวัตินี้"><i class="fas fa-trash-alt"></i></button>`;
             }
 
-            cont.innerHTML += `<div class="bg-white border rounded-lg shadow-sm mb-4 cursor-pointer hover:border-green-400 hover:shadow-md transition-all duration-200" onclick="openSessionDrilldownModal('${r.id}', 'club')">
+            htmlArray.push(`<div class="bg-white border rounded-lg shadow-sm mb-4 cursor-pointer hover:border-green-400 hover:shadow-md transition-all duration-200" onclick="openSessionDrilldownModal('${r.id}', 'club')">
                 <div class="bg-green-50/50 hover:bg-green-100/50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 transition-colors">
                     <div class="flex-1">
                         <h4 class="font-bold text-green-900">${getBangkokDate(r.date)} (กิจกรรมวิชาชุมนุม - ปี ${rYr}/${rSem})</h4>
@@ -160,8 +249,14 @@ export function renderHistory() {
                         ${deleteBtnHtml}
                     </div>
                 </div>
-            </div>`;
+            </div>`);
         });
+
+        cont.innerHTML = htmlArray.join('');
+
+        if (totalPages > 1) {
+            renderPaginationControls('history-records-container', totalPages, currentHistoryPage, 'changeHistoryPage');
+        }
     }
 }
 
@@ -278,3 +373,4 @@ window.searchHistory = searchHistory;
 window.renderHistory = renderHistory;
 window.exportHistoryCSV = exportHistoryCSV;
 window.deleteSessionRecord = deleteSessionRecord;
+window.changeHistoryPage = changeHistoryPage;

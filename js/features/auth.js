@@ -63,15 +63,16 @@ export async function handleLogin(e, role) {
         
         if (!student && user === pass) {
             try {
-                const res = await fetch(`${AppState.googleSheetUrl}?action=getStudentById&studentId=${encodeURIComponent(user)}`);
-                const json = await res.json();
-                if (json.status === 'success' && json.Student) {
-                    student = json.Student;
-                    AppState.allStudents.push(student);
-                    localStorage.setItem(DB_KEYS.STUDENTS, JSON.stringify(AppState.allStudents));
+                const synced = await syncDataFromServer(true);
+                if (synced) {
+                    student = AppState.allStudents.find(s => {
+                        if (!s.studentId) return false;
+                        const cleanStudentId = s.studentId.toString().trim();
+                        return cleanStudentId === user && cleanStudentId === pass && s.deleted_flg !== 'Y';
+                    });
                 }
             } catch (err) {
-                console.error("Login fetch error:", err);
+                console.error("Login Firebase sync error:", err);
             }
         }
         

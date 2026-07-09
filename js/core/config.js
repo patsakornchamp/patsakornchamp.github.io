@@ -66,7 +66,7 @@ if (schoolParam !== 'rnn' && schoolParam !== 'cpw') {
                             border-radius: 12px;
                             font-weight: bold;
                             transition: background 0.2s;
-                        ">เข้าใช้งานโรงเรียน RNN</a>
+                        ">เข้าใช้งานโรงเรียนราชวินิต นนทบุรี</a>
                         <a href="?school=cpw" style="
                             background: #38a169;
                             color: white;
@@ -75,7 +75,7 @@ if (schoolParam !== 'rnn' && schoolParam !== 'cpw') {
                             border-radius: 12px;
                             font-weight: bold;
                             transition: background 0.2s;
-                        ">เข้าใช้งานโรงเรียน CPW</a>
+                        ">เข้าใช้งานไชยฉิมพลีวิทยาคม</a>
                     </div>
                 </div>
             </div>
